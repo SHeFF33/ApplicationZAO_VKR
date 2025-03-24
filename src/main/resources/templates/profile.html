@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Личный кабинет</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+            margin: 80px auto 20px auto;
+        }
+        .client-info {
+            margin-bottom: 20px;
+        }
+        .client-info h2 {
+            margin-top: 0;
+        }
+        .table-container {
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .table-container th, .table-container td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .table-container th {
+            background-color: #f2f2f2;
+        }
+        .table-container tr:hover {
+            background-color: #f1f1f1;
+        }
+        .button-container {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .edit-button {
+            background-color: #2196F3;
+        }
+        .edit-button:hover {
+            background-color: #1e87d9;
+        }
+        .save-button {
+            background-color: #FF9800;
+        }
+        .save-button:hover {
+            background-color: #e68900;
+        }
+        .editable input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s;
+            text-align: left;
+        }
+        .modal-content h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #555;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .modal-content button:hover {
+            background-color: #45a049;
+        }
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a href="/profile">Личный кабинет</a>
+    <a href="/products">Номенклатура</a>
+    <a href="/cart">Корзина</a>
+    <a th:href="@{/orders(username=${username})}">Заказы</a>
+    <a href="/documents">Документация</a>
+    <a th:href="@{/login}">Выйти</a>
+    <a th:href="@{/messenger}">Мои обращения</a>
+</div>
+
+<div class="container">
+    <div class="client-info">
+        <h2>Информация о клиенте</h2>
+        <p><strong>Название:</strong> <span th:text="${client.name}"></span></p>
+        <p><strong>ИНН:</strong> <span th:text="${client.inn}"></span></p>
+        <p><strong>КПП:</strong> <span th:text="${client.kpp}"></span></p>
+        <p><strong>Юридический адрес:</strong> <span th:text="${client.uraddress}"></span></p>
+        <p><strong>Фактический адрес:</strong> <span th:text="${client.factaddress}"></span></p>
+    </div>
+
+    <div class="table-container">
+        <h3>Адреса</h3>
+        <table id="addressTable">
+            <tr>
+                <th>Индекс</th>
+                <th>Страна</th>
+                <th>Регион</th>
+                <th>Район</th>
+                <th>Город/Поселение</th>
+                <th>Улица</th>
+                <th>Дом</th>
+                <th>Квартира</th>
+                <th>Контакт</th>
+            </tr>
+            <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}">
+                <td><span class="editable" data-field="postalcode" th:text="${address.postalcode}"></span></td>
+                <td><span class="editable" data-field="country" th:text="${address.country}"></span></td>
+                <td><span class="editable" data-field="region" th:text="${address.region}"></span></td>
+                <td><span class="editable" data-field="rayon" th:text="${address.rayon}"></span></td>
+                <td><span class="editable" data-field="city" th:text="${address.city}"></span></td>
+                <td><span class="editable" data-field="street" th:text="${address.street}"></span></td>
+                <td><span class="editable" data-field="home" th:text="${address.home}"></span></td>
+                <td><span class="editable" data-field="roomnumber" th:text="${address.roomnumber}"></span></td>
+                <td>
+                    <span class="editable" data-field="contact" th:text="${address.contact != null ? address.contact.name : 'Нет контакта'}"></span>
+                    <select class="editable-select" data-field="contact" th:attr="data-address-id=${address.id}" style="display: none;">
+                        <option value="">Нет контакта</option>
+                        <option th:each="contact : ${contacts}"
+                                th:value="${contact.id}"
+                                th:text="${contact.name}"
+                                th:selected="${address.contact != null && address.contact.id == contact.id}"></option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <div class="button-container">
+            <button class="button" onclick="openAddAddressModal()">Добавить адрес</button>
+            <button class="button edit-button" onclick="enableEditing('addressTable')">Изменить</button>
+            <button class="button save-button" onclick="saveChanges('addressTable')">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <h3>Контактные данные</h3>
+        <table id="contactTable">
+            <tr>
+                <th>Тип контакта</th>
+                <th>Имя</th>
+                <th>Телефон</th>
+                <th>Email</th>
+            </tr>
+            <tr th:each="contact : ${contacts}" th:attr="data-id=${contact.id}">
+                <td><span class="editable" data-field="contactType" th:text="${contact.contactType}"></span></td>
+                <td><span class="editable" data-field="name" th:text="${contact.name}"></span></td>
+                <td><span class="editable" data-field="phonenumber" th:text="${contact.phonenumber}"></span></td>
+                <td><span class="editable" data-field="email" th:text="${contact.email}"></span></td>
+            </tr>
+        </table>
+        <div class="button-container">
+            <button class="button" onclick="openAddContactModal()">Добавить контакт</button>
+            <button class="button edit-button" onclick="enableEditing('contactTable')">Изменить</button>
+            <button class="button save-button" onclick="saveChanges('contactTable')">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<div id="addAddressModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddAddressModal()">&times;</span>
+        <h2>Добавить адрес</h2>
+        <form th:action="@{/profile/addAddress}" method="post">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <label for="postalcode">Индекс:</label>
+            <input type="number" id="postalcode" name="postalcode" required>
+            <label for="country">Страна:</label>
+            <input type="text" id="country" name="country" required>
+            <label for="region">Регион:</label>
+            <input type="text" id="region" name="region" required>
+            <label for="rayon">Район:</label>
+            <input type="text" id="rayon" name="rayon" required>
+            <label for="city">Город/Поселение:</label>
+            <input type="text" id="city" name="city" required>
+            <label for="street">Улица:</label>
+            <input type="text" id="street" name="street" required>
+            <label for="home">Дом:</label>
+            <input type="text" id="home" name="home" required>
+            <label for="roomnumber">Квартира:</label>
+            <input type="text" id="roomnumber" name="roomnumber">
+            <label for="contactId">Контакт:</label>
+            <select id="contactId" name="contactId" required>
+                <option value="" disabled selected>Выберите контакт</option>
+                <option th:each="contact : ${contacts}" th:value="${contact.id}" th:text="${contact.name}"></option>
+            </select>
+            <button type="submit" class="button">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+
+<div id="addContactModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddContactModal()">&times;</span>
+        <h2>Добавить контакт</h2>
+        <form th:action="@{/profile/addContact}" method="post">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <label for="contactType">Тип контакта:</label>
+            <input type="text" id="contactType" name="contactType" required>
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="phonenumber">Телефон:</label>
+            <input type="text" id="phonenumber" name="phonenumber" required>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <button type="submit" class="button">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    let isEditingEnabled = false;
+
+    function enableEditing(tableId) {
+        if (isEditingEnabled) return;
+        const table = document.getElementById(tableId);
+        const editableFields = table.querySelectorAll('.editable');
+        editableFields.forEach(field => {
+            const text = field.innerText;
+            if (field.getAttribute('data-field') === 'contact') {
+                field.style.display = 'none';
+                const select = field.nextElementSibling;
+                select.style.display = 'block';
+            } else {
+                field.innerHTML = `<input type="text" value="${text}" data-field="${field.getAttribute('data-field')}">`;
+            }
+        });
+        isEditingEnabled = true;
+    }
+
+
+    function saveChanges(tableId) {
+        const table = document.getElementById(tableId);
+        const rows = table.querySelectorAll('tr');
+        const data = [];
+
+        rows.forEach((row, index) => {
+            if (index === 0) return;
+            const inputs = row.querySelectorAll('input, select');
+            const rowData = {
+                id: row.getAttribute('data-id')
+            };
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                if (field === 'contact') {
+                    rowData['contactId'] = input.value;
+                } else {
+                    rowData[field] = input.value;
+                }
+            });
+            data.push(rowData);
+        });
+
+        console.log("Отправляемые данные:", data); // Отладка
+
+        const endpoint = tableId === 'addressTable' ? 'editAddress' : 'editContact';
+
+        fetch(`/profile/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+            },
+            body: JSON.stringify(data),
+        })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    response.text().then(text => {
+                        console.error(text);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+    function openAddAddressModal() {
+        document.getElementById('addAddressModal').style.display = 'block';
+    }
+
+    function closeAddAddressModal() {
+        document.getElementById('addAddressModal').style.display = 'none';
+    }
+
+    function openAddContactModal() {
+        document.getElementById('addContactModal').style.display = 'block';
+    }
+
+    function closeAddContactModal() {
+        document.getElementById('addContactModal').style.display = 'none';
+    }
+
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+</script>
+</body>
+</html>

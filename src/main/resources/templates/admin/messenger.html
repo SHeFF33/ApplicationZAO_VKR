@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Обращения клиентов</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            padding: 20px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #4CAF50;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .conversation-list {
+            display: grid;
+            gap: 15px;
+        }
+        .conversation-item {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .conversation-item:hover {
+            background-color: #f5f5f5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .conversation-item a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .conversation-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .conversation-item p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .status-open {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status-closed {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .new-conversation {
+            background-color: #fff8e1;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/admin/products}">Добавить товар</a>
+    <a th:href="@{/admin/clients}">Клиенты</a>
+    <a th:href="@{/admin/orders}">Заказы</a>
+    <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+    <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+    <a th:href="@{/admin/document}">Документация</a>
+    <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <h1>Обращения клиентов</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('open')">Новые обращения</button>
+        <button class="tab-btn" onclick="showTab('my')">Мои обращения</button>
+    </div>
+
+    <div id="openTab" class="tab-content active">
+        <div class="conversation-list">
+            <div th:each="conv : ${openConversations}" class="conversation-item new-conversation">
+                <a th:href="@{/admin/messenger/{id}(id=${conv.id})}">
+                    <h3 th:text="${conv.subject}"></h3>
+                    <p>Клиент: <span th:text="${conv.client.name}"></span></p>
+                    <p>Дата создания: <span th:text="${#temporals.format(conv.createdAt, 'dd.MM.yyyy HH:mm')}"></span></p>
+                    <p>Статус: <span class="status status-open">Новое</span></p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="myTab" class="tab-content">
+        <div class="conversation-list">
+            <div th:each="conv : ${myConversations}" class="conversation-item">
+                <a th:href="@{/admin/messenger/{id}(id=${conv.id})}">
+                    <h3 th:text="${conv.subject}"></h3>
+                    <p>Клиент: <span th:text="${conv.client.name}"></span></p>
+                    <p>Дата создания: <span th:text="${#temporals.format(conv.createdAt, 'dd.MM.yyyy HH:mm')}"></span></p>
+                    <p>Статус:
+                        <span th:class="${conv.closed} ? 'status status-closed' : 'status status-open'"
+                              th:text="${conv.closed} ? 'Закрыто' : 'Открыто'"></span>
+                    </p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+
+    function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Deactivate all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab and activate button
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+</script>
+</body>
+</html>

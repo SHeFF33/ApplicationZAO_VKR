@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Добавить клиента</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+    }
+    .form-section {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .form-section h4 {
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    .form-section div {
+      margin-bottom: 10px;
+    }
+    .form-section label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-section input, .form-section select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-section button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .form-section button:hover {
+      background-color: #45a049;
+    }
+    .table-section {
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+    .table-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      table-layout: fixed;
+    }
+    .table-section th, .table-section td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      word-wrap: break-word;
+    }
+    .table-section th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .table-section input {
+      width: calc(100% - 16px);
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/admin/dashboard}">Панель администратора</a>
+  <a th:href="@{/admin/products}">Товары</a>
+  <a th:href="@{/admin/clients}">Клиенты</a>
+  <a th:href="@{/admin/orders}">Заказы</a>
+  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+  <a th:href="@{/admin/document}">Документация</a>
+  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <h2>Добавить клиента</h2>
+  <form th:action="@{/admin/addClient}" method="post">
+    <div class="form-section">
+      <div>
+        <label>Имя:</label>
+        <input type="text" name="name" required/>
+      </div>
+      <div>
+        <label>ИНН:</label>
+        <input type="text" name="inn" required/>
+      </div>
+      <div>
+        <label>КПП:</label>
+        <input type="text" name="kpp" required/>
+      </div>
+      <div>
+        <label>Юридический адрес:</label>
+        <input type="text" name="uraddress" required/>
+      </div>
+      <div>
+        <label>Фактический адрес:</label>
+        <input type="text" name="factaddress" required/>
+      </div>
+      <div>
+        <label>Выбранная цена:</label>
+        <select name="selectedPriceId">
+          <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}"></option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <h4>Адреса</h4>
+      <table id="addresses">
+        <thead>
+        <tr>
+          <th>Почтовый индекс</th>
+          <th>Страна</th>
+          <th>Регион</th>
+          <th>Район</th>
+          <th>Город</th>
+          <th>Улица</th>
+          <th>Дом</th>
+          <th>Номер комнаты</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><input type="text" name="postalcodes" required/></td>
+          <td><input type="text" name="countries" required/></td>
+          <td><input type="text" name="regions" required/></td>
+          <td><input type="text" name="rayons" required/></td>
+          <td><input type="text" name="cities" required/></td>
+          <td><input type="text" name="streets" required/></td>
+          <td><input type="text" name="homes" required/></td>
+          <td><input type="text" name="roomnumbers" required/></td>
+        </tr>
+        </tbody>
+      </table>
+      <button type="button" onclick="addAddress()">Добавить адрес</button>
+    </div>
+
+    <div class="table-section">
+      <h4>Контакты</h4>
+      <table id="contacts">
+        <thead>
+        <tr>
+          <th>Тип контакта</th>
+          <th>Имя</th>
+          <th>Номер телефона</th>
+          <th>Email</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><input type="text" name="typeContacts" required/></td>
+          <td><input type="text" name="contactNames" required/></td>
+          <td><input type="text" name="phonenumbers" required/></td>
+          <td><input type="text" name="emails" required/></td>
+        </tr>
+        </tbody>
+      </table>
+      <button type="button" onclick="addContact()">Добавить контакт</button>
+    </div>
+
+    <div class="table-section">
+      <h4>Пользователи</h4>
+      <table id="users">
+        <thead>
+        <tr>
+          <th>Имя пользователя</th>
+          <th>Имя</th>
+          <th>Пароль</th>
+          <th>Админ</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><input type="text" name="usernames" required/></td>
+          <td><input type="text" name="nameuser" required/></td>
+          <td><input type="password" name="passwords" required/></td>
+          <td><input type="checkbox" name="isAdmins" value="true"/></td>
+        </tr>
+        </tbody>
+      </table>
+      <button type="button" onclick="addUser()">Добавить пользователя</button>
+    </div>
+
+    <div class="form-section">
+      <button type="submit">Добавить клиента</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "250px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+
+  function addAddress() {
+    const table = document.getElementById('addresses').getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+    newRow.innerHTML = `
+      <td><input type="text" name="postalcodes" required/></td>
+      <td><input type="text" name="countries" required/></td>
+      <td><input type="text" name="regions" required/></td>
+      <td><input type="text" name="rayons" required/></td>
+      <td><input type="text" name="cities" required/></td>
+      <td><input type="text" name="streets" required/></td>
+      <td><input type="text" name="homes" required/></td>
+      <td><input type="text" name="roomnumbers" required/></td>
+    `;
+  }
+
+  function addContact() {
+    const table = document.getElementById('contacts').getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+    newRow.innerHTML = `
+    <td><input type="text" name="typeContacts" required/></td>
+    <td><input type="text" name="contactNames" required/></td>
+    <td><input type="text" name="phonenumbers" required/></td>
+    <td><input type="text" name="emails" required/></td>
+  `;
+  }
+
+  function addUser() {
+    const table = document.getElementById('users').getElementsByTagName('tbody')[0];
+    const newRow = table.insertRow();
+    newRow.innerHTML = `
+      <td><input type="text" name="usernames" required/></td>
+      <td><input type="text" name="name" required/></td>
+      <td><input type="password" name="passwords" required/></td>
+      <td><input type="checkbox" name="isAdmins" value="true"/></td>
+    `;
+  }
+</script>
+</body>
+</html>

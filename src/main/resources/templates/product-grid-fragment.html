@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<div th:fragment="productGrid">
+  <div class="product-grid">
+    <div th:each="product : ${products}" class="product-block">
+      <a th:href="@{/product/{id}(id=${product.id})}" class="product-link">
+        <img th:src="@{/product/image/{id}(id=${product.images[0].id})}" alt="Product Image"/>
+        <div class="product-info">
+          <h3 th:text="${product.name}"></h3>
+          <p th:text="${@clientController.getProductPrice(product, selectedPriceId)} + ' руб.'"></p>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Мои обращения</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+    }
+    .new-conversation-btn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .new-conversation-btn:hover {
+      background-color: #45a049;
+    }
+    .conversation-form {
+      display: none;
+      margin-bottom: 20px;
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+    }
+    .conversation-form input,
+    .conversation-form textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .conversation-form textarea {
+      height: 100px;
+    }
+    .conversation-list {
+      display: grid;
+      gap: 15px;
+    }
+    .conversation-item {
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+    .conversation-item:hover {
+      background-color: #f5f5f5;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .conversation-item a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .conversation-item h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .conversation-item p {
+      margin: 5px 0;
+      color: #666;
+    }
+    .status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .status-open {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .status-closed {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/profile}">Личный кабинет</a>
+  <a th:href="@{/products}">Номенклатура</a>
+  <a href="/cart">Корзина</a>
+  <a th:href="@{/orders}">Заказы</a>
+  <a href="/documents">Документация</a>
+  <a th:href="@{/messenger}">Мои обращения</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <h1>Мои обращения</h1>
+
+  <button class="new-conversation-btn" onclick="showNewConversationForm()">Создать новое обращение</button>
+
+  <div id="newConversationForm" class="conversation-form">
+    <form th:action="@{/messenger/start}" method="post" enctype="multipart/form-data">
+      <input type="text" name="subject" placeholder="Тема обращения" required>
+      <textarea name="message" placeholder="Опишите вашу проблему или вопрос" required></textarea>
+      <input type="file" name="files" multiple>
+      <button type="submit" class="new-conversation-btn">Отправить</button>
+    </form>
+  </div>
+
+  <div class="conversation-list">
+    <div th:each="conv : ${conversations}" class="conversation-item">
+      <a th:href="@{/messenger/{id}(id=${conv.id})}">
+        <h3 th:text="${conv.subject}"></h3>
+        <p>Дата создания: <span th:text="${#temporals.format(conv.createdAt, 'dd.MM.yyyy HH:mm')}"></span></p>
+        <p>Статус:
+          <span th:class="${conv.closed} ? 'status status-closed' : 'status status-open'"
+                th:text="${conv.closed} ? 'Закрыто' : 'Открыто'"></span>
+        </p>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "250px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+
+  function showNewConversationForm() {
+    const form = document.getElementById('newConversationForm');
+    form.style.display = form.style.display === 'block' ? 'none' : 'block';
+  }
+</script>
+</body>
+</html>

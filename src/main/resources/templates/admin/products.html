@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Добавить товар</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            padding: 20px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+        form div {
+            margin-bottom: 15px;
+        }
+        form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        form input, form textarea, form select, form button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        form button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #45a049;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .modal-content div {
+            margin-bottom: 15px;
+        }
+        .modal-content label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .modal-content input, .modal-content textarea, .modal-content select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .modal-content button:hover {
+            background-color: #45a049;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .button-container button {
+            flex: 1;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/admin/dashboard}">Панель администратора</a>
+    <a th:href="@{/admin/clients}">Клиенты</a>
+    <a th:href="@{/admin/orders}">Заказы</a>
+    <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+    <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+    <a th:href="@{/admin/document}">Документация</a>
+    <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <h2>Добавить товар</h2>
+
+    <form th:action="@{/admin/addProduct}" method="post">
+        <div>
+            <label>Название:</label>
+            <input type="text" name="name" required/>
+        </div>
+        <div>
+            <label>Сорт:</label>
+            <input type="text" name="sort" required/>
+        </div>
+        <div>
+            <label>Толщина:</label>
+            <input type="text" name="tolsh" required/>
+        </div>
+        <div>
+            <label>Количество:</label>
+            <input type="number" name="quantity" required/>
+        </div>
+        <div>
+            <label>Описание:</label>
+            <textarea name="description" required></textarea>
+        </div>
+        <div class="button-container">
+            <button onclick="openModal('documentModal')">Добавить документацию</button>
+            <button onclick="openModal('imageModal')">Добавить фотографии</button>
+            <button onclick="openModal('priceModal')">Добавить цену</button>
+        </div>
+        <div>
+            <button type="submit">Добавить товар</button>
+        </div>
+    </form>
+
+    <div id="documentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('documentModal')">&times;</span>
+            <h3>Добавить документацию</h3>
+            <form th:action="@{/admin/addDocumentation}" method="post" enctype="multipart/form-data">
+                <div>
+                    <label>Продукт:</label>
+                    <select name="productId">
+                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>Документация:</label>
+                    <input type="file" name="documentation" id="documentInput" style="display: none;" accept=".pdf,.doc,.docx"/>
+                    <input type="text" id="documentName" placeholder="Выберите документ" onclick="document.getElementById('documentInput').click()" readonly/>
+                </div>
+                <div>
+                    <label>Описание:</label>
+                    <textarea name="description" required></textarea>
+                </div>
+                <div>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('imageModal')">&times;</span>
+            <h3>Добавить фотографии</h3>
+            <form th:action="@{/admin/addProductImages}" method="post" enctype="multipart/form-data">
+                <div>
+                    <label>Продукт:</label>
+                    <select name="productId">
+                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>Фотографии:</label>
+                    <input type="file" name="images" id="imageInput" style="display: none;" accept="image/*" multiple/>
+                    <div class="image-preview" id="imagePreview"></div>
+                    <button type="button" onclick="document.getElementById('imageInput').click()">Выбрать фото</button>
+                </div>
+                <div>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="priceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('priceModal')">&times;</span>
+            <h3>Добавить цену</h3>
+            <form th:action="@{/admin/addSum}" method="post">
+                <div>
+                    <label>Продукт:</label>
+                    <select name="productId">
+                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>Цена:</label>
+                    <input type="number" name="summas" step="0.01" required/>
+                </div>
+                <div>
+                    <label>Период:</label>
+                    <input type="date" name="periods" required/>
+                </div>
+                <div>
+                    <label>Прайс-лист:</label>
+                    <select name="priceIds">
+                        <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}"></option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = "block";
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+    }
+
+    document.getElementById('documentInput').addEventListener('change', function(event) {
+        const fileName = event.target.files[0].name;
+        document.getElementById('documentName').value = fileName;
+    });
+
+    document.getElementById('imageInput').addEventListener('change', function(event) {
+        const preview = document.getElementById('imagePreview');
+        preview.innerHTML = '';
+        const files = event.target.files;
+        for (let i = 0; i < files.length && i < 5; i++) {
+            const file = files[i];
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            preview.appendChild(img);
+        }
+    });
+
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+</script>
+</body>
+</html>

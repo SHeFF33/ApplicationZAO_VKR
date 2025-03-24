@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Карточка товара</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+      border-top: 1px solid #ddd;
+      border-left: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+    }
+    .image-slider {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      height: 400px;
+    }
+    .image-slider img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .image-slider img.active {
+      display: block;
+    }
+    .image-slider .prev, .image-slider .next {
+      position: absolute;
+      top: 50%;
+      width: auto;
+      padding: 30px;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      transition: 0.6s ease;
+      border-radius: 0 3px 3px 0;
+      user-select: none;
+      cursor: pointer;
+    }
+    .image-slider .next {
+      right: 0;
+      border-radius: 3px 0 0 3px;
+    }
+    .image-slider .prev:hover, .image-slider .next:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+    .product-details {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .product-details div {
+      width: 48%;
+    }
+    .documentation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .documentation-table th, .documentation-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .documentation-table th {
+      background-color: #f2f2f2;
+    }
+    .add-to-cart-form {
+      margin-top: 20px;
+    }
+    .add-to-cart-form input[type="number"] {
+      width: 50px;
+      padding: 5px;
+      margin-right: 10px;
+    }
+    .add-to-cart-form button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .add-to-cart-form button:hover {
+      background-color: #45a049;
+    }
+  </style>
+  <script>
+    let currentIndex = 0;
+
+    function showImage(index) {
+      const images = document.querySelectorAll('.image-slider img');
+      images.forEach((img, i) => {
+        img.classList.toggle('active', i === index);
+      });
+    }
+
+    function nextImage() {
+      const images = document.querySelectorAll('.image-slider img');
+      currentIndex = (currentIndex + 1) % images.length;
+      showImage(currentIndex);
+    }
+
+    function prevImage() {
+      const images = document.querySelectorAll('.image-slider img');
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      showImage(currentIndex);
+    }
+
+    setInterval(nextImage, 10000);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      showImage(currentIndex);
+      document.querySelector('.image-slider .next').addEventListener('click', nextImage);
+      document.querySelector('.image-slider .prev').addEventListener('click', prevImage);
+    });
+
+    function openNav() {
+      document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+      document.getElementById("mySidebar").style.width = "0";
+    }
+  </script>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/profile}">Личный кабинет</a>
+  <a th:href="@{/products}">Товары</a>
+  <a href="/cart">Корзина</a>
+  <a th:href="@{/orders(username=${username})}">Заказы</a>
+  <a href="/documents">Документация</a>
+  <a th:href="@{/messenger}">Мои обращения</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <h2 th:text="${product.name}"></h2>
+  <div class="image-slider">
+    <img th:each="image : ${product.images}" th:src="@{/product/image/{id}(id=${image.id})}" class="product-image" alt="Product Image"/>
+    <a class="prev">&#10094;</a>
+    <a class="next">&#10095;</a>
+  </div>
+  <div class="product-details">
+    <div>
+      <p th:text="${product.description}"></p>
+      <p>Сорт: <span th:text="${product.sort}"></span></p>
+      <p>Толщина: <span th:text="${product.tolsh}"></span></p>
+      <p>Количество: <span th:text="${product.quantity}"></span></p>
+      <p>
+        Цена:
+        <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} != null" th:text="${@clientController.getProductPrice(product, selectedPriceId)}"></span>
+        <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} == null">Цена не найдена</span>
+      </p>
+    </div>
+    <div>
+      <h3>Документы:</h3>
+      <table class="documentation-table">
+        <tr>
+          <th>Описание</th>
+          <th></th>
+        </tr>
+        <tr th:each="doc : ${product.documentations}">
+          <td th:text="${doc.description}"></td>
+          <td><a th:href="@{/products/{id}/document/{docId}(id=${product.id}, docId=${doc.id})}" th:text="Скачать"></a></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <form th:action="@{/product/addToCart}" method="post" class="add-to-cart-form">
+    <input type="hidden" name="productId" th:value="${product.id}" />
+    <input type="hidden" name="sumId" th:value="${@clientController.getProductPriceId(product, selectedPriceId)}" />
+    <input type="hidden" name="username" th:value="${username}" />
+    <input type="number" name="quantity" value="1" min="1" />
+    <button type="submit">Добавить в корзину</button>
+  </form>
+</div>
+</body>
+</html>

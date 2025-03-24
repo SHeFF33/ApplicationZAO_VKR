@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Клиенты</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+    }
+    .client-block {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .client-block:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+    }
+    .client-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .client-info div {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 5px 0;
+      width: 100%;
+    }
+    .client-info div span:first-child {
+      font-weight: bold;
+      color: #555;
+      margin-right: 10px;
+    }
+    .client-info div span:last-child {
+      color: #333;
+      text-align: left;
+    }
+    .add-client-btn {
+      display: block;
+      width: fit-content;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .add-client-btn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/admin/dashboard}">Панель администратора</a>
+  <a th:href="@{/admin/products}">Товары</a>
+  <a th:href="@{/admin/orders}">Заказы</a>
+  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+  <a th:href="@{/admin/document}">Документация</a>
+  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <a href="/admin/addClient" class="add-client-btn">Добавить нового клиента</a>
+  <div th:each="client : ${clients}">
+    <div class="client-block" th:onclick="'window.location.href = \'' + @{/admin/clientDetails/{id}(id=${client.id})} + '\''">
+      <div class="client-info">
+        <div>
+          <span>Имя:</span>
+          <span th:text="${client.name}"></span>
+        </div>
+        <div>
+          <span>ИНН:</span>
+          <span th:text="${client.inn}"></span>
+        </div>
+        <div>
+          <span>КПП:</span>
+          <span th:text="${client.kpp}"></span>
+        </div>
+        <div>
+          <span>Юридический адрес:</span>
+          <span th:text="${client.uraddress}"></span>
+        </div>
+        <div>
+          <span>Фактический адрес:</span>
+          <span th:text="${client.factaddress}"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "250px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+</script>
+</body>
+</html>

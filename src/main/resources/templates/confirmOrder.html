@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Подтверждение заказа</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 80%;
+      max-width: 800px;
+    }
+    h2, h3 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .total-sum {
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+    .button-container {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #4CAF50;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .button:hover {
+      background-color: #45a049;
+    }
+    .cancel-button {
+      background-color: #f44336;
+    }
+    .cancel-button:hover {
+      background-color: #e57373;
+    }
+    .notification {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: #fff;
+      padding: 15px 25px;
+      border-radius: 5px;
+      z-index: 1000;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+</header>
+
+<div class="container">
+  <h2>Подтверждение заказа</h2>
+  <form th:action="@{/cart/confirmOrder}" method="post">
+    <input type="hidden" name="addressId" th:value="${addressId}" />
+    <input type="hidden" name="deliveryDate" th:value="${deliveryDate}" />
+
+    <h3>Адрес доставки:</h3>
+    <p th:text="${selectedAddress.postalcode + ', ' + selectedAddress.country + ', ' + selectedAddress.region + ', '  + selectedAddress.rayon + ', '  + selectedAddress.city + ', ' + selectedAddress.street + ', ' + selectedAddress.home + ', ' + selectedAddress.roomnumber}"></p>
+
+    <h3>Дата доставки:</h3>
+    <p th:text="${deliveryDate}"></p>
+
+    <h3>Товары в заказе:</h3>
+    <table>
+      <tr>
+        <th>Название продукта</th>
+        <th>Количество</th>
+        <th>Цена</th>
+      </tr>
+      <tr th:each="entry : ${cart.cartItems}">
+        <td th:text="${entry.product.name}"></td>
+        <td th:text="${entry.quantity}"></td>
+        <td th:text="${entry.sum.summa}"></td>
+      </tr>
+    </table>
+
+    <div class="total-sum">
+      <h3>Итоговая сумма: <span th:text="${totalSum}"></span></h3>
+    </div>
+
+    <div class="button-container">
+      <button type="submit" class="button">Подтвердить заказ</button>
+      <a href="/cart" class="button cancel-button">Отмена</a>
+    </div>
+  </form>
+</div>
+
+<div id="confirmationNotification" class="notification">
+  Ваш заказ находится в обработке.
+</div>
+
+<script>
+  var notification = document.getElementById("confirmationNotification");
+  document.querySelector('form').onsubmit = function(event) {
+    notification.style.display = "block";
+    event.preventDefault();
+    setTimeout(function() {
+      event.target.submit();
+    }, 2000);
+  }
+</script>
+</body>
+</html>

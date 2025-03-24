@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Типы документов и Цены</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+    }
+    h2 {
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    h3 {
+      margin-top: 20px;
+    }
+    .success-message {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr:hover {
+      background-color: #ddd;
+    }
+    select, input[type="text"], input[type="file"] {
+      width: calc(100% - 20px);
+      padding: 8px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .status-form {
+      display: flex;
+      align-items: center;
+    }
+    .status-form select {
+      margin-right: 10px;
+    }
+    .document-table {
+      margin-top: 20px;
+    }
+    .document-table th, .document-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    .document-table th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .document-table tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .document-table tr:hover {
+      background-color: #ddd;
+    }
+    .upload-form {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .upload-form label {
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/admin/dashboard}">Панель администратора</a>
+  <a th:href="@{/admin/products}">Товары</a>
+  <a th:href="@{/admin/clients}">Клиенты</a>
+  <a th:href="@{/admin/orders}">Заказы</a>
+  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+  <a th:href="@{/admin/document}">Документация</a>
+  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <h2>Типы документов</h2>
+  <table>
+    <tr>
+      <th>Название</th>
+    </tr>
+    <tr th:each="type : ${documentTypes}">
+      <td th:text="${type.name}"></td>
+    </tr>
+  </table>
+  <form th:action="@{/admin/addDocumentType}" method="post">
+    <input type="text" name="name" placeholder="Название типа" required />
+    <button type="submit">Добавить тип</button>
+  </form>
+
+  <h2>Цены</h2>
+  <table>
+    <tr>
+      <th>Вид</th>
+      <th>Имя</th>
+    </tr>
+    <tr th:each="price : ${prices}">
+      <td th:text="${price.vid}"></td>
+      <td th:text="${price.name}"></td>
+    </tr>
+  </table>
+  <h3>Добавить цену</h3>
+  <form th:action="@{/admin/addPrice}" method="post">
+    <div>
+      <label>Вид:</label>
+      <input type="text" name="vid" required />
+    </div>
+    <div>
+      <label>Имя:</label>
+      <input type="text" name="name" required />
+    </div>
+    <div>
+      <button type="submit">Добавить цену</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "250px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+</script>
+</body>
+</html>

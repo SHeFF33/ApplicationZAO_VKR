@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Ошибка</title>
+</head>
+<body>
+<h2>Ошибка</h2>
+<p th:text="${message}">Произошла непредвиденная ошибка.</p>
+<p th:if="${statusCode != null}">Код статуса: <span th:text="${statusCode}"></span></p>
+<p th:if="${exceptionType != null}">Тип исключения: <span th:text="${exceptionType}"></span></p>
+</body>
+</html>

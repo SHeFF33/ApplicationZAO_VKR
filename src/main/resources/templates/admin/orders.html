@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Заказы</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            padding: 20px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .filter-form div {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 10px;
+        }
+        .filter-form label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .filter-form input, .filter-form select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .filter-form button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            align-self: center;
+            margin: 22px;
+        }
+        .filter-form button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/admin/dashboard}">Панель администратора</a>
+    <a th:href="@{/admin/products}">Товары</a>
+    <a th:href="@{/admin/clients}">Клиенты</a>
+    <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+    <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+    <a th:href="@{/admin/document}">Документация</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <h2>Заказы</h2>
+    <form th:action="@{/admin/orders}" method="get" class="filter-form">
+        <div>
+            <label for="client">Контрагент:</label>
+            <select id="client" name="clientId">
+                <option value="">Все контрагенты</option>
+                <option th:each="client : ${clients}"
+                        th:value="${client.id}"
+                        th:text="${client.name}"
+                        th:selected="${clientId != null && clientId == client.id}">
+                </option>
+            </select>
+        </div>
+        <div>
+            <label for="status">Статус:</label>
+            <select id="status" name="status">
+                <option value="">Все статусы</option>
+                <option value="В обработке" th:selected="${status != null && status == 'В обработке'}">В обработке</option>
+                <option value="Подтвержден" th:selected="${status != null && status == 'Подтвержден'}">Подтвержден</option>
+                <option value="Назначена погрузка" th:selected="${status != null && status == 'Назначена погрузка'}">Назначена погрузка</option>
+                <option value="В пути" th:selected="${status != null && status == 'В пути'}">В пути</option>
+                <option value="Закрыт" th:selected="${status != null && status == 'Закрыт'}">Закрыт</option>
+            </select>
+        </div>
+        <div>
+            <label for="startDate">Дата и время начала:</label>
+            <input type="datetime-local" id="startDate" name="startDate" th:value="${startDate}" />
+        </div>
+        <div>
+            <label for="endDate">Дата и время конца:</label>
+            <input type="datetime-local" id="endDate" name="endDate" th:value="${endDate}" />
+        </div>
+        <div>
+            <button type="submit">Найти</button>
+        </div>
+    </form>
+    <table>
+        <tr>
+            <th>Контрагент</th>
+            <th>Дата заказа</th>
+            <th>Дата доставки</th>
+            <th>Адрес доставки</th>
+            <th>Статус</th>
+            <th>Товары</th>
+        </tr>
+        <tr th:each="order : ${orders}" th:onclick="'window.location.href = \'' + @{/admin/orders/{id}(id=${order.id})} + '\''">
+            <td th:text="${order.client.name}"></td>
+            <td th:text="${order.formattedOrderDate}"></td>
+            <td th:text="${order.formattedDeliveryDate}"></td>
+            <td th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></td>
+            <td th:text="${order.status}"></td>
+            <td>
+                <ul>
+                    <li th:each="tchOrder : ${order.tchOrders}" th:text="${tchOrder.product.name} + ' - ' + ${tchOrder.quantity} + ' шт. - ' + ${tchOrder.price}"></li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+</script>
+</body>
+</html>

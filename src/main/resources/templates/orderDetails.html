@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Детали заказа</title>
+  <style>
+    .order-details {
+      padding: 20px;
+    }
+    .order-details h3 {
+      margin-top: 0;
+    }
+    .order-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .order-table th, .order-table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    .order-table th {
+      background-color: #f2f2f2;
+    }
+    .total-row {
+      text-align: right;
+      font-weight: bold;
+    }
+    .doc-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    .doc-list li {
+      margin-bottom: 5px;
+    }
+    .doc-list a {
+      text-decoration: none;
+      color: #4CAF50;
+    }
+    .doc-list a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<div class="order-details">
+  <h3>Заказ от <span th:text="${order.formattedOrderDate}"></span></h3>
+  <p><strong>Дата доставки:</strong> <span th:text="${order.formattedDeliveryDate}"></span></p>
+  <p><strong>Адрес доставки:</strong><span th:text="' ' + ${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+  <p><strong>Контактные данные:</strong><span th:if="${order.deliveryAddress.contact != null}"><span th:text="${'Имя: ' + order.deliveryAddress.contact.name + ', Должность: ' + order.deliveryAddress.contact.contactType  + ', Номер телефона: ' +  order.deliveryAddress.contact.phonenumber + ', Почтовый адрес: ' + order.deliveryAddress.contact.email}"></span></span>
+  </p><p><strong>Статус:</strong> <span th:text="${order.status}"></span></p>
+
+  <h4>Товары:</h4>
+  <table class="order-table">
+    <tr>
+      <th>Название</th>
+      <th>Количество</th>
+      <th>Цена</th>
+    </tr>
+    <tr th:each="tchOrder : ${order.tchOrders}">
+      <td th:text="${tchOrder.product.name}"></td>
+      <td th:text="${tchOrder.quantity}"></td>
+      <td th:text="${tchOrder.price}"></td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="2" style="text-align: right;">Итого:</td>
+      <td th:text="${#numbers.formatDecimal(totalSum, 0, 'COMMA', 2, 'POINT')}"></td>
+    </tr>
+  </table>
+
+  <h4>Документация:</h4>
+  <ul class="doc-list">
+    <li th:each="doc : ${order.documentations}" th:if="${doc != null}">
+      <span th:text="${doc.name + ' (' + doc.documentType.name + ')'}"></span>
+      <a th:href="@{/orders/{id}/document/{docId}(id=${order.id}, docId=${doc.id})}" th:text="'Скачать'"></a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

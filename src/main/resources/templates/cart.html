@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Корзина</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            display: flex;
+            justify-content: space-between;
+        }
+        .cart-items {
+            width: 70%;
+        }
+        .checkout-container {
+            width: 28%;
+            padding-left: 20px;
+        }
+        .product-item {
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 0;
+        }
+        .product-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 20px;
+        }
+        .product-details {
+            flex-grow: 1;
+        }
+        .product-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .product-description {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .product-price {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .quantity-button {
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .quantity-button:hover {
+            background-color: #e0e0e0;
+        }
+        .delete-button {
+            background-color: #ff4d4d;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-left: 15px;
+            transition: background-color 0.3s;
+        }
+        .delete-button:hover {
+            background-color: #ff1a1a;
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 15px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .checkout-container h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .checkout-container label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        .checkout-container select,
+        .checkout-container input {
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/profile}">Личный кабинет</a>
+    <a th:href="@{/products}">Номенклатура</a>
+    <a href="/cart">Корзина</a>
+    <a th:href="@{/orders(username=${username})}">Заказы</a>
+    <a href="/documents">Документация</a>
+    <a th:href="@{/messenger}">Мои обращения</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <div class="cart-items">
+        <div th:if="${cart == null or cart.cartItems.isEmpty()}">
+            <p>Ваша корзина пуста.</p>
+        </div>
+        <div th:if="${cart != null and !cart.cartItems.isEmpty()}">
+            <div class="product-item" th:each="entry : ${cart.cartItems}">
+                <img th:src="@{/product/image/{id}(id=${entry.product.id})}" class="product-image" alt="Product Image">
+                <div class="product-details">
+                    <div class="product-name" th:text="${entry.product.name}"></div>
+                    <div class="product-description">
+                        <span>Сорт: </span><span th:text="${entry.product.sort}"></span><br>
+                        <span>Толщина: </span><span th:text="${entry.product.tolsh}"></span>
+                    </div>
+                    <div class="product-price">Цена: <span th:text="${entry.sum.summa}"></span></div>
+
+                    <div class="quantity-control" th:data-item-id="${entry.id}">
+                        <button class="quantity-button" onclick="decreaseQuantity(this)">-</button>
+                        <span class="quantity-value" th:data-quantity="${entry.quantity}" th:text="${entry.quantity}"></span>
+                        <button class="quantity-button" onclick="increaseQuantity(this)">+</button>
+                        <button class="delete-button" onclick="deleteItem(this)">Удалить</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="checkout-container">
+        <h2>Оформление заказа</h2>
+        <form th:action="@{/cart/checkout}" method="post">
+            <label for="addressId">Адрес доставки:</label>
+            <select id="addressId" name="addressId">
+                <option th:each="address : ${client.addresses}" th:value="${address.id}" th:text="${address.postalcode + ', ' + address.country + ', ' + address.region + ', '  + address.rayon + ', '  + address.city + ', ' + address.street + ', ' + address.home + ', ' + address.roomnumber}"></option>
+            </select>
+            <br>
+            <label for="deliveryDateTime">Дата доставки:</label>
+            <input type="datetime-local" id="deliveryDateTime" name="deliveryDateTime" th:attr="min=${minDateTime}" required />
+            <br>
+            <button type="submit" class="button">Оформить заказ</button>
+        </form>
+    </div>
+</div>
+<script>
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+    function decreaseQuantity(button) {
+        const itemId = button.parentElement.getAttribute('data-item-id');
+        fetch(`/cart/decreaseQuantity/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const quantitySpan = button.parentElement.querySelector('.quantity-value');
+                quantitySpan.textContent = data.quantity;
+                quantitySpan.setAttribute('data-quantity', data.quantity);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function increaseQuantity(button) {
+        const itemId = button.parentElement.getAttribute('data-item-id');
+        fetch(`/cart/increaseQuantity/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const quantitySpan = button.parentElement.querySelector('.quantity-value');
+                quantitySpan.textContent = data.quantity;
+                quantitySpan.setAttribute('data-quantity', data.quantity);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function deleteItem(button) {
+        const itemId = button.parentElement.getAttribute('data-item-id');
+        fetch(`/cart/deleteItem/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    const productItem = button.closest('.product-item');
+                    if (productItem) {
+                        productItem.remove();
+                    }
+                } else {
+                    console.error('Error deleting item:', response.statusText);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+</script>
+
+</body>
+</html>

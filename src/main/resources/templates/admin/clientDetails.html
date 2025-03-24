@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Информация о клиенте</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+    .header-button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .header-button:hover {
+      color: #ddd;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      right: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: #818181;
+      display: block;
+      transition: 0.3s;
+    }
+    .sidebar a:hover {
+      color: #f1f1f1;
+    }
+    .sidebar .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 1200px;
+    }
+    .info-section {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .info-section h4 {
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    .info-section div {
+      margin-bottom: 10px;
+    }
+    .info-section label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .info-section span {
+      display: block;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    .table-section {
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+    .table-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      table-layout: fixed;
+    }
+    .table-section th, .table-section td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      word-wrap: break-word;
+    }
+    .table-section th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .button-section {
+      margin-top: 20px;
+    }
+    .button-section a {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+    .button-section a:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-title">ЗАО Муром</div>
+  <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+  <a th:href="@{/admin/dashboard}">Панель администратора</a>
+  <a th:href="@{/admin/products}">Товары</a>
+  <a th:href="@{/admin/clients}">Клиенты</a>
+  <a th:href="@{/admin/orders}">Заказы</a>
+  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+  <a th:href="@{/admin/document}">Документация</a>
+  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+  <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+  <h2>Информация о клиенте</h2>
+  <div class="info-section">
+    <div>
+      <label>Имя:</label>
+      <span th:text="${client.name}"></span>
+    </div>
+    <div>
+      <label>ИНН:</label>
+      <span th:text="${client.inn}"></span>
+    </div>
+    <div>
+      <label>КПП:</label>
+      <span th:text="${client.kpp}"></span>
+    </div>
+    <div>
+      <label>Юридический адрес:</label>
+      <span th:text="${client.uraddress}"></span>
+    </div>
+    <div>
+      <label>Фактический адрес:</label>
+      <span th:text="${client.factaddress}"></span>
+    </div>
+    <div>
+      <label>Выбранная цена:</label>
+      <span th:text="${client.selectedPrice.name}"></span>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <h4>Адреса</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>Почтовый индекс</th>
+        <th>Страна</th>
+        <th>Регион</th>
+        <th>Район</th>
+        <th>Город</th>
+        <th>Улица</th>
+        <th>Дом</th>
+        <th>Номер комнаты</th>
+        <th>Контакт</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="address : ${client.addresses}">
+        <td th:text="${address.postalcode}"></td>
+        <td th:text="${address.country}"></td>
+        <td th:text="${address.region}"></td>
+        <td th:text="${address.rayon}"></td>
+        <td th:text="${address.city}"></td>
+        <td th:text="${address.street}"></td>
+        <td th:text="${address.home}"></td>
+        <td th:text="${address.roomnumber}"></td>
+        <td th:text="${address.contact != null ? address.contact.name : 'Нет контакта'}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-section">
+    <h4>Контакты</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>Тип контакта</th>
+        <th>Имя</th>
+        <th>Номер телефона</th>
+        <th>Email</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="contact : ${client.contacts}">
+        <td th:text="${contact.contactType}"></td>
+        <td th:text="${contact.name}"></td>
+        <td th:text="${contact.phonenumber}"></td>
+        <td th:text="${contact.email}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-section">
+    <h4>Пользователи</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>Имя пользователя</th>
+        <th>Имя</th>
+        <th>Роль</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="user : ${client.users}">
+        <td th:text="${user.username}"></td>
+        <td th:text="${user.name}"></td>
+        <td th:text="${user.admin} ? 'Администратор' : 'Пользователь'"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <div class="button-section">
+    <a th:href="@{/admin/editClient/{id}(id=${client.id})}">Изменить</a>
+    <a href="/admin/clients">Назад к списку клиентов</a>
+  </div>
+</div>
+
+<script>
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "250px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+</script>
+</body>
+</html>

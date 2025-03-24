@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Заказы</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        .status-filter {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .order-block {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .order-block:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        .order-block h3 {
+            margin-top: 0;
+        }
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .order-table th, .order-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .order-table th {
+            background-color: #f2f2f2;
+        }
+        .doc-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .doc-list li {
+            margin-bottom: 5px;
+        }
+        .doc-list a {
+            text-decoration: none;
+            color: #4CAF50;
+        }
+        .doc-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/profile}">Личный кабинет</a>
+    <a th:href="@{/products}">Номенклатура</a>
+    <a href="/cart">Корзина</a>
+    <a th:href="@{/orders(username=${username})}">Заказы</a>
+    <a href="/documents">Документация</a>
+    <a th:href="@{/messenger}">Мои обращения</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <form id="statusForm" method="get" action="#" th:action="@{/orders}">
+        <input type="hidden" name="username" th:value="${username}">
+        <select name="status" class="status-filter" onchange="document.getElementById('statusForm').submit()">
+            <option value="" th:selected="${status == null or status.isEmpty()}">Все статусы</option>
+            <option value="В обработке" th:selected="${#strings.equals(status, 'В обработке')}">В обработке</option>
+            <option value="Подтвержден" th:selected="${#strings.equals(status, 'Подтвержден')}">Подтвержден</option>
+            <option value="Назначена погрузка" th:selected="${#strings.equals(status, 'Назначена погрузка')}">Назначена погрузка</option>
+            <option value="В пути" th:selected="${#strings.equals(status, 'В пути')}">В пути</option>
+            <option value="Закрыт" th:selected="${#strings.equals(status, 'Закрыт')}">Закрыт</option>
+        </select>
+    </form>
+
+    <div th:each="order : ${orders}" class="order-block" th:onclick="'openOrderDetailsModal(' + ${order.id} + ')'" style="cursor: pointer;">
+        <h3>Заказ от <span th:text="${order.formattedOrderDate}"></span></h3>
+        <p><strong>Дата доставки:</strong> <span th:text="${order.formattedDeliveryDate}"></span></p>
+        <p><strong>Адрес доставки:</strong>
+            <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+        </p>
+        <p><strong>Статус:</strong> <span th:text="${order.status}"></span></p>
+    </div>
+</div>
+<div id="orderDetailsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeOrderDetailsModal()">&times;</span>
+        <div id="orderDetailsContent"></div>
+    </div>
+</div>
+
+<script>
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+    function openOrderDetailsModal(orderId) {
+        fetch('/orderDetails?id=' + orderId)
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('orderDetailsContent').innerHTML = data;
+                document.getElementById('orderDetailsModal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке деталей заказа:', error);
+            });
+    }
+    function closeOrderDetailsModal() {
+        document.getElementById('orderDetailsModal').style.display = 'none';
+    }
+</script>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 800px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .close:hover {
+        color: black;
+    }
+</style>
+</body>
+</html>

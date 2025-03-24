@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Панель администратора</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 24px;
+        }
+        .header-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .header-button:hover {
+            color: #ddd;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            right: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 20px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .container {
+            padding: 20px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+        .product-block {
+            display: flex;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            align-items: flex-start;
+        }
+        .product-block .product-info {
+            flex: 1;
+        }
+        .product-block .product-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .product-block img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .product-block h3 {
+            margin-top: 0;
+        }
+        .product-block ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .add-product-button {
+            display: block;
+            width: fit-content;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .add-product-button:hover {
+            background-color: #45a049;
+        }
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .price-table th, .price-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .price-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-title">ЗАО Муром</div>
+    <button class="header-button" onclick="openNav()">&#9776;</button>
+</header>
+
+<div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a th:href="@{/admin/products}">Добавить товар</a>
+    <a th:href="@{/admin/clients}">Клиенты</a>
+    <a th:href="@{/admin/orders}">Заказы</a>
+    <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
+    <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
+    <a th:href="@{/admin/document}">Документация</a>
+    <a th:href="@{/admin/messenger}">Обращения клиентов</a>
+    <a th:href="@{/login}">Выйти</a>
+</div>
+
+<div class="container">
+    <a href="/admin/products" class="add-product-button">Добавить товар</a>
+    <div th:each="product : ${products}">
+        <div class="product-block">
+            <div class="product-info">
+                <h3 th:text="${product.name}"></h3>
+                <p><strong>Сорт:</strong> <span th:text="${product.sort}"></span></p>
+                <p><strong>Толщина:</strong> <span th:text="${product.tolsh}"></span></p>
+                <p><strong>Количество:</strong> <span th:text="${product.quantity}"></span></p>
+                <p><strong>Описание:</strong> <span th:text="${product.description}"></span></p>
+                <h4>Документация:</h4>
+                <ul>
+                    <li th:each="doc : ${product.documentations}" th:text="${doc.name}"></li>
+                </ul>
+                <h4>Цены:</h4>
+                <table class="price-table">
+                    <tr>
+                        <th>Цена</th>
+                        <th>Период</th>
+                        <th>Прайс-лист</th>
+                    </tr>
+                    <tr th:each="sum : ${product.sums}">
+                        <td th:text="${sum.summa}"></td>
+                        <td th:text="${sum.period}"></td>
+                        <td th:text="${sum.price.name}"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="product-images">
+                <img th:each="image : ${product.images}" th:src="@{/images/{id}(id=${image.id})}" alt="Product Image">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openNav() {
+        document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    function closeNav() {
+        document.getElementById("mySidebar").style.width = "0";
+    }
+</script>
+</body>
+</html>
