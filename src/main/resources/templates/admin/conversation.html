@@ -170,6 +170,58 @@
       background-color: #f2dede;
       color: #a94442;
     }
+    .attachment-image {
+      max-width: 200px;
+      max-height: 200px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      transition: transform 0.2s;
+    }
+    .attachment-image:hover {
+      transform: scale(1.05);
+    }
+    .attachments-container {
+      display: flex;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+      overflow: auto;
+    }
+    .modal-content {
+      display: block;
+      margin: auto;
+      max-width: 90%;
+      max-height: 90%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 35px;
+      color: #f1f1f1;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-modal:hover {
+      color: #bbb;
+    }
   </style>
 </head>
 <body>
@@ -192,7 +244,7 @@
 
 <div class="container">
   <div class="conversation-header">
-    <h1 th:text="${conversation.subject}"></h1>
+    <h3 th:text="${conversation.subject}"></h3>
     <p>Клиент: <strong th:text="${conversation.client.name}"></strong></p>
     <p>Дата создания: <span th:text="${#temporals.format(conversation.createdAt, 'dd.MM.yyyy HH:mm')}"></span></p>
     <p>Статус:
@@ -209,8 +261,19 @@
         <span class="message-time" th:text="${#temporals.format(msg.sentAt, 'dd.MM.yyyy HH:mm')}"></span>
       </div>
       <div class="message-text" th:text="${msg.text}"></div>
-      <div th:each="att : ${msg.attachments}" class="attachment">
-        <a th:href="@{/admin/messenger/attachment/{id}(id=${att.id})}" th:text="${att.fileName}"></a>
+      <div class="attachments-container" th:if="${!msg.attachments.isEmpty()}">
+        <div th:each="att : ${msg.attachments}">
+          <th:block th:if="${att.fileType.startsWith('image/')}">
+            <img th:src="@{/admin/messenger/attachment/{id}(id=${att.id})}"
+                 class="attachment-image"
+                 th:attr="onclick='showImageModal(this.src)'">
+          </th:block>
+          <th:block th:unless="${att.fileType.startsWith('image/')}">
+            <div class="attachment">
+              <a th:href="@{/admin/messenger/attachment/{id}(id=${att.id})}" th:text="${att.fileName}"></a>
+            </div>
+          </th:block>
+        </div>
       </div>
     </div>
   </div>
@@ -218,11 +281,19 @@
   <div class="reply-form" th:unless="${conversation.closed}">
     <form th:action="@{/admin/messenger/reply/{id}(id=${conversation.id})}" method="post" enctype="multipart/form-data">
       <textarea name="message" placeholder="Ваш ответ..." required></textarea>
+      <input type="file" name="files" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onchange="validateFiles(this)">
+      <div id="fileError" style="color: red; margin-bottom: 10px;"></div>
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
       <button type="submit">Отправить</button>
-      <button type="button" onclick="closeConversation()" class="btn btn-danger">Закрыть обращение</button>
+      <button type="button" onclick="closeConversation()" class="close-btn">Закрыть обращение</button>
     </form>
   </div>
+</div>
+
+<!-- Модальное окно для изображений -->
+<div id="imageModal" class="modal">
+  <span class="close-modal" onclick="closeModal()">&times;</span>
+  <img class="modal-content" id="modalImage">
 </div>
 
 <script>
@@ -240,7 +311,6 @@
       form.method = 'POST';
       form.action = '/admin/messenger/close/' + [[${conversation.id}]];
 
-      // Добавляем CSRF токен для безопасности
       const csrfInput = document.createElement('input');
       csrfInput.type = 'hidden';
       csrfInput.name = '_csrf';
@@ -250,6 +320,54 @@
       document.body.appendChild(form);
       form.submit();
     }
+  }
+
+  // Модальное окно для изображений
+  const modal = document.getElementById("imageModal");
+  const modalImg = document.getElementById("modalImage");
+
+  function showImageModal(src) {
+    modal.style.display = "block";
+    modalImg.src = src;
+  }
+
+  function closeModal() {
+    modal.style.display = "none";
+  }
+
+  // Закрытие при клике вне изображения
+  window.onclick = function(event) {
+    if (event.target === modal) {
+      closeModal();
+    }
+  }
+
+  // Валидация файлов
+  function validateFiles(input) {
+    const fileError = document.getElementById("fileError");
+    fileError.textContent = "";
+
+    if (input.files) {
+      const allowedExtensions = /(\.jpg|\.jpeg|\.png|\.pdf|\.doc|\.docx)$/i;
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+
+        if (!allowedExtensions.exec(file.name)) {
+          fileError.textContent = "Недопустимый формат файла. Разрешены только JPEG, JPG, PNG, PDF и DOC";
+          input.value = "";
+          return false;
+        }
+
+        if (file.size > maxSize) {
+          fileError.textContent = "Файл слишком большой. Максимальный размер - 5MB";
+          input.value = "";
+          return false;
+        }
+      }
+    }
+    return true;
   }
 </script>
 </body>

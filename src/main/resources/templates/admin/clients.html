@@ -141,7 +141,7 @@
 </div>
 
 <div class="container">
-  <a href="/admin/addClient" class="add-client-btn">Добавить нового клиента</a>
+  <a href="/admin/addClient" class="add-client-btn">Добавить клиента</a>
   <div th:each="client : ${clients}">
     <div class="client-block" th:onclick="'window.location.href = \'' + @{/admin/clientDetails/{id}(id=${client.id})} + '\''">
       <div class="client-info">

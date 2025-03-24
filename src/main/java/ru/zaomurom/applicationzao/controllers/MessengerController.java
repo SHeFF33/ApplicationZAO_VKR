@@ -1,3 +1,4 @@
+// MessengerController.java
 package ru.zaomurom.applicationzao.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,10 @@ import ru.zaomurom.applicationzao.services.MessengerService;
 import ru.zaomurom.applicationzao.services.UserService;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -45,11 +49,13 @@ public class MessengerController {
         Client client = getClientFromPrincipal(principal);
         Conversation conversation = messengerService.getConversationById(id);
 
-        if (conversation.getClient().getId().equals(client.getId())) {
-            model.addAttribute("conversation", conversation);
-            return "conversation";
+        if (client == null || conversation.getClient() == null ||
+                !client.getId().equals(conversation.getClient().getId())) {
+            return "redirect:/messenger";
         }
-        return "redirect:/messenger";
+
+        model.addAttribute("conversation", conversation);
+        return "conversation";
     }
 
     @PostMapping("/start")
@@ -59,8 +65,15 @@ public class MessengerController {
             @RequestParam(required = false) List<MultipartFile> files,
             Principal principal) throws IOException {
 
+        if (files != null) {
+            for (MultipartFile file : files) {
+                validateFile(file);
+            }
+        }
+
         Client client = getClientFromPrincipal(principal);
-        messengerService.startNewConversation(client, subject, message, files);
+        User user = getUserFromPrincipal(principal);
+        messengerService.startNewConversation(client, user, subject, message, files);
         return "redirect:/messenger";
     }
 
@@ -70,6 +83,12 @@ public class MessengerController {
             @RequestParam String message,
             @RequestParam(required = false) List<MultipartFile> files,
             Principal principal) throws IOException {
+
+        if (files != null) {
+            for (MultipartFile file : files) {
+                validateFile(file);
+            }
+        }
 
         User user = getUserFromPrincipal(principal);
         messengerService.addMessageToConversation(conversationId, user, message, files);
@@ -82,17 +101,49 @@ public class MessengerController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(attachment.getFileType()));
-        headers.setContentDispositionFormData("attachment", attachment.getFileName());
+
+        String encodedFileName = URLEncoder.encode(attachment.getFileName(), StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
+
+        if (attachment.getFileType().startsWith("image/")) {
+            headers.add("Content-Disposition", "inline; filename*=UTF-8''" + encodedFileName);
+        } else {
+            headers.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+        }
 
         return new ResponseEntity<>(attachment.getFileData(), headers, HttpStatus.OK);
     }
 
     private Client getClientFromPrincipal(Principal principal) {
+        if (principal == null) {
+            return null;
+        }
+
         User user = userService.findByUsername(principal.getName());
-        return user.getClient();
+        return user != null ? user.getClient() : null;
     }
 
     private User getUserFromPrincipal(Principal principal) {
         return userService.findByUsername(principal.getName());
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) return;
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null) {
+            throw new IllegalArgumentException("Invalid file name");
+        }
+
+        String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+        List<String> allowedExtensions = Arrays.asList("jpeg", "jpg", "png", "pdf", "doc", "docx");
+
+        if (!allowedExtensions.contains(extension)) {
+            throw new IllegalArgumentException("Недопустимый формат файла. Разрешены: " + String.join(", ", allowedExtensions));
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) { // 5MB limit
+            throw new IllegalArgumentException("Файл слишком большой. Максимальный размер - 5MB");
+        }
     }
 }

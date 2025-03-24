@@ -190,7 +190,7 @@
     <button type="submit">Добавить тип</button>
   </form>
 
-  <h2>Цены</h2>
+  <h2>Прайсы</h2>
   <table>
     <tr>
       <th>Вид</th>
@@ -201,7 +201,6 @@
       <td th:text="${price.name}"></td>
     </tr>
   </table>
-  <h3>Добавить цену</h3>
   <form th:action="@{/admin/addPrice}" method="post">
     <div>
       <label>Вид:</label>
@@ -212,7 +211,7 @@
       <input type="text" name="name" required />
     </div>
     <div>
-      <button type="submit">Добавить цену</button>
+      <button type="submit">Добавить прайс</button>
     </div>
   </form>
 </div>

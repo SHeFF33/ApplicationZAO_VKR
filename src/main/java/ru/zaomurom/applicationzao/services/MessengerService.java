@@ -85,26 +85,23 @@ public class MessengerService {
                     .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
         }
 
-        // Создание нового обращения
-        public Conversation startNewConversation(Client client, String subject, String messageText,
-                                                 List<MultipartFile> files) throws IOException {
-            Conversation conversation = new Conversation();
-            conversation.setClient(client);
-            conversation.setSubject(subject);
-            conversation.setCreatedAt(LocalDateTime.now());
-            conversation.setClosed(false);
+    public Conversation startNewConversation(Client client, User sender, String subject, String messageText,
+                                             List<MultipartFile> files) throws IOException {
+        Conversation conversation = new Conversation();
+        conversation.setClient(client);
+        conversation.setSubject(subject);
+        conversation.setCreatedAt(LocalDateTime.now());
+        conversation.setClosed(false);
 
-            // Первое сообщение от клиента
-            User clientUser = client.getUsers().isEmpty() ? null : client.getUsers().get(0);
-            Message message = new Message();
-            message.setConversation(conversation);
-            message.setSender(clientUser);
-            message.setText(messageText);
-            message.setSentAt(LocalDateTime.now());
+        Message message = new Message();
+        message.setConversation(conversation);
+        message.setSender(sender);
+        message.setText(messageText);
+        message.setSentAt(LocalDateTime.now());
 
-            // Обработка вложений
-            if (files != null && !files.isEmpty()) {
-                for (MultipartFile file : files) {
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                if (file != null && !file.isEmpty()) {
                     Attachment attachment = new Attachment();
                     attachment.setFileName(file.getOriginalFilename());
                     attachment.setFileType(file.getContentType());
@@ -113,10 +110,11 @@ public class MessengerService {
                     message.getAttachments().add(attachment);
                 }
             }
-
-            conversation.getMessages().add(message);
-            return conversationRepository.save(conversation);
         }
+
+        conversation.getMessages().add(message);
+        return conversationRepository.save(conversation);
+    }
 
 
 

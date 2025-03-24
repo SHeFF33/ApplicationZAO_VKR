@@ -102,6 +102,8 @@
             border-radius: 4px;
             cursor: pointer;
             margin-top: 10px;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
         .form-section button:hover {
             background-color: #45a049;
@@ -127,8 +129,133 @@
             color: white;
         }
         .table-section input {
-            width: calc(100% - 16px); /* Adjust width to fit within cell */
+            width: calc(100% - 16px);
             box-sizing: border-box;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .btn {
+            padding: 8px 16px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #ddd;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Improved buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-add {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn-add:hover {
+            background-color: #0b7dda;
+        }
+        .btn-save {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn-save:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
@@ -152,7 +279,6 @@
 </div>
 
 <div class="container">
-    <h2>Редактировать клиента</h2>
     <form th:action="@{/admin/editClient/{id}(id=${client.id})}" method="post">
         <div class="form-section">
             <div>
@@ -222,7 +348,7 @@
                 </tr>
                 </tbody>
             </table>
-            <button type="button" onclick="addAddress()">Добавить адрес</button>
+            <button type="button" class="btn-add" onclick="openAddressModal()">Добавить адрес</button>
         </div>
 
         <div class="table-section">
@@ -245,7 +371,7 @@
                 </tr>
                 </tbody>
             </table>
-            <button type="button" onclick="addContact()">Добавить контакт</button>
+            <button type="button" class="btn-add" onclick="openContactModal()">Добавить контакт</button>
         </div>
 
         <div class="table-section">
@@ -256,7 +382,6 @@
                     <th>Имя пользователя</th>
                     <th>Имя</th>
                     <th>Роль</th>
-                    <th>Действия</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -269,14 +394,135 @@
                 </tr>
                 </tbody>
             </table>
-            <button type="button" onclick="addUser()">Добавить пользователя</button>
+            <button type="button" class="btn-add" onclick="openUserModal()">Добавить пользователя</button>
         </div>
 
-
-        <div class="form-section">
-            <button type="submit">Сохранить изменения</button>
+        <div class="action-buttons">
+            <button type="submit" class="btn-save">Сохранить изменения</button>
         </div>
     </form>
+</div>
+
+<!-- Address Modal -->
+<div id="addressModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">Добавить новый адрес</span>
+            <span class="close" onclick="closeAddressModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Почтовый индекс:</label>
+                <input type="text" id="modalPostalcode" required>
+            </div>
+            <div class="form-group">
+                <label>Страна:</label>
+                <input type="text" id="modalCountry" required>
+            </div>
+            <div class="form-group">
+                <label>Регион:</label>
+                <input type="text" id="modalRegion" required>
+            </div>
+            <div class="form-group">
+                <label>Район:</label>
+                <input type="text" id="modalRayon" required>
+            </div>
+            <div class="form-group">
+                <label>Город:</label>
+                <input type="text" id="modalCity" required>
+            </div>
+            <div class="form-group">
+                <label>Улица:</label>
+                <input type="text" id="modalStreet" required>
+            </div>
+            <div class="form-group">
+                <label>Дом:</label>
+                <input type="text" id="modalHome" required>
+            </div>
+            <div class="form-group">
+                <label>Номер комнаты:</label>
+                <input type="text" id="modalRoomnumber" required>
+            </div>
+            <div class="form-group">
+                <label>Контакт:</label>
+                <select id="modalContactId">
+                    <option value="">Нет контакта</option>
+                    <option th:each="contact : ${client.contacts}"
+                            th:value="${contact.id}"
+                            th:text="${contact.name}">
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeAddressModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="addAddressFromModal()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div id="contactModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">Добавить новый контакт</span>
+            <span class="close" onclick="closeContactModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Тип контакта:</label>
+                <input type="text" id="modalContactType" required>
+            </div>
+            <div class="form-group">
+                <label>Имя:</label>
+                <input type="text" id="modalContactName" required>
+            </div>
+            <div class="form-group">
+                <label>Номер телефона:</label>
+                <input type="text" id="modalPhonenumber" required>
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="text" id="modalEmail" required>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeContactModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="addContactFromModal()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title">Добавить нового пользователя</span>
+            <span class="close" onclick="closeUserModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Имя пользователя:</label>
+                <input type="text" id="modalUsername" required>
+            </div>
+            <div class="form-group">
+                <label>Имя:</label>
+                <input type="text" id="modalNameuser" required>
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" id="modalPassword" required>
+            </div>
+            <div class="form-group">
+                <label>Администратор:</label>
+                <input type="checkbox" id="modalIsAdmin" value="true">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeUserModal()">Отмена</button>
+            <button class="btn btn-primary" onclick="addUserFromModal()">Добавить</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -288,59 +534,127 @@
         document.getElementById("mySidebar").style.width = "0";
     }
 
-    function addAddress() {
+    // Address modal functions
+    function openAddressModal() {
+        document.getElementById('addressModal').style.display = 'block';
+    }
+
+    function closeAddressModal() {
+        document.getElementById('addressModal').style.display = 'none';
+    }
+
+    function addAddressFromModal() {
         const table = document.getElementById('addresses').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
         newRow.innerHTML = `
-        <td><input type="text" name="postalcodes" required/></td>
-        <td><input type="text" name="countries" required/></td>
-        <td><input type="text" name="regions" required/></td>
-        <td><input type="text" name="rayons" required/></td>
-        <td><input type="text" name="cities" required/></td>
-        <td><input type="text" name="streets" required/></td>
-        <td><input type="text" name="homes" required/></td>
-        <td><input type="text" name="roomnumbers" required/></td>
-        <td>
-            <select name="contactIds">
-                <option value="">Нет контакта</option>
-            </select>
-        </td>
-    `;
+            <td><input type="text" name="postalcodes" value="${document.getElementById('modalPostalcode').value}" required/></td>
+            <td><input type="text" name="countries" value="${document.getElementById('modalCountry').value}" required/></td>
+            <td><input type="text" name="regions" value="${document.getElementById('modalRegion').value}" required/></td>
+            <td><input type="text" name="rayons" value="${document.getElementById('modalRayon').value}" required/></td>
+            <td><input type="text" name="cities" value="${document.getElementById('modalCity').value}" required/></td>
+            <td><input type="text" name="streets" value="${document.getElementById('modalStreet').value}" required/></td>
+            <td><input type="text" name="homes" value="${document.getElementById('modalHome').value}" required/></td>
+            <td><input type="text" name="roomnumbers" value="${document.getElementById('modalRoomnumber').value}" required/></td>
+            <td>
+                <select name="contactIds">
+                    <option value="">Нет контакта</option>
+                </select>
+            </td>
+        `;
 
         const contactSelect = newRow.querySelector('select[name="contactIds"]');
+        const selectedContactId = document.getElementById('modalContactId').value;
+
         document.querySelectorAll('#contacts tbody tr').forEach(contactRow => {
             const contactId = contactRow.querySelector('input[name="contactNames"]').getAttribute('data-id');
             const contactName = contactRow.querySelector('input[name="contactNames"]').value;
             const option = document.createElement('option');
             option.value = contactId;
             option.text = contactName;
+            if (contactId === selectedContactId) {
+                option.selected = true;
+            }
             contactSelect.appendChild(option);
         });
+
+        // Clear modal fields
+        document.getElementById('modalPostalcode').value = '';
+        document.getElementById('modalCountry').value = '';
+        document.getElementById('modalRegion').value = '';
+        document.getElementById('modalRayon').value = '';
+        document.getElementById('modalCity').value = '';
+        document.getElementById('modalStreet').value = '';
+        document.getElementById('modalHome').value = '';
+        document.getElementById('modalRoomnumber').value = '';
+        document.getElementById('modalContactId').value = '';
+
+        closeAddressModal();
     }
 
+    // Contact modal functions
+    function openContactModal() {
+        document.getElementById('contactModal').style.display = 'block';
+    }
 
+    function closeContactModal() {
+        document.getElementById('contactModal').style.display = 'none';
+    }
 
-
-    function addContact() {
+    function addContactFromModal() {
         const table = document.getElementById('contacts').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
+        const newContactId = Date.now(); // Generate a temporary ID
+
         newRow.innerHTML = `
-            <td><input type="text" name="typeContacts" required/></td>
-            <td><input type="text" name="contactNames" required/></td>
-            <td><input type="text" name="phonenumbers" required/></td>
-            <td><input type="text" name="emails" required/></td>
+            <td><input type="text" name="typeContacts" value="${document.getElementById('modalContactType').value}" required/></td>
+            <td><input type="text" name="contactNames" value="${document.getElementById('modalContactName').value}" data-id="${newContactId}" required/></td>
+            <td><input type="text" name="phonenumbers" value="${document.getElementById('modalPhonenumber').value}" required/></td>
+            <td><input type="text" name="emails" value="${document.getElementById('modalEmail').value}" required/></td>
         `;
+
+        // Clear modal fields
+        document.getElementById('modalContactType').value = '';
+        document.getElementById('modalContactName').value = '';
+        document.getElementById('modalPhonenumber').value = '';
+        document.getElementById('modalEmail').value = '';
+
+        closeContactModal();
     }
 
-    function addUser() {
+    // User modal functions
+    function openUserModal() {
+        document.getElementById('userModal').style.display = 'block';
+    }
+
+    function closeUserModal() {
+        document.getElementById('userModal').style.display = 'none';
+    }
+
+    function addUserFromModal() {
         const table = document.getElementById('users').getElementsByTagName('tbody')[0];
         const newRow = table.insertRow();
+        const isAdminChecked = document.getElementById('modalIsAdmin').checked ? 'checked' : '';
+
         newRow.innerHTML = `
-            <td><input type="text" name="usernames" required/></td>
-             <td><input type="password" name="nameuser" required/></td>
-            <td><input type="password" name="passwords" required/></td>
-            <td><input type="checkbox" name="isAdmins" value="true"/></td>
+            <td><input type="text" name="usernames" value="${document.getElementById('modalUsername').value}" required/></td>
+            <td><input type="text" name="nameuser" value="${document.getElementById('modalNameuser').value}" required/></td>
+            <td><input type="checkbox" name="isAdmins" ${isAdminChecked} value="true"/></td>
         `;
+
+        // Clear modal fields
+        document.getElementById('modalUsername').value = '';
+        document.getElementById('modalNameuser').value = '';
+        document.getElementById('modalPassword').value = '';
+        document.getElementById('modalIsAdmin').checked = false;
+
+        closeUserModal();
+    }
+
+    // Close modals when clicking outside of them
+    window.onclick = function(event) {
+        if (event.target.className === 'modal') {
+            event.target.style.display = 'none';
+        }
     }
 </script>
 </body>

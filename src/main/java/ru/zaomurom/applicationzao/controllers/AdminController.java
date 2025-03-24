@@ -176,6 +176,10 @@ public class AdminController {
         List<User> usersList = new ArrayList<>();
         if (usernames != null && !usernames.isEmpty()) {
             for (int i = 0; i < usernames.size(); i++) {
+                if ((nameuser == null || nameuser.size() <= i) ||
+                        (passwords == null || passwords.size() <= i)) {
+                    continue;
+                }
                 User user = new User();
                 user.setUsername(usernames.get(i));
                 user.setPassword(new BCryptPasswordEncoder().encode(passwords.get(i)));

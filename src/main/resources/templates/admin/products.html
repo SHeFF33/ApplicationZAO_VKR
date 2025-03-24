@@ -74,6 +74,7 @@
         form label {
             display: block;
             margin-bottom: 5px;
+            font-weight: bold;
         }
         form input, form textarea, form select, form button {
             width: 100%;
@@ -81,11 +82,13 @@
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         form button {
             background-color: #4CAF50;
             color: white;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
         form button:hover {
             background-color: #45a049;
@@ -113,6 +116,10 @@
             float: right;
             font-size: 24px;
             cursor: pointer;
+            color: #aaa;
+        }
+        .close:hover {
+            color: #333;
         }
         .image-preview {
             display: flex;
@@ -126,30 +133,36 @@
             object-fit: cover;
             border-radius: 5px;
         }
-        .modal-content div {
+        .file-input-container {
+            position: relative;
             margin-bottom: 15px;
         }
-        .modal-content label {
+        .file-input-label {
             display: block;
-            margin-bottom: 5px;
-        }
-        .modal-content input, .modal-content textarea, .modal-content select {
-            width: 100%;
-            padding: 8px;
+            padding: 10px;
+            background-color: #f5f5f5;
             border: 1px solid #ddd;
             border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s;
         }
-        .modal-content button {
+        .file-input-label:hover {
+            background-color: #e9e9e9;
+        }
+        .file-input {
+            position: absolute;
+            opacity: 0;
             width: 100%;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
+            height: 100%;
+            top: 0;
+            left: 0;
             cursor: pointer;
         }
-        .modal-content button:hover {
-            background-color: #45a049;
+        .file-name {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
         }
         .button-container {
             display: flex;
@@ -167,6 +180,29 @@
         }
         .button-container button:hover {
             background-color: #45a049;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .file-counter {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .selected-files {
+            margin-top: 10px;
+        }
+        .selected-file {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .remove-file {
+            color: #f44336;
+            margin-left: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -189,9 +225,9 @@
 </div>
 
 <div class="container">
-    <h2>Добавить товар</h2>
+    <h2>Страница добавления номенклатуры</h2>
 
-    <form th:action="@{/admin/addProduct}" method="post">
+    <form th:action="@{/admin/addProduct}" method="post" id="productForm">
         <div>
             <label>Название:</label>
             <input type="text" name="name" required/>
@@ -213,9 +249,9 @@
             <textarea name="description" required></textarea>
         </div>
         <div class="button-container">
-            <button onclick="openModal('documentModal')">Добавить документацию</button>
-            <button onclick="openModal('imageModal')">Добавить фотографии</button>
-            <button onclick="openModal('priceModal')">Добавить цену</button>
+            <button type="button" onclick="openModal('documentModal')">Добавить документацию</button>
+            <button type="button" onclick="openModal('imageModal')">Добавить фотографии</button>
+            <button type="button" onclick="openModal('priceModal')">Добавить цену</button>
         </div>
         <div>
             <button type="submit">Добавить товар</button>
@@ -225,18 +261,20 @@
     <div id="documentModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('documentModal')">&times;</span>
-            <h3>Добавить документацию</h3>
-            <form th:action="@{/admin/addDocumentation}" method="post" enctype="multipart/form-data">
+            <form id="documentationForm" th:action="@{/admin/addDocumentation}" method="post" enctype="multipart/form-data">
                 <div>
-                    <label>Продукт:</label>
-                    <select name="productId">
+                    <label for="docProductId">Номенклатура:</label>
+                    <select id="docProductId" name="productId" required>
+                        <option value="">Выберите номенклатуру</option>
                         <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
                     </select>
                 </div>
-                <div>
-                    <label>Документация:</label>
-                    <input type="file" name="documentation" id="documentInput" style="display: none;" accept=".pdf,.doc,.docx"/>
-                    <input type="text" id="documentName" placeholder="Выберите документ" onclick="document.getElementById('documentInput').click()" readonly/>
+                <div class="file-input-container">
+                    <label class="file-input-label" id="documentLabel">Выберите документ (PDF, Word, Excel, PPT)</label>
+                    <input type="file" id="documentInput" name="documentation" class="file-input"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" required/>
+                    <div class="file-name" id="documentName">Файл не выбран</div>
+                    <div class="error-message" id="documentError"></div>
                 </div>
                 <div>
                     <label>Описание:</label>
@@ -252,34 +290,38 @@
     <div id="imageModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('imageModal')">&times;</span>
-            <h3>Добавить фотографии</h3>
-            <form th:action="@{/admin/addProductImages}" method="post" enctype="multipart/form-data">
+            <form id="imageForm" th:action="@{/admin/addProductImages}" method="post" enctype="multipart/form-data">
                 <div>
-                    <label>Продукт:</label>
-                    <select name="productId">
+                    <label for="imgProductId">Номенклатура:</label>
+                    <select id="imgProductId" name="productId" required>
+                        <option value="">Выберите номенклатуру</option>
                         <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
                     </select>
                 </div>
-                <div>
-                    <label>Фотографии:</label>
-                    <input type="file" name="images" id="imageInput" style="display: none;" accept="image/*" multiple/>
-                    <div class="image-preview" id="imagePreview"></div>
-                    <button type="button" onclick="document.getElementById('imageInput').click()">Выбрать фото</button>
+                <div class="file-input-container">
+                    <input type="file" id="imageInput" class="file-input"
+                           accept="image/jpeg,image/png,image/jpg" multiple/>
+                    <label class="file-input-label" id="imageLabel">Выберите фото (.JPG, .PNG, .JPEG)</label>
+                    <div class="file-counter" id="fileCounter">Можно добавить до 3 фото</div>
+                    <div class="error-message" id="imageError"></div>
                 </div>
+                <div class="selected-files" id="selectedFiles"></div>
+                <div class="image-preview" id="imagePreview"></div>
                 <div>
                     <button type="submit">Сохранить</button>
                 </div>
             </form>
         </div>
     </div>
+
     <div id="priceModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('priceModal')">&times;</span>
-            <h3>Добавить цену</h3>
-            <form th:action="@{/admin/addSum}" method="post">
+            <form id="priceForm" th:action="@{/admin/addSum}" method="post">
                 <div>
-                    <label>Продукт:</label>
-                    <select name="productId">
+                    <label for="priceProductId">Номенклатура:</label>
+                    <select id="priceProductId" name="productId" required>
+                        <option value="">Выберите номенклатуру</option>
                         <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
                     </select>
                 </div>
@@ -292,8 +334,9 @@
                     <input type="date" name="periods" required/>
                 </div>
                 <div>
-                    <label>Прайс-лист:</label>
-                    <select name="priceIds">
+                    <label>Прайсы:</label>
+                    <select name="priceIds" required>
+                        <option value="">Выберите прайс</option>
                         <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}"></option>
                     </select>
                 </div>
@@ -306,28 +349,190 @@
 </div>
 
 <script>
+    // Функции для работы с модальными окнами
     function openModal(modalId) {
         document.getElementById(modalId).style.display = "block";
+        // Сброс ошибок при открытии модального окна
+        document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
     }
 
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = "none";
     }
 
-    document.getElementById('documentInput').addEventListener('change', function(event) {
-        const fileName = event.target.files[0].name;
-        document.getElementById('documentName').value = fileName;
+    // Обработчик для документации
+    document.getElementById('documentInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const errorElement = document.getElementById('documentError');
+
+        if (file) {
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                errorElement.textContent = 'Пожалуйста, выберите файл одного из разрешенных типов: PDF, Word, Excel или PowerPoint';
+                e.target.value = '';
+                document.getElementById('documentName').textContent = 'Файл не выбран';
+                return;
+            }
+
+            document.getElementById('documentName').textContent = file.name;
+            errorElement.textContent = '';
+        }
     });
 
-    document.getElementById('imageInput').addEventListener('change', function(event) {
+    let selectedFiles = [];
+    const maxFiles = 3;
+
+    // Обработчик для фотографий
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const files = e.target.files;
+        const errorElement = document.getElementById('imageError');
+        const counter = document.getElementById('fileCounter');
+
+        if (files.length > 0) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+
+                if (!allowedTypes.includes(file.type)) {
+                    errorElement.textContent = 'Пожалуйста, выберите файлы только следующих типов: JPG, PNG, JPEG';
+                    e.target.value = '';
+                    return;
+                }
+
+                // Проверяем, не превышен ли лимит файлов
+                if (selectedFiles.length >= maxFiles) {
+                    errorElement.textContent = `Можно загрузить не более ${maxFiles} файлов`;
+                    e.target.value = '';
+                    return;
+                }
+
+                // Добавляем файл в массив
+                selectedFiles.push(file);
+                updateFileList();
+            }
+
+            e.target.value = ''; // Очищаем input, чтобы можно было добавить тот же файл снова
+            errorElement.textContent = '';
+        }
+
+        updateCounter();
+    });
+
+    // Функция для обновления списка выбранных файлов
+    function updateFileList() {
+        const filesContainer = document.getElementById('selectedFiles');
         const preview = document.getElementById('imagePreview');
+        filesContainer.innerHTML = '';
         preview.innerHTML = '';
-        const files = event.target.files;
-        for (let i = 0; i < files.length && i < 5; i++) {
-            const file = files[i];
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            preview.appendChild(img);
+
+        selectedFiles.forEach((file, index) => {
+            // Добавляем файл в список
+            const fileElement = document.createElement('div');
+            fileElement.className = 'selected-file';
+            fileElement.innerHTML = `
+                <span>${file.name}</span>
+                <span class="remove-file" onclick="removeFile(${index})">×</span>
+            `;
+            filesContainer.appendChild(fileElement);
+
+            // Добавляем превью
+            if (index < 5) { // Показываем превью только для первых 5 изображений
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+            }
+        });
+    }
+
+    // Функция для удаления файла
+    function removeFile(index) {
+        selectedFiles.splice(index, 1);
+        updateFileList();
+        updateCounter();
+    }
+
+    // Функция для обновления счетчика
+    function updateCounter() {
+        const counter = document.getElementById('fileCounter');
+        counter.textContent = `Выбрано файлов: ${selectedFiles.length} из ${maxFiles}`;
+    }
+
+    // Валидация формы для фотографий
+    document.getElementById('imageForm').addEventListener('submit', function(e) {
+        const productId = document.getElementById('imgProductId').value;
+        const errorElement = document.getElementById('imageError');
+
+        if (!productId) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите продукт');
+            return;
+        }
+
+        if (selectedFiles.length === 0) {
+            e.preventDefault();
+            errorElement.textContent = 'Пожалуйста, выберите хотя бы один файл';
+            return;
+        }
+
+        // Создаем FormData и добавляем файлы
+        const formData = new FormData(this);
+        selectedFiles.forEach((file, index) => {
+            formData.append('images', file);
+        });
+
+        // Отправляем форму с файлами
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                closeModal('imageModal');
+                selectedFiles = [];
+                updateFileList();
+                updateCounter();
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+        });
+
+        e.preventDefault();
+    });
+
+    document.getElementById('documentationForm').addEventListener('submit', function(e) {
+        const productId = document.getElementById('docProductId').value;
+        const fileInput = document.getElementById('documentInput');
+
+        if (!productId) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите продукт');
+            return;
+        }
+
+        if (fileInput.files.length === 0) {
+            e.preventDefault();
+            document.getElementById('documentError').textContent = 'Пожалуйста, выберите файл';
+            return;
+        }
+    });
+
+
+    document.getElementById('priceForm').addEventListener('submit', function(e) {
+        const productId = document.getElementById('priceProductId').value;
+
+        if (!productId) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите продукт');
+            return;
         }
     });
 
@@ -338,6 +543,14 @@
     function closeNav() {
         document.getElementById("mySidebar").style.width = "0";
     }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'modal') {
+            event.target.style.display = 'none';
+        }
+    }
 </script>
 </body>
 </html>
+
+
