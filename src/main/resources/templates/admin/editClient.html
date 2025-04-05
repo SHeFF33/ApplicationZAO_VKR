@@ -381,6 +381,7 @@
                 <tr>
                     <th>Имя пользователя</th>
                     <th>Имя</th>
+                    <th>Пароль</th>
                     <th>Роль</th>
                 </tr>
                 </thead>
@@ -388,6 +389,7 @@
                 <tr th:each="user : ${client.users}">
                     <td><input type="text" name="usernames" th:value="${user.username}" required/></td>
                     <td><input type="text" name="nameuser" th:value="${user.name}" required/></td>
+                    <td><input type="password" name="passwords" th:value="${user.password}" required/></td>
                     <td>
                         <input type="checkbox" name="isAdmins" th:checked="${user.admin}" value="true"/>
                     </td>
@@ -396,6 +398,7 @@
             </table>
             <button type="button" class="btn-add" onclick="openUserModal()">Добавить пользователя</button>
         </div>
+
 
         <div class="action-buttons">
             <button type="submit" class="btn-save">Сохранить изменения</button>
@@ -631,26 +634,41 @@
     }
 
     function addUserFromModal() {
+        // Получаем значения из формы
+        const username = document.getElementById('modalUsername').value;
+        const name = document.getElementById('modalNameuser').value;
+        const password = document.getElementById('modalPassword').value;
+        const isAdmin = document.getElementById('modalIsAdmin').checked;
+
+        // Проверяем, что все обязательные поля заполнены
+        if (!username || !name || !password) {
+            alert('Пожалуйста, заполните все обязательные поля');
+            return;
+        }
+
+        // Получаем таблицу пользователей
         const table = document.getElementById('users').getElementsByTagName('tbody')[0];
+
+        // Создаем новую строку
         const newRow = table.insertRow();
-        const isAdminChecked = document.getElementById('modalIsAdmin').checked ? 'checked' : '';
 
+        // Заполняем строку данными
         newRow.innerHTML = `
-            <td><input type="text" name="usernames" value="${document.getElementById('modalUsername').value}" required/></td>
-            <td><input type="text" name="nameuser" value="${document.getElementById('modalNameuser').value}" required/></td>
-            <td><input type="checkbox" name="isAdmins" ${isAdminChecked} value="true"/></td>
-        `;
+        <td><input type="text" name="usernames" value="${username}" required/></td>
+        <td><input type="text" name="nameuser" value="${name}" required/></td>
+        <td><input type="password" name="passwords" value="${password}" required/></td>
+        <td>
+            <input type="checkbox" name="isAdmins" ${isAdmin ? 'checked' : ''} value="true"/>
+            <input type="hidden" name="isAdmins" value="false"/> <!-- Для unchecked состояния -->
+        </td>
+    `;
 
-        // Clear modal fields
         document.getElementById('modalUsername').value = '';
         document.getElementById('modalNameuser').value = '';
         document.getElementById('modalPassword').value = '';
         document.getElementById('modalIsAdmin').checked = false;
-
         closeUserModal();
     }
-
-    // Close modals when clicking outside of them
     window.onclick = function(event) {
         if (event.target.className === 'modal') {
             event.target.style.display = 'none';

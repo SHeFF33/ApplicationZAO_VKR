@@ -233,8 +233,8 @@ public class AdminController {
             @RequestParam(required = false) List<String> passwords,
             @RequestParam(required = false) List<String> isAdmins,
             @RequestParam(required = false) List<String> nameuser,
-            @RequestParam(required = false) List<Long> contactIds
-    ) {
+            @RequestParam(required = false) List<Long> contactIds) {
+
         Optional<Client> optionalClient = clientService.findById(id);
         if (optionalClient.isPresent()) {
             Client client = optionalClient.get();
@@ -244,9 +244,11 @@ public class AdminController {
             client.setUraddress(uraddress);
             client.setFactaddress(factaddress);
 
+            // Установка выбранного прайса
             Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
             client.setSelectedPrice(selectedPrice);
 
+            // Обработка адресов
             List<Addresses> existingAddresses = client.getAddresses();
             if (postalcodes != null && !postalcodes.isEmpty()) {
                 for (int i = 0; i < postalcodes.size(); i++) {
@@ -261,6 +263,7 @@ public class AdminController {
                     address.setRoomnumber(roomnumbers.get(i));
                     address.setClient(client);
 
+                    // Установка контакта для адреса, если указан
                     if (contactIds != null && i < contactIds.size()) {
                         Long contactId = contactIds.get(i);
                         if (contactId != null) {
@@ -275,6 +278,7 @@ public class AdminController {
                 }
             }
 
+            // Обработка контактов
             List<Contacts> existingContacts = client.getContacts();
             if (contactNames != null && !contactNames.isEmpty()) {
                 for (int i = 0; i < contactNames.size(); i++) {
@@ -290,15 +294,29 @@ public class AdminController {
                 }
             }
 
+            // Обработка пользователей с хэшированием паролей
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
             List<User> existingUsers = client.getUsers();
             if (usernames != null && !usernames.isEmpty()) {
                 for (int i = 0; i < usernames.size(); i++) {
                     User user = (i < existingUsers.size()) ? existingUsers.get(i) : new User();
                     user.setUsername(usernames.get(i));
-                    user.setPassword(passwords != null && i < passwords.size() ? new BCryptPasswordEncoder().encode(passwords.get(i)) : user.getPassword());
-                    user.setAdmin(isAdmins != null && isAdmins.size() > i && Boolean.parseBoolean(isAdmins.get(i)));
-                    user.setName(nameuser != null && i < nameuser.size() ? nameuser.get(i) : user.getName());
+                    user.setName(nameuser.get(i));
+
+                    // Обработка пароля:
+                    // Если это новый пользователь (i >= existingUsers.size()) или пароль был изменен
+                    if (passwords != null && i < passwords.size() && !passwords.get(i).isEmpty()) {
+                        // Хэшируем новый пароль
+                        user.setPassword(passwordEncoder.encode(passwords.get(i)));
+                    } else if (user.getId() == null) {
+                        // Для нового пользователя, если пароль не указан, устанавливаем дефолтный
+                        user.setPassword(passwordEncoder.encode("defaultPassword"));
+                    }
+                    // Для существующего пользователя, если пароль не меняли - оставляем старый
+
+                    user.setAdmin(isAdmins != null && isAdmins.size() > i && "true".equals(isAdmins.get(i)));
                     user.setClient(client);
+
                     if (i >= existingUsers.size()) {
                         existingUsers.add(user);
                     }
