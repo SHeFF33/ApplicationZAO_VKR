@@ -129,15 +129,35 @@ public class AdminController {
             @RequestParam(required = false) List<String> passwords,
             @RequestParam(required = false) List<String> isAdmins,
             @RequestParam(required = false) List<String> nameuser,
+            @RequestParam(required = false) List<String> userEmails,
             RedirectAttributes redirectAttributes) {
 
-        // Проверка уникальности username перед созданием клиента
+        // Проверка уникальности username
         if (usernames != null) {
             for (String username : usernames) {
                 if (userService.existsByUsername(username)) {
                     redirectAttributes.addFlashAttribute("errorMessage",
                             "Пользователь с логином '" + username + "' уже существует");
                     return "redirect:/admin/addClient";
+                }
+            }
+        }
+
+        // Проверка email для администраторов
+        if (isAdmins != null && userEmails != null) {
+            for (int i = 0; i < isAdmins.size(); i++) {
+                if (Boolean.parseBoolean(isAdmins.get(i))) {
+                    String email = userEmails.get(i);
+                    if (email == null || email.isEmpty()) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                "Для администратора необходимо указать email");
+                        return "redirect:/admin/addClient";
+                    }
+                    if (userService.existsByEmail(email)) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                "Пользователь с email '" + email + "' уже существует");
+                        return "redirect:/admin/addClient";
+                    }
                 }
             }
         }
@@ -188,7 +208,6 @@ public class AdminController {
         }
         client.setContacts(contactsList);
 
-        // Обработка пользователей
         List<User> usersList = new ArrayList<>();
         if (usernames != null && !usernames.isEmpty()) {
             for (int i = 0; i < usernames.size(); i++) {
@@ -200,8 +219,14 @@ public class AdminController {
                 User user = new User();
                 user.setUsername(usernames.get(i));
                 user.setPassword(new BCryptPasswordEncoder().encode(passwords.get(i)));
-                user.setAdmin(isAdmins != null && isAdmins.size() > i && Boolean.parseBoolean(isAdmins.get(i)));
+                boolean isAdmin = isAdmins != null && isAdmins.size() > i && Boolean.parseBoolean(isAdmins.get(i));
+                user.setAdmin(isAdmin);
                 user.setName(nameuser.get(i));
+
+                if (isAdmin && userEmails != null && userEmails.size() > i) {
+                    user.setEmail(userEmails.get(i));
+                }
+
                 user.setClient(client);
                 usersList.add(user);
             }
@@ -255,6 +280,7 @@ public class AdminController {
             @RequestParam(required = false) List<String> nameuser,
             @RequestParam(required = false) List<Long> contactIds,
             @RequestParam(required = false) List<Long> userIds,
+            @RequestParam(required = false) List<String> userEmails,
             RedirectAttributes redirectAttributes) {
 
         Optional<Client> optionalClient = clientService.findById(id);
@@ -265,24 +291,39 @@ public class AdminController {
 
         Client client = optionalClient.get();
 
-        // Проверка уникальности username для всех пользователей
+        // Проверка уникальности username
         if (usernames != null) {
             for (int i = 0; i < usernames.size(); i++) {
                 String username = usernames.get(i);
                 Long userId = (userIds != null && i < userIds.size()) ? userIds.get(i) : null;
 
-                // Пропускаем пустые username (если такое возможно)
-                if (username == null || username.trim().isEmpty()) {
-                    continue;
-                }
-
                 User existingUser = userService.findByUsername(username);
-
-                // Если пользователь с таким username уже существует и это не тот же самый пользователь
                 if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
                     redirectAttributes.addFlashAttribute("errorMessage",
                             "Пользователь с логином '" + username + "' уже существует");
                     return "redirect:/admin/editClient/" + id;
+                }
+            }
+        }
+
+        // Проверка email для администраторов
+        if (isAdmins != null && userEmails != null) {
+            for (int i = 0; i < isAdmins.size(); i++) {
+                if (Boolean.parseBoolean(isAdmins.get(i))) {
+                    String email = userEmails.get(i);
+                    if (email == null || email.isEmpty()) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                "Для администратора необходимо указать email");
+                        return "redirect:/admin/editClient/" + id;
+                    }
+
+                    Long userId = (userIds != null && i < userIds.size()) ? userIds.get(i) : null;
+                    User existingUser = userService.findByEmail(email);
+                    if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                "Пользователь с email '" + email + "' уже существует");
+                        return "redirect:/admin/editClient/" + id;
+                    }
                 }
             }
         }
@@ -296,7 +337,6 @@ public class AdminController {
         client.setSum1(sum1);
         client.setSum2(sum2);
 
-        // Установка выбранного прайса
         Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
         client.setSelectedPrice(selectedPrice);
 
@@ -344,8 +384,6 @@ public class AdminController {
                 }
             }
         }
-
-        // Обработка пользователей с хэшированием паролей
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         List<User> existingUsers = client.getUsers();
         if (usernames != null && !usernames.isEmpty()) {
@@ -354,18 +392,21 @@ public class AdminController {
                 user.setUsername(usernames.get(i));
                 user.setName(nameuser.get(i));
 
-                // Обработка пароля:
-                // Если пароль был изменен (новый пароль не пустой)
                 if (passwords != null && i < passwords.size() && !passwords.get(i).isEmpty()) {
                     user.setPassword(passwordEncoder.encode(passwords.get(i)));
                 } else if (user.getId() == null) {
-                    // Для нового пользователя, если пароль не указан, устанавливаем дефолтный
                     user.setPassword(passwordEncoder.encode("defaultPassword"));
                 }
 
-                // Обработка роли администратора
-                boolean isAdmin = isAdmins != null && isAdmins.size() > i;
+                boolean isAdmin = isAdmins != null && isAdmins.size() > i && Boolean.parseBoolean(isAdmins.get(i));
                 user.setAdmin(isAdmin);
+
+                if (isAdmin && userEmails != null && userEmails.size() > i) {
+                    user.setEmail(userEmails.get(i));
+                } else {
+                    user.setEmail(null);
+                }
+
                 user.setClient(client);
 
                 if (i >= existingUsers.size()) {
@@ -384,6 +425,49 @@ public class AdminController {
             return "redirect:/admin/editClient/" + id;
         }
     }
+
+    @GetMapping("/api/checkUsername")
+    @ResponseBody
+    public ResponseEntity<?> checkUsername(
+            @RequestParam String username,
+            @RequestParam(required = false) Long userId) {
+
+        User existingUser = userService.findByUsername(username);
+        Map<String, Object> response = new HashMap<>();
+
+        if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
+            response.put("available", false);
+            response.put("message", "Пользователь с таким логином уже существует");
+        } else {
+            response.put("available", true);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/checkEmail")
+    @ResponseBody
+    public ResponseEntity<?> checkEmail(
+            @RequestParam String email,
+            @RequestParam(required = false) Long userId) {
+
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.ok(Collections.singletonMap("valid", false));
+        }
+
+        User existingUser = userService.findByEmail(email);
+        Map<String, Object> response = new HashMap<>();
+
+        if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
+            response.put("valid", false);
+            response.put("message", "Пользователь с таким email уже существует");
+        } else {
+            response.put("valid", true);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/admin/deleteUser/{clientId}/{userId}")
     public String deleteUser(@PathVariable Long clientId, @PathVariable Long userId) {
         Optional<Client> optionalClient = clientService.findById(clientId);
@@ -414,6 +498,7 @@ public class AdminController {
             @RequestParam String name,
             @RequestParam String sort,
             @RequestParam String tolsh,
+            @RequestParam double volume,
             @RequestParam Double length,
             @RequestParam int quantity,
             @RequestParam String description
@@ -422,6 +507,7 @@ public class AdminController {
         product.setName(name);
         product.setSort(sort);
         product.setTolsh(tolsh);
+        product.setVolume(volume);
         product.setLength(length);
         product.setQuantity(quantity);
         product.setDescription(description);
@@ -539,22 +625,18 @@ public class AdminController {
             @RequestParam Long orderId,
             @RequestParam String status,
             RedirectAttributes redirectAttributes,
-            Principal principal
-    ) {
+            Principal principal) {
+
         Order order = orderService.findById(orderId).orElse(null);
         if (order != null) {
             order.setStatus(status);
             orderService.save(order);
             User user = userService.findByUsername(principal.getName());
             orderService.addStatusHistory(order, status, user);
-            Client client = order.getClient();
-            for (Contacts contact : client.getContacts()) {
-                try {
-                    emailService.sendOrderStatusUpdateEmail(contact.getEmail(), order, status);
-                } catch (MessagingException e) {
-                    e.printStackTrace();
-                }
-            }
+
+            // Асинхронная отправка уведомлений
+            emailService.sendOrderStatusUpdateEmailAsync(order, status);
+
             redirectAttributes.addFlashAttribute("successMessage", "Статус заказа успешно обновлен.");
         }
         return "redirect:/admin/orders/" + orderId;
@@ -780,19 +862,6 @@ public class AdminController {
         documentZAOService.deleteById(id);
         return "redirect:/admin/document";
     }
-    @GetMapping("/api/checkUsername")
-    @ResponseBody
-    public ResponseEntity<?> checkUsername(
-            @RequestParam String username,
-            @RequestParam(required = false) Long userId) {
-
-        User existingUser = userService.findByUsername(username);
-
-        if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
-            return ResponseEntity.ok().body(Collections.singletonMap("available", false));
-        }
-        return ResponseEntity.ok().body(Collections.singletonMap("available", true));
-    }
 
     @GetMapping("/admin/editProduct/{id}")
     public String editProductForm(@PathVariable Long id, Model model) {
@@ -811,6 +880,7 @@ public class AdminController {
             @RequestParam String sort,
             @RequestParam String tolsh,
             @RequestParam Double length,
+            @RequestParam Double volume,
             @RequestParam int quantity,
             @RequestParam String description,
             @RequestParam(required = false, defaultValue = "false") boolean visible,
@@ -820,6 +890,7 @@ public class AdminController {
         product.setName(name);
         product.setSort(sort);
         product.setTolsh(tolsh);
+        product.setVolume(volume);
         product.setLength(length);
         product.setQuantity(quantity);
         product.setDescription(description);

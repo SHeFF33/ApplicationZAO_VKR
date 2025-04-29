@@ -136,4 +136,11 @@ public class OrderService {
         }
         return Optional.empty();
     }
+    public double calculateOrderTotal(Order order) {
+        return order.getTchOrders().stream()
+                .mapToDouble(tchOrder -> tchOrder.getVolume() *
+                        tchOrder.getQuantity() *
+                        tchOrder.getPrice())
+                .sum();
+    }
 }

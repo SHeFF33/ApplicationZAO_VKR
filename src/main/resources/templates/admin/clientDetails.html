@@ -595,6 +595,7 @@
           <tr>
             <th>Логин</th>
             <th>Имя</th>
+            <th>Email</th>
             <th>Роль</th>
           </tr>
           </thead>
@@ -602,13 +603,14 @@
           <tr th:each="user : ${client.users}">
             <td th:text="${user.username}"></td>
             <td th:text="${user.name}"></td>
+            <td th:text="${user.admin ? user.email : 'Нет'}"></td>
             <td>
               <span th:if="${user.admin}" class="badge badge--primary">Администратор</span>
               <span th:unless="${user.admin}" class="badge badge--secondary">Пользователь</span>
             </td>
           </tr>
           <tr th:if="${#lists.isEmpty(client.users)}">
-            <td colspan="3" class="empty-state">
+            <td colspan="4" class="empty-state">
               <i class="fas fa-users"></i>
               <p>Пользователи не добавлены</p>
             </td>

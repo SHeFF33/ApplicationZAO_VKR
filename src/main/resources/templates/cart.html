@@ -830,6 +830,7 @@
                         <div class="product-item__description">
                             <span class="product-item__spec">Сорт: <span th:text="${item.product.sort}"></span></span>
                             <span class="product-item__spec">Толщина: <span th:text="${item.product.tolsh}"></span></span>
+                            <span class="product-item__spec">Объем: <span th:text="${item.product.volume}"></span></span>
                             <span class="product-item__spec">Длина: <span th:text="${item.product.length}"></span></span>
                         </div>
                         <div class="product-item__price">
@@ -875,11 +876,17 @@
                        th:attr="min=${minDateTime}" class="form-control" required>
             </div>
 
+            <div class="form-group">
+                <label for="comment" class="form-label">Комментарий к заказу</label>
+                <textarea id="comment" name="comment" class="form-control" rows="4" maxlength="3000"></textarea>
+            </div>
+
             <button type="submit" class="btn">
                 <i class="fas fa-check-circle"></i> Оформить заказ
             </button>
         </form>
     </aside>
+
 </main>
 
 <!-- Модальное окно ручного распределения -->

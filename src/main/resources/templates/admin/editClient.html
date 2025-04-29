@@ -391,6 +391,21 @@
             color: var(--text-primary);
         }
 
+        /* Validation styles */
+        .is-invalid {
+            border-color: var(--error) !important;
+        }
+
+        .invalid-feedback {
+            color: var(--error);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .required {
+            color: var(--error);
+        }
+
         /* Responsive styles */
         @media (max-width: 768px) {
             .form-grid {
@@ -466,27 +481,27 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Имя компании</label>
+                    <label class="form-label">Имя компании <span class="required">*</span></label>
                     <input type="text" name="name" class="form-control" th:value="${client.name}" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">ИНН</label>
+                    <label class="form-label">ИНН <span class="required">*</span></label>
                     <input type="text" name="inn" class="form-control" th:value="${client.inn}" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">КПП</label>
+                    <label class="form-label">КПП <span class="required">*</span></label>
                     <input type="text" name="kpp" class="form-control" th:value="${client.kpp}" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Юридический адрес</label>
+                    <label class="form-label">Юридический адрес <span class="required">*</span></label>
                     <input type="text" name="uraddress" class="form-control" th:value="${client.uraddress}" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Фактический адрес</label>
+                    <label class="form-label">Фактический адрес <span class="required">*</span></label>
                     <input type="text" name="factaddress" class="form-control" th:value="${client.factaddress}" required>
                 </div>
 
@@ -501,7 +516,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Выбранная цена</label>
+                    <label class="form-label">Выбранная цена <span class="required">*</span></label>
                     <select name="selectedPriceId" class="form-control form-select" required>
                         <option th:each="price : ${prices}"
                                 th:value="${price.id}"
@@ -560,7 +575,7 @@
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(client.addresses)}">
-                        <td colspan="10" class="empty-state">
+                        <td colspan="11" class="empty-state">
                             <i class="fas fa-map-marked-alt"></i>
                             <p>Адреса не добавлены</p>
                         </td>
@@ -622,6 +637,7 @@
                         <th>Логин</th>
                         <th>Имя</th>
                         <th>Пароль</th>
+                        <th>Email (если админ)</th>
                         <th>Администратор</th>
                         <th></th>
                     </tr>
@@ -629,18 +645,29 @@
                     <tbody>
                     <tr th:each="user, stat : ${client.users}">
                         <td>
-                            <input type="text" name="usernames" th:value="${user.username}" required>
+                            <input type="text" name="usernames" th:value="${user.username}" required
+                                   onblur="validateUsername(this, ${user.id})">
                             <input type="hidden" name="userIds" th:value="${user.id}">
+                            <div class="invalid-feedback" th:id="'username-feedback-' + ${stat.index}"></div>
                         </td>
                         <td><input type="text" name="nameuser" th:value="${user.name}" required></td>
                         <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+                        <td>
+                            <input type="email" name="userEmails" th:value="${user.email}"
+                                   th:required="${user.admin}" th:disabled="${!user.admin}"
+                                   th:attr="data-index=${stat.index}"
+                                   placeholder="Недоступно для заполнения"
+                                   onblur="validateEmail(this, ${user.id})">
+                            <div class="invalid-feedback" th:id="'email-feedback-' + ${stat.index}"></div>
+                        </td>
                         <td style="text-align: center;">
                             <input type="hidden" name="_isAdmins" value="on">
-                            <input type="checkbox" name="isAdmins" th:checked="${user.admin}" value="true">
+                            <input type="checkbox" name="isAdmins" th:checked="${user.admin}"
+                                   value="true" onchange="toggleEmailRequired(this, ${stat.index})">
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(client.users)}">
-                        <td colspan="5" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <i class="fas fa-users"></i>
                             <p>Пользователи не добавлены</p>
                         </td>
@@ -670,12 +697,104 @@
         document.getElementById("sidebar").classList.remove("app-sidebar--open");
     }
 
+    function toggleEmailRequired(checkbox, index) {
+        const row = checkbox.closest('tr');
+        const emailInput = row.querySelector('input[name="userEmails"]');
+        const emailFeedback = document.getElementById('email-feedback-' + index);
+
+        if (checkbox.checked) {
+            emailInput.required = true;
+            emailInput.disabled = false;
+            emailInput.placeholder = "Введите email администратора";
+            emailInput.value = ""; // Очищаем поле при включении админки
+        } else {
+            emailInput.required = false;
+            emailInput.disabled = true;
+            emailInput.placeholder = "Недоступно для заполнения";
+            emailInput.value = ""; // Очищаем поле при выключении админки
+            emailInput.classList.remove('is-invalid');
+            if (emailFeedback) emailFeedback.textContent = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
+            toggleEmailRequired(checkbox, index);
+
+            checkbox.addEventListener('change', function() {
+                toggleEmailRequired(this, index);
+            });
+        });
+    });
+
+    function validateUsername(input, userId) {
+        const username = input.value;
+        const feedbackId = 'username-feedback-' + Array.from(input.closest('tr').parentNode.children).indexOf(input.closest('tr'));
+        const feedback = document.getElementById(feedbackId);
+
+        if (!username) {
+            input.classList.add('is-invalid');
+            feedback.textContent = 'Имя пользователя обязательно';
+            return;
+        }
+
+        fetch('/api/checkUsername?username=' + encodeURIComponent(username) + (userId ? '&userId=' + userId : ''))
+            .then(response => response.json())
+            .then(data => {
+                if (data.available) {
+                    input.classList.remove('is-invalid');
+                    feedback.textContent = '';
+                } else {
+                    input.classList.add('is-invalid');
+                    feedback.textContent = data.message || 'Пользователь с таким логином уже существует';
+                }
+            })
+            .catch(() => {
+                input.classList.add('is-invalid');
+                feedback.textContent = 'Ошибка проверки имени пользователя';
+            });
+    }
+
+    function validateEmail(input, userId) {
+        const email = input.value;
+        const feedbackId = 'email-feedback-' + Array.from(input.closest('tr').parentNode.children).indexOf(input.closest('tr'));
+        const feedback = document.getElementById(feedbackId);
+        const isAdmin = input.closest('tr').querySelector('input[name="isAdmins"]').checked;
+
+        if (!isAdmin) {
+            input.classList.remove('is-invalid');
+            feedback.textContent = '';
+            return;
+        }
+
+        if (!email) {
+            input.classList.add('is-invalid');
+            feedback.textContent = 'Email обязателен для администратора';
+            return;
+        }
+
+        fetch('/api/checkEmail?email=' + encodeURIComponent(email) + (userId ? '&userId=' + userId : ''))
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    input.classList.remove('is-invalid');
+                    feedback.textContent = '';
+                } else {
+                    input.classList.add('is-invalid');
+                    feedback.textContent = data.message || 'Пользователь с таким email уже существует';
+                }
+            })
+            .catch(() => {
+                input.classList.add('is-invalid');
+                feedback.textContent = 'Ошибка проверки email';
+            });
+    }
+
     function addTableRow(tableId) {
         const table = document.getElementById(tableId);
         const tbody = table.querySelector('tbody');
         const emptyRow = tbody.querySelector('tr.empty-state');
 
-        // Удаляем пустую строку, если она есть
         if (emptyRow) {
             emptyRow.remove();
         }
@@ -684,60 +803,66 @@
 
         if (tableId === 'addresses') {
             newRow.innerHTML = `
-        <td><input type="text" name="postalcodes" required></td>
-        <td><input type="text" name="countries" required></td>
-        <td><input type="text" name="regions"></td> <!-- Убрано required -->
-        <td><input type="text" name="rayons"></td>
-        <td><input type="text" name="cities" required></td>
-        <td><input type="text" name="streets" required></td>
-        <td><input type="text" name="homes" required></td>
-        <td><input type="text" name="roomnumbers" required></td>
-        <td><textarea name="schedules"></textarea></td>
-        <td>
-            <select name="contactIds">
-                <option value="">Нет контакта</option>
-                ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
+                <td><input type="text" name="postalcodes" required></td>
+                <td><input type="text" name="countries" required></td>
+                <td><input type="text" name="regions" required></td>
+                <td><input type="text" name="rayons"></td>
+                <td><input type="text" name="cities" required></td>
+                <td><input type="text" name="streets" required></td>
+                <td><input type="text" name="homes" required></td>
+                <td><input type="text" name="roomnumbers" required></td>
+                <td><textarea name="schedules"></textarea></td>
+                <td>
+                    <select name="contactIds">
+                        <option value="">Нет контакта</option>
+                        ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
                 const name = tr.querySelector('input[name="contactNames"]').value;
                 return `<option value="${tr.querySelector('input[name="contactNames"]').getAttribute('data-id') || ''}">${name}</option>`;
             }).join('')}
-            </select>
-        </td>
-        <td style="text-align: center;">
-            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </td>
-    `;
+                    </select>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
         } else if (tableId === 'contacts') {
             newRow.innerHTML = `
-            <td><input type="text" name="typeContacts" required></td>
-            <td><input type="text" name="contactNames" required></td>
-            <td><input type="text" name="phonenumbers" required></td>
-            <td><input type="email" name="emails" required></td>
-            <td style="text-align: center;">
-                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </td>
-        `;
+                <td><input type="text" name="typeContacts" required></td>
+                <td><input type="text" name="contactNames" required></td>
+                <td><input type="text" name="phonenumbers" required></td>
+                <td><input type="email" name="emails" required></td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
         } else if (tableId === 'users') {
+            const newIndex = tbody.querySelectorAll('tr:not(.empty-state)').length;
             newRow.innerHTML = `
-            <td>
-                <input type="text" name="usernames" required>
-                <input type="hidden" name="userIds" value="">
-            </td>
-            <td><input type="text" name="nameuser" required></td>
-            <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
-            <td style="text-align: center;">
-                <input type="hidden" name="_isAdmins" value="on">
-                <input type="checkbox" name="isAdmins" value="true">
-            </td>
-            <td style="text-align: center;">
-                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </td>
-        `;
+                <td>
+                    <input type="text" name="usernames" required onblur="validateUsername(this)">
+                    <input type="hidden" name="userIds" value="">
+                    <div class="invalid-feedback" id="username-feedback-${newIndex}"></div>
+                </td>
+                <td><input type="text" name="nameuser" required></td>
+                <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+                <td>
+                    <input type="email" name="userEmails" disabled>
+                    <div class="invalid-feedback" id="email-feedback-${newIndex}"></div>
+                </td>
+                <td style="text-align: center;">
+                    <input type="hidden" name="_isAdmins" value="on">
+                    <input type="checkbox" name="isAdmins" value="false" onchange="toggleEmailRequired(this, ${newIndex})">
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
         }
 
         tbody.appendChild(newRow);
@@ -750,39 +875,37 @@
 
         row.remove();
 
-        // Если больше нет строк, добавляем пустое состояние
         if (tbody.querySelectorAll('tr:not(.empty-state)').length === 0) {
             const emptyRow = document.createElement('tr');
             emptyRow.className = 'empty-state';
 
             if (table.id === 'addresses') {
                 emptyRow.innerHTML = `
-                <td colspan="10">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <p>Адреса не добавлены</p>
-                </td>
-            `;
+                    <td colspan="11">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <p>Адреса не добавлены</p>
+                    </td>
+                `;
             } else if (table.id === 'contacts') {
                 emptyRow.innerHTML = `
-                <td colspan="5">
-                    <i class="fas fa-user-tie"></i>
-                    <p>Контакты не добавлены</p>
-                </td>
-            `;
+                    <td colspan="5">
+                        <i class="fas fa-user-tie"></i>
+                        <p>Контакты не добавлены</p>
+                    </td>
+                `;
             } else if (table.id === 'users') {
                 emptyRow.innerHTML = `
-                <td colspan="5">
-                    <i class="fas fa-users"></i>
-                    <p>Пользователи не добавлены</p>
-                </td>
-            `;
+                    <td colspan="6">
+                        <i class="fas fa-users"></i>
+                        <p>Пользователи не добавлены</p>
+                    </td>
+                `;
             }
 
             tbody.appendChild(emptyRow);
         }
     }
 
-    // Close sidebar when clicking outside
     document.addEventListener('click', function(event) {
         const sidebar = document.getElementById('sidebar');
         const menuBtn = document.querySelector('.app-header__menu-btn');
@@ -793,6 +916,13 @@
             !menuBtn.contains(event.target)) {
             closeNav();
         }
+    });
+
+    // Инициализация состояния email полей при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
+            toggleEmailRequired(checkbox, index);
+        });
     });
 </script>
 </body>

@@ -24,6 +24,8 @@ public class TCHOrder {
 
     private int quantity;
     private double price;
+    private double volume;
+
     @Column(name = "original_price")
     private Double originalPrice;
 
@@ -37,8 +39,21 @@ public class TCHOrder {
         this.product = product;
         this.quantity = quantity;
         this.price = price;
+        this.volume = product != null ? product.getVolume() : 0.0;
     }
 
+    @PrePersist
+    @PreUpdate
+    public void prePersistAndUpdate() {
+        if (originalPrice == null) {
+            originalPrice = price;
+        }
+        if (product != null) {
+            this.volume = product.getVolume();
+        }
+    }
+
+    // Геттеры и сеттеры
     public Long getId() {
         return id;
     }
@@ -61,6 +76,9 @@ public class TCHOrder {
 
     public void setProduct(Product product) {
         this.product = product;
+        if (product != null) {
+            this.volume = product.getVolume();
+        }
     }
 
     public int getQuantity() {
@@ -95,19 +113,24 @@ public class TCHOrder {
         this.discount = discount;
     }
 
-    @PrePersist
-    @PreUpdate
-    public void prePersist() {
-        if (originalPrice == null) {
-            originalPrice = price;
-        }
-    }
-
     public Double getOriginalPrice() {
         return originalPrice;
     }
 
     public void setOriginalPrice(Double originalPrice) {
         this.originalPrice = originalPrice;
+    }
+
+    public double getVolume() {
+        return volume;
+    }
+
+    public void setVolume(double volume) {
+        this.volume = volume;
+    }
+
+    // Метод для расчета суммы с учетом объема
+    public double getTotalSum() {
+        return volume * quantity * price;
     }
 }

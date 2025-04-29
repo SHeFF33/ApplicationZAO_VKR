@@ -12,10 +12,6 @@ public class OrderTruck {
     private Long id;
     private double total;
 
-    public double getTotal() {
-        return total;
-    }
-
     public void setTotal(double total) {
         this.total = total;
     }
@@ -33,7 +29,6 @@ public class OrderTruck {
         this.order = order;
     }
 
-    // Геттеры и сеттеры
     public Long getId() {
         return id;
     }
@@ -56,5 +51,10 @@ public class OrderTruck {
 
     public void setTchOrders(List<TCHOrder> tchOrders) {
         this.tchOrders = tchOrders;
+    }
+    public double getTotal() {
+        return tchOrders.stream()
+                .mapToDouble(TCHOrder::getTotalSum)
+                .sum();
     }
 }

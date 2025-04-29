@@ -11,6 +11,7 @@ public class User {
     private String password;
     private boolean isAdmin;
     private String name;
+    private String email; // Добавлено новое поле
 
     @ManyToOne
     @JoinColumn(name = "client_id")
@@ -18,11 +19,21 @@ public class User {
 
     public User() {}
 
-    public User(String username, String password, boolean isAdmin, String name) {
+    public User(String username, String password, boolean isAdmin, String name, String email) {
         this.username = username;
         this.password = password;
         this.isAdmin = isAdmin;
         this.name = name;
+        this.email = email;
+    }
+
+    // Геттеры и сеттеры
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getName() {

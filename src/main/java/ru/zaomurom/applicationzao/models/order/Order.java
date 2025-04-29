@@ -31,6 +31,9 @@ public class Order {
     @Temporal(TemporalType.TIMESTAMP)
     private Date orderDate;
 
+    @Column(length = 3000)
+    private String comment;
+
     private String status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -134,6 +137,13 @@ public class Order {
 
     public void setTrucks(List<OrderTruck> trucks) {
         this.trucks = trucks;
+    }
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     public String getFormattedOrderDate() {

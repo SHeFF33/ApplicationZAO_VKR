@@ -271,4 +271,11 @@ public class CartService {
             truck.getItems().add(newItem);
         }
     }
+    public double calculateCartTotal(Cart cart) {
+        return cart.getCartItems().stream()
+                .mapToDouble(item -> item.getProduct().getVolume() *
+                        item.getQuantity() *
+                        item.getSum().getSumma())
+                .sum();
+    }
 }

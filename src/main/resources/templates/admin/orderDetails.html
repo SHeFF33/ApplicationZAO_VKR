@@ -560,14 +560,19 @@
         <span class="info-item__label">Дата доставки</span>
         <span class="info-item__value" th:text="${order.formattedDeliveryDate}"></span>
       </div>
+      <div class="info-item">
+        <span class="info-item__label">Комментарий к заказу</span>
+        <span class="info-item__value" th:text="${order.comment}"></span>
+      </div>
     </div>
     <div class="info-item">
       <span class="info-item__label">Адрес доставки</span>
       <span class="info-item__value">
-                <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
-            </span>
+            <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+        </span>
     </div>
   </div>
+
 
   <div class="card">
     <div class="card__header">
@@ -625,6 +630,7 @@
         <tr>
           <th>Товар</th>
           <th>Количество</th>
+          <th>Объем (м³)</th>
           <th>Цена за единицу</th>
           <th>Сумма</th>
         </tr>
@@ -633,8 +639,9 @@
         <tr th:each="tchOrder : ${truck.tchOrders}">
           <td th:text="${tchOrder.product.name}"></td>
           <td th:text="${tchOrder.quantity} + ' шт.'"></td>
+          <td th:text="${tchOrder.volume}"></td>
           <td th:text="${#numbers.formatDecimal(tchOrder.price, 1, 2)} + ' руб.'"></td>
-          <td th:text="${#numbers.formatDecimal(tchOrder.price * tchOrder.quantity, 1, 2)} + ' руб.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.volume * tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'"></td>
         </tr>
         </tbody>
       </table>

@@ -452,6 +452,21 @@
       gap: 0.75rem;
     }
 
+    /* Validation styles */
+    .is-invalid {
+      border-color: var(--error) !important;
+    }
+
+    .invalid-feedback {
+      color: var(--error);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .required {
+      color: var(--error);
+    }
+
     /* Responsive styles */
     @media (max-width: 768px) {
       .form-grid {
@@ -522,27 +537,27 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Имя компании</label>
+          <label class="form-label">Имя компании <span class="required">*</span></label>
           <input type="text" name="name" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">ИНН</label>
+          <label class="form-label">ИНН <span class="required">*</span></label>
           <input type="text" name="inn" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">КПП</label>
+          <label class="form-label">КПП <span class="required">*</span></label>
           <input type="text" name="kpp" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Юридический адрес</label>
+          <label class="form-label">Юридический адрес <span class="required">*</span></label>
           <input type="text" name="uraddress" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Фактический адрес</label>
+          <label class="form-label">Фактический адрес <span class="required">*</span></label>
           <input type="text" name="factaddress" class="form-control" required>
         </div>
 
@@ -557,7 +572,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Выбранная цена</label>
+          <label class="form-label">Выбранная цена <span class="required">*</span></label>
           <select name="selectedPriceId" class="form-control form-select" required>
             <option value="">Выберите прайс</option>
             <option th:each="price : ${prices}"
@@ -643,42 +658,42 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Почтовый индекс</label>
+          <label class="form-label">Почтовый индекс <span class="required">*</span></label>
           <input type="text" id="postalcode" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Страна</label>
+          <label class="form-label">Страна <span class="required">*</span></label>
           <input type="text" id="country" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Регион</label>
+          <label class="form-label">Регион <span class="required">*</span></label>
           <input type="text" id="region" class="form-control" required>
         </div>
 
         <div class="form-group">
           <label class="form-label">Район</label>
-          <input type="text" id="rayon" class="form-control" required>
+          <input type="text" id="rayon" class="form-control">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Город</label>
+          <label class="form-label">Город <span class="required">*</span></label>
           <input type="text" id="city" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Улица</label>
+          <label class="form-label">Улица <span class="required">*</span></label>
           <input type="text" id="street" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Дом</label>
+          <label class="form-label">Дом <span class="required">*</span></label>
           <input type="text" id="home" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Строение</label>
+          <label class="form-label">Строение <span class="required">*</span></label>
           <input type="text" id="roomnumber" class="form-control" required>
         </div>
       </div>
@@ -713,22 +728,22 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Тип контакта</label>
+          <label class="form-label">Тип контакта <span class="required">*</span></label>
           <input type="text" id="contactType" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Имя</label>
+          <label class="form-label">Имя <span class="required">*</span></label>
           <input type="text" id="contactName" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Номер телефона</label>
+          <label class="form-label">Номер телефона <span class="required">*</span></label>
           <input type="text" id="phoneNumber" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">Email <span class="required">*</span></label>
           <input type="email" id="email" class="form-control" required>
         </div>
       </div>
@@ -758,24 +773,32 @@
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Имя пользователя</label>
+          <label class="form-label">Имя пользователя <span class="required">*</span></label>
           <input type="text" id="username" class="form-control" required>
+          <div class="invalid-feedback" id="username-feedback"></div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Имя</label>
+          <label class="form-label">Имя <span class="required">*</span></label>
           <input type="text" id="nameuser" class="form-control" required>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Пароль</label>
+          <label class="form-label">Пароль <span class="required">*</span></label>
           <input type="password" id="password" class="form-control" required>
         </div>
+
+        <div class="form-group" id="emailGroup" style="display: none;">
+          <label class="form-label">Email <span class="required">*</span></label>
+          <input type="email" id="userEmail" class="form-control">
+          <div class="invalid-feedback" id="userEmail-feedback"></div>
+        </div>
+
       </div>
 
       <div class="form-group" style="margin-top: 1rem;">
         <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="checkbox" id="isAdmin" style="width: auto;">
+          <input type="checkbox" id="isAdmin" style="width: auto;" onchange="toggleEmailField(this)">
           Администратор
         </label>
       </div>
@@ -813,6 +836,73 @@
     document.getElementById(modalId).classList.remove("modal--open");
   }
 
+  function clearModal(modalId) {
+    const modal = document.getElementById(modalId);
+    const inputs = modal.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+      if (input.type !== 'checkbox') {
+        input.value = '';
+        input.classList.remove('is-invalid');
+      } else {
+        input.checked = false;
+      }
+    });
+    modal.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+  }
+
+  function toggleEmailField(checkbox) {
+    const emailGroup = document.getElementById('emailGroup');
+    const emailInput = document.getElementById('userEmail');
+    const emailFeedback = document.getElementById('userEmail-feedback');
+
+    if (checkbox.checked) {
+      emailGroup.style.display = 'block';
+      emailInput.required = true;
+    } else {
+      emailGroup.style.display = 'none';
+      emailInput.required = false;
+      emailInput.value = '';
+      emailInput.classList.remove('is-invalid');
+      if (emailFeedback) emailFeedback.textContent = '';
+    }
+  }
+
+  function validateUsername(username, callback) {
+    if (!username) {
+      callback(false, 'Имя пользователя обязательно');
+      return;
+    }
+
+    fetch('/api/checkUsername?username=' + encodeURIComponent(username))
+            .then(response => response.json())
+            .then(data => {
+              if (data.available) {
+                callback(true);
+              } else {
+                callback(false, data.message || 'Пользователь с таким логином уже существует');
+              }
+            })
+            .catch(() => callback(false, 'Ошибка проверки имени пользователя'));
+  }
+
+  function validateEmail(email, callback) {
+    if (!email) {
+      callback(false, 'Email обязателен для администратора');
+      return;
+    }
+
+    fetch('/api/checkEmail?email=' + encodeURIComponent(email))
+            .then(response => response.json())
+            .then(data => {
+              if (data.valid) {
+                callback(true);
+              } else {
+                callback(false, data.message || 'Пользователь с таким email уже существует');
+              }
+            })
+            .catch(() => callback(false, 'Ошибка проверки email'));
+  }
+
   function addAddress() {
     const postalcode = document.getElementById('postalcode').value;
     const country = document.getElementById('country').value;
@@ -824,7 +914,7 @@
     const roomnumber = document.getElementById('roomnumber').value;
     const schedule = document.getElementById('schedule').value;
 
-    if (!postalcode || !country || !region || !rayon || !city || !street || !home || !roomnumber) {
+    if (!postalcode || !country || !region || !city || !street || !home || !roomnumber) {
       alert('Пожалуйста, заполните все обязательные поля');
       return;
     }
@@ -832,7 +922,6 @@
     const addressId = 'address-' + addressCounter++;
     const addressesList = document.getElementById('addresses-list');
 
-    // Remove empty state if it exists
     const emptyState = addressesList.querySelector('.empty-state');
     if (emptyState) {
       emptyState.remove();
@@ -842,56 +931,56 @@
     addressItem.className = 'item-card';
     addressItem.id = addressId;
     addressItem.innerHTML = `
-            <div class="item-card__header">
-                <h4 class="item-card__title">Адрес ${addressCounter}</h4>
-                <button class="item-card__remove" onclick="removeItem('${addressId}')">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-            <div class="item-card__details">
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Почтовый индекс</div>
-                    <div>${postalcode}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Страна</div>
-                    <div>${country}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Регион</div>
-                    <div>${region}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Город</div>
-                    <div>${city}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Улица</div>
-                    <div>${street}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Дом</div>
-                    <div>${home}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Комната</div>
-                    <div>${roomnumber}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">График работы</div>
-                    <div>${schedule || 'Не указано'}</div>
-                </div>
-            </div>
-            <input type="hidden" name="postalcodes" value="${postalcode}">
-            <input type="hidden" name="countries" value="${country}">
-            <input type="hidden" name="regions" value="${region}">
-            <input type="hidden" name="rayons" value="${rayon}">
-            <input type="hidden" name="cities" value="${city}">
-            <input type="hidden" name="streets" value="${street}">
-            <input type="hidden" name="homes" value="${home}">
-            <input type="hidden" name="roomnumbers" value="${roomnumber}">
-            <input type="hidden" name="schedules" value="${schedule}">
-        `;
+      <div class="item-card__header">
+        <h4 class="item-card__title">Адрес ${addressCounter}</h4>
+        <button class="item-card__remove" onclick="removeItem('${addressId}')">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+      <div class="item-card__details">
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Почтовый индекс</div>
+          <div>${postalcode}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Страна</div>
+          <div>${country}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Регион</div>
+          <div>${region}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Город</div>
+          <div>${city}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Улица</div>
+          <div>${street}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Дом</div>
+          <div>${home}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Комната</div>
+          <div>${roomnumber}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">График работы</div>
+          <div>${schedule || 'Не указано'}</div>
+        </div>
+      </div>
+      <input type="hidden" name="postalcodes" value="${postalcode}">
+      <input type="hidden" name="countries" value="${country}">
+      <input type="hidden" name="regions" value="${region}">
+      <input type="hidden" name="rayons" value="${rayon}">
+      <input type="hidden" name="cities" value="${city}">
+      <input type="hidden" name="streets" value="${street}">
+      <input type="hidden" name="homes" value="${home}">
+      <input type="hidden" name="roomnumbers" value="${roomnumber}">
+      <input type="hidden" name="schedules" value="${schedule}">
+    `;
 
     addressesList.appendChild(addressItem);
     closeModal('addressModal');
@@ -912,7 +1001,6 @@
     const contactId = 'contact-' + contactCounter++;
     const contactsList = document.getElementById('contacts-list');
 
-    // Remove empty state if it exists
     const emptyState = contactsList.querySelector('.empty-state');
     if (emptyState) {
       emptyState.remove();
@@ -922,31 +1010,31 @@
     contactItem.className = 'item-card';
     contactItem.id = contactId;
     contactItem.innerHTML = `
-            <div class="item-card__header">
-                <h4 class="item-card__title">${contactName}</h4>
-                <button class="item-card__remove" onclick="removeItem('${contactId}')">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-            <div class="item-card__details">
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Тип контакта</div>
-                    <div>${contactType}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Телефон</div>
-                    <div>${phoneNumber}</div>
-                </div>
-                <div class="item-card__detail">
-                    <div class="item-card__detail-label">Email</div>
-                    <div>${email}</div>
-                </div>
-            </div>
-            <input type="hidden" name="typeContacts" value="${contactType}">
-            <input type="hidden" name="contactNames" value="${contactName}">
-            <input type="hidden" name="phonenumbers" value="${phoneNumber}">
-            <input type="hidden" name="emails" value="${email}">
-        `;
+      <div class="item-card__header">
+        <h4 class="item-card__title">${contactName}</h4>
+        <button class="item-card__remove" onclick="removeItem('${contactId}')">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+      <div class="item-card__details">
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Тип контакта</div>
+          <div>${contactType}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Телефон</div>
+          <div>${phoneNumber}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Email</div>
+          <div>${email}</div>
+        </div>
+      </div>
+      <input type="hidden" name="typeContacts" value="${contactType}">
+      <input type="hidden" name="contactNames" value="${contactName}">
+      <input type="hidden" name="phonenumbers" value="${phoneNumber}">
+      <input type="hidden" name="emails" value="${email}">
+    `;
 
     contactsList.appendChild(contactItem);
     closeModal('contactModal');
@@ -958,64 +1046,88 @@
     const nameuser = document.getElementById('nameuser').value;
     const password = document.getElementById('password').value;
     const isAdmin = document.getElementById('isAdmin').checked;
+    const email = document.getElementById('userEmail').value; // Изменили на userEmail
 
-    if (!username || !nameuser || !password) {
-      alert('Пожалуйста, заполните все обязательные поля');
-      return;
+    // Валидация имени пользователя
+    validateUsername(username, (valid, message) => {
+      const usernameInput = document.getElementById('username');
+      const feedback = document.getElementById('username-feedback');
+
+      if (!valid) {
+        usernameInput.classList.add('is-invalid');
+        feedback.textContent = message || 'Недопустимое имя пользователя';
+        return;
+      }
+
+      usernameInput.classList.remove('is-invalid');
+      feedback.textContent = '';
+
+      // Если администратор, валидируем email
+      if (isAdmin) {
+        validateEmail(email, (emailValid, emailMessage) => {
+          const emailInput = document.getElementById('userEmail'); // Изменили на userEmail
+          const emailFeedback = document.getElementById('userEmail-feedback'); // Изменили на userEmail-feedback
+
+          if (!emailValid) {
+            emailInput.classList.add('is-invalid');
+            emailFeedback.textContent = emailMessage || 'Недопустимый email';
+            return;
+          }
+
+          emailInput.classList.remove('is-invalid');
+          emailFeedback.textContent = '';
+          createUserItem(username, nameuser, password, isAdmin, email);
+        });
+      } else {
+        createUserItem(username, nameuser, password, isAdmin, '');
+      }
+    });
+  }
+
+  function createUserItem(username, nameuser, password, isAdmin, email) {
+    const userId = 'user-' + userCounter++;
+    const usersList = document.getElementById('users-list');
+
+    const emptyState = usersList.querySelector('.empty-state');
+    if (emptyState) {
+      emptyState.remove();
     }
 
-    // Проверка username на клиенте (дополнительная проверка)
-    fetch('/api/checkUsername?username=' + username)
-            .then(response => response.json())
-            .then(data => {
-              if (data.exists) {
-                alert('Пользователь с таким логином уже существует');
-                return;
-              }
+    const userItem = document.createElement('div');
+    userItem.className = 'item-card';
+    userItem.id = userId;
+    userItem.innerHTML = `
+      <div class="item-card__header">
+        <h4 class="item-card__title">${username}</h4>
+        <button class="item-card__remove" onclick="removeItem('${userId}')">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+      <div class="item-card__details">
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Имя</div>
+          <div>${nameuser}</div>
+        </div>
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Роль</div>
+          <div>${isAdmin ? 'Администратор' : 'Пользователь'}</div>
+        </div>
+        ${isAdmin ? `
+        <div class="item-card__detail">
+          <div class="item-card__detail-label">Email</div>
+          <div>${email}</div>
+        </div>` : ''}
+      </div>
+      <input type="hidden" name="usernames" value="${username}">
+      <input type="hidden" name="nameuser" value="${nameuser}">
+      <input type="hidden" name="passwords" value="${password}">
+      <input type="hidden" name="isAdmins" value="${isAdmin}">
+       ${isAdmin ? `<input type="hidden" name="userEmails" value="${email}">` : ''}
+    `;
 
-              const userId = 'user-' + userCounter++;
-              const usersList = document.getElementById('users-list');
-
-              // Remove empty state if it exists
-              const emptyState = usersList.querySelector('.empty-state');
-              if (emptyState) {
-                emptyState.remove();
-              }
-
-              const userItem = document.createElement('div');
-              userItem.className = 'item-card';
-              userItem.id = userId;
-              userItem.innerHTML = `
-                    <div class="item-card__header">
-                        <h4 class="item-card__title">${username}</h4>
-                        <button class="item-card__remove" onclick="removeItem('${userId}')">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                    <div class="item-card__details">
-                        <div class="item-card__detail">
-                            <div class="item-card__detail-label">Имя</div>
-                            <div>${nameuser}</div>
-                        </div>
-                        <div class="item-card__detail">
-                            <div class="item-card__detail-label">Роль</div>
-                            <div>${isAdmin ? 'Администратор' : 'Пользователь'}</div>
-                        </div>
-                    </div>
-                    <input type="hidden" name="usernames" value="${username}">
-                    <input type="hidden" name="nameuser" value="${nameuser}">
-                    <input type="hidden" name="passwords" value="${password}">
-                    <input type="hidden" name="isAdmins" value="${isAdmin}">
-                `;
-
-              usersList.appendChild(userItem);
-              closeModal('userModal');
-              clearModal('userModal');
-            })
-            .catch(error => {
-              console.error('Error checking username:', error);
-              alert('Произошла ошибка при проверке имени пользователя');
-            });
+    usersList.appendChild(userItem);
+    closeModal('userModal');
+    clearModal('userModal');
   }
 
   function removeItem(id) {
@@ -1024,26 +1136,25 @@
       const parentList = element.parentElement;
       element.remove();
 
-      // Check if list is empty and add empty state
       if (parentList.children.length === 0) {
         const emptyState = document.createElement('div');
         emptyState.className = 'empty-state';
 
         if (parentList.id === 'addresses-list') {
           emptyState.innerHTML = `
-                        <i class="fas fa-map-marked-alt"></i>
-                        <p>Адреса не добавлены</p>
-                    `;
+            <i class="fas fa-map-marked-alt"></i>
+            <p>Адреса не добавлены</p>
+          `;
         } else if (parentList.id === 'contacts-list') {
           emptyState.innerHTML = `
-                        <i class="fas fa-user-tie"></i>
-                        <p>Контакты не добавлены</p>
-                    `;
+            <i class="fas fa-user-tie"></i>
+            <p>Контакты не добавлены</p>
+          `;
         } else if (parentList.id === 'users-list') {
           emptyState.innerHTML = `
-                        <i class="fas fa-users"></i>
-                        <p>Пользователи не добавлены</p>
-                    `;
+            <i class="fas fa-users"></i>
+            <p>Пользователи не добавлены</p>
+          `;
         }
 
         parentList.appendChild(emptyState);
@@ -1051,26 +1162,12 @@
     }
   }
 
-  function clearModal(modalId) {
-    const modal = document.getElementById(modalId);
-    const inputs = modal.querySelectorAll('input, textarea');
-    inputs.forEach(input => {
-      if (input.type !== 'checkbox') {
-        input.value = '';
-      } else {
-        input.checked = false;
-      }
-    });
-  }
-
-  // Close modal when clicking outside
   window.addEventListener('click', function(event) {
     if (event.target.classList.contains('modal')) {
       event.target.classList.remove('modal--open');
     }
   });
 
-  // Close sidebar when clicking outside
   document.addEventListener('click', function(event) {
     const sidebar = document.getElementById('sidebar');
     const menuBtn = document.querySelector('.app-header__menu-btn');

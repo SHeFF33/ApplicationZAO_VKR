@@ -18,6 +18,7 @@ public class Product {
     private String sort;
     private String tolsh;
     private Double length;
+    private Double volume;
     private int quantity;
     @Column(length = 3000)
     private String description;
@@ -37,11 +38,12 @@ public class Product {
 
     public Product() {}
 
-    public Product(String name, String sort, String tolsh, double length, int quantity, String description, boolean visible) {
+    public Product(String name, String sort, String tolsh, double length, double volume, int quantity, String description, boolean visible) {
         this.name = name;
         this.sort = sort;
         this.tolsh = tolsh;
         this.length = length;
+        this.volume = volume;
         this.quantity = quantity;
         this.description = description;
         this.visible = visible;
@@ -155,6 +157,21 @@ public class Product {
             return MAX_ITEMS_LONG;
         }
         return MAX_ITEMS_SHORT;
+    }
+    public Double getVolume() {
+        return volume;
+    }
+
+    public void setVolume(Double volume) {
+        this.volume = volume;
+    }
+
+    public List<CartItem> getCartItems() {
+        return cartItems;
+    }
+
+    public void setCartItems(List<CartItem> cartItems) {
+        this.cartItems = cartItems;
     }
 
     public boolean affectsTruckCapacity(List<Product> productsInTruck) {

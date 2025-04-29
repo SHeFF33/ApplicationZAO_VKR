@@ -568,7 +568,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}">
+                        <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}, data-schedule=${address.schedule}">
                             <td th:text="${address.postalcode}"></td>
                             <td th:text="${address.country}"></td>
                             <td th:text="${address.region}"></td>
@@ -917,12 +917,11 @@
         document.getElementById('editHome').value = row.cells[6].textContent;
         document.getElementById('editRoomnumber').value = row.cells[7].textContent || '';
 
-        // Для многострочного текста
-        const scheduleDiv = row.cells[8].querySelector('.schedule-text');
-        document.getElementById('editSchedule').value = scheduleDiv ? scheduleDiv.textContent.trim() : '';
+        const schedule = row.getAttribute('data-schedule');
+        document.getElementById('editSchedule').value = schedule || '';
 
         // Устанавливаем выбранный контакт
-        const contactName = row.cells[9].textContent;
+        const contactName = row.cells[8].textContent; // Изменено с 9 на 8, так как столбец действий теперь последний
         const contactSelect = document.getElementById('editContactSelect');
         let found = false;
         for (let i = 0; i < contactSelect.options.length; i++) {

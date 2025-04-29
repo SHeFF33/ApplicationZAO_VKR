@@ -67,6 +67,9 @@ public class ClientController {
     @Autowired
     private TchOrderRepository tchOrderRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     @GetMapping("/profile")
     public String profile(Model model, Principal principal) {
         String username = principal.getName();
@@ -335,7 +338,7 @@ public class ClientController {
             cart.addProduct(product, quantity, sum);
             cartService.save(cart);
 
-            int filledTrucksCount = 0;
+            int filledTrucksCount = 1;
             for (CartTruck truck : cart.getTrucks()) {
                 int totalItems = truck.getItems().stream()
                         .mapToInt(CartTruckItem::getQuantity)
@@ -353,8 +356,8 @@ public class ClientController {
             Map<String, Object> response = new HashMap<>();
             response.put("redirect", "/products");
 
-            if (filledTrucksCount > 0) {
-                String message = filledTrucksCount == 1 ?
+            if (filledTrucksCount > 1) {
+                String message = filledTrucksCount == 2 ?
                         "Первая грузовая машина заполнена" :
                         "Количество заполненных грузовых машин: " + filledTrucksCount;
                 response.put("message", message);
@@ -394,7 +397,7 @@ public class ClientController {
             Order order = orderOpt.get();
 
             double totalSum = order.getTchOrders().stream()
-                    .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getPrice())
+                    .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getVolume() * tchOrder.getPrice())
                     .sum();
 
             model.addAttribute("order", order);
@@ -546,7 +549,8 @@ public class ClientController {
     }
 
     @PostMapping("/cart/checkout")
-    public String checkout(@RequestParam Long addressId, @RequestParam String deliveryDateTime, Principal principal, Model model) {
+    public String checkout(@RequestParam Long addressId, @RequestParam String deliveryDateTime,
+                           @RequestParam String comment, Principal principal, Model model) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
@@ -586,7 +590,9 @@ public class ClientController {
         String formattedDeliveryDateTime = formatter.format(parsedDeliveryDateTime);
 
         double totalSum = cart.getCartItems().stream()
-                .mapToDouble(cartItem -> cartItem.getQuantity() * cartItem.getSum().getSumma())
+                .mapToDouble(cartItem -> cartItem.getProduct().getVolume() *
+                        cartItem.getQuantity() *
+                        cartItem.getSum().getSumma())
                 .sum();
 
         model.addAttribute("addressId", addressId);
@@ -595,18 +601,16 @@ public class ClientController {
         model.addAttribute("client", client);
         model.addAttribute("selectedAddress", selectedAddress);
         model.addAttribute("totalSum", totalSum);
+        model.addAttribute("comment", comment);
 
         return "confirmOrder";
     }
 
+
     @PostMapping("/cart/confirmOrder")
     @Transactional
-    public String confirmOrder(
-            @RequestParam Long addressId,
-            @RequestParam String deliveryDate,
-            Principal principal,
-            Model model
-    ) {
+    public String confirmOrder(@RequestParam Long addressId, @RequestParam String deliveryDate,
+                               @RequestParam String comment, Principal principal, Model model) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
@@ -617,10 +621,8 @@ public class ClientController {
             return "cart";
         }
 
-        // Используем существующее распределение из корзины, а не создаем новое
         List<CartTruck> cartTrucks = cart.getTrucks();
         if (cartTrucks.isEmpty()) {
-            // Если по какой-то причине распределения нет, создаем его
             cartTrucks = cart.distributeItemsToTrucks();
         }
 
@@ -639,11 +641,11 @@ public class ClientController {
         order.setDeliveryDate(parsedDeliveryDate);
         order.setOrderDate(new Date());
         order.setStatus("В обработке");
+        order.setComment(comment);
 
         List<OrderTruck> orderTrucks = new ArrayList<>();
         List<TCHOrder> tchOrders = new ArrayList<>();
 
-        // Берем данные из распределенных машин корзины
         for (CartTruck cartTruck : cartTrucks) {
             OrderTruck orderTruck = new OrderTruck(order);
             orderTrucks.add(orderTruck);
@@ -655,6 +657,7 @@ public class ClientController {
                         cartTruckItem.getQuantity(),
                         cartTruckItem.getSum().getSumma()
                 );
+                tchOrder.setVolume(cartTruckItem.getProduct().getVolume());
                 tchOrder.setTruck(orderTruck);
                 tchOrders.add(tchOrder);
             }
@@ -666,13 +669,16 @@ public class ClientController {
 
         orderService.addStatusHistory(order, "В обработке", user);
 
-        // Очищаем корзину
+        // Асинхронная отправка уведомлений администраторам
+        emailService.sendNewOrderNotification(order, client.getName());
+
         cart.getCartItems().clear();
         cart.getTrucks().clear();
         cartService.save(cart);
 
         return "redirect:/orders";
     }
+
 
     public Double getProductPrice(Product product, Long selectedPriceId) {
         if (selectedPriceId != null) {

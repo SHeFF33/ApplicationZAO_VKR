@@ -139,6 +139,9 @@
 
     .order-details__value {
       color: var(--text-primary);
+      word-wrap: break-word; /* Разрешает перенос длинных слов */
+      overflow-wrap: break-word; /* Разрешает перенос длинных слов */
+      white-space: pre-wrap; /* Сохраняет пробелы и разрывы строк */
     }
 
     /* Delivery info */
@@ -185,6 +188,41 @@
     .products-table__total {
       font-weight: 600;
       color: var(--text-primary);
+    }
+
+    /* Специфичные стили для таблицы документов */
+    .documents-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .documents-table th {
+      text-align: left;
+      padding: 0.75rem;
+      background-color: #f9f9f9;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .documents-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .documents-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .documents-table tr:hover td {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Выравнивание кнопки вправо */
+    .documents-table td:last-child {
+      text-align: right;
     }
 
     /* Truck section */
@@ -275,6 +313,10 @@
         <div class="order-details__label">Статус</div>
         <div class="order-details__value" th:text="${order.status}"></div>
       </div>
+      <div class="order-details__item">
+        <div class="order-details__label">Комментарий к заказу</div>
+        <div class="order-details__value" th:text="${order.comment}"></div>
+      </div>
     </div>
   </div>
 
@@ -287,10 +329,10 @@
       <div class="order-details__item">
         <div class="order-details__label">Адрес</div>
         <div class="order-details__value">
-                    <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' +
-                                 ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' +
-                                 ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} +
-                                 (${order.deliveryAddress.roomnumber} != null ? ', ' + ${order.deliveryAddress.roomnumber} : '')"></span>
+          <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' +
+                         ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' +
+                         ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} +
+                         (${order.deliveryAddress.roomnumber} != null ? ', ' + ${order.deliveryAddress.roomnumber} : '')"></span>
         </div>
       </div>
     </div>
@@ -327,6 +369,7 @@
         <tr>
           <th>Наименование</th>
           <th>Количество</th>
+          <th>Объем (м³)</th>
           <th>Цена</th>
           <th>Сумма</th>
         </tr>
@@ -335,8 +378,9 @@
         <tr th:each="tchOrder : ${truck.tchOrders}">
           <td th:text="${tchOrder.product.name}"></td>
           <td th:text="${tchOrder.quantity}"></td>
+          <td th:text="${tchOrder.volume}"></td>
           <td th:text="${tchOrder.price} + ' руб.'"></td>
-          <td th:text="${tchOrder.price * tchOrder.quantity} + ' руб.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.quantity * tchOrder.volume * tchOrder.price, 0, 'COMMA', 2, 'POINT')} + ' руб.'"></td>
         </tr>
         </tbody>
       </table>
@@ -356,7 +400,7 @@
     </h2>
 
     <div th:if="${order.documentations != null and !order.documentations.empty}">
-      <table class="products-table">
+      <table class="documents-table">
         <thead>
         <tr>
           <th>Тип документа</th>
@@ -382,7 +426,6 @@
       Нет прикрепленных документов
     </div>
   </div>
-
 
   <form th:action="@{/repeatOrder}" method="post" style="margin-top: 2rem; text-align: center;">
     <input type="hidden" name="orderId" th:value="${order.id}" />
