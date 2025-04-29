@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import ru.zaomurom.applicationzao.models.client.Client;
 import ru.zaomurom.applicationzao.models.client.Addresses;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -37,6 +38,9 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDocumentation> documentations;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderTruck> trucks = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderStatusHistory> statusHistory;
@@ -122,6 +126,14 @@ public class Order {
 
     public void setStatusHistory(List<OrderStatusHistory> statusHistory) {
         this.statusHistory = statusHistory;
+    }
+
+    public List<OrderTruck> getTrucks() {
+        return trucks;
+    }
+
+    public void setTrucks(List<OrderTruck> trucks) {
+        this.trucks = trucks;
     }
 
     public String getFormattedOrderDate() {

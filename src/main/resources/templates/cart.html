@@ -3,305 +3,1410 @@
 <head>
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-    <title>Корзина</title>
+    <meta name="username" th:content="${username}"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Корзина | ЗАО Муром</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
+        :root {
+            --primary: #2E7D32;
+            --primary-light: #4CAF50;
+            --primary-dark: #1B5E20;
+            --secondary: #FF5722;
+            --background: #f5f5f5;
+            --surface: #ffffff;
+            --error: #d32f2f;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border: #e0e0e0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        header {
-            background-color: #4CAF50;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .app-header {
+            background-color: var(--primary);
             color: white;
-            padding: 10px 20px;
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .header-title {
-            font-size: 24px;
+
+        .app-header__title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .header-button {
+
+        .app-header__menu-btn {
             background: none;
             border: none;
             color: white;
-            font-size: 24px;
+            font-size: 1.5rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: var(--transition);
         }
-        .header-button:hover {
-            color: #ddd;
+
+        .app-header__menu-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        .sidebar {
+
+        /* Sidebar */
+        .app-sidebar {
             height: 100%;
             width: 0;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
             top: 0;
             right: 0;
-            background-color: #111;
+            background-color: var(--surface);
             overflow-x: hidden;
-            transition: 0.5s;
-            padding-top: 60px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-lg);
         }
-        .sidebar a {
-            padding: 8px 8px 8px 32px;
-            text-decoration: none;
-            font-size: 20px;
-            color: #818181;
-            display: block;
-            transition: 0.3s;
+
+        .app-sidebar--open {
+            width: 320px;
         }
-        .sidebar a:hover {
-            color: #f1f1f1;
-        }
-        .sidebar .closebtn {
-            position: absolute;
-            top: 0;
-            right: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 1200px;
-            margin: 20px auto;
+
+        .app-sidebar__header {
+            padding: 1.5rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
         }
-        .cart-items {
-            width: 70%;
+
+        .app-sidebar__close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
         }
-        .checkout-container {
-            width: 28%;
-            padding-left: 20px;
+
+        .app-sidebar__nav {
+            padding: 1rem 0;
         }
+
+        .app-sidebar__nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .app-sidebar__nav-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .app-sidebar__nav-item i {
+            margin-right: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main container */
+        .app-container {
+            max-width: 1440px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cart section */
+        .cart-section {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .cart-section__header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .cart-section__actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .cart-section__title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .distribution-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            background-color: var(--secondary);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .distribution-btn:hover {
+            background-color: #e64a19;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .cart-empty {
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .cart-empty__icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--border);
+        }
+
+        .cart-empty__text {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cart-empty__btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary);
+            color: white;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .cart-empty__btn:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Truck block */
+        .truck-block {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .truck-block__header {
+            background-color: var(--primary-light);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        .truck-block__icon {
+            margin-right: 0.75rem;
+        }
+
+        /* Product item */
         .product-item {
             display: flex;
-            align-items: flex-start;
-            border-bottom: 1px solid #ddd;
-            padding: 20px 0;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            transition: var(--transition);
         }
-        .product-image {
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-item:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .product-item__image {
             width: 120px;
             height: 120px;
             object-fit: cover;
-            border-radius: 5px;
-            margin-right: 20px;
+            border-radius: var(--radius-sm);
+            margin-right: 1.5rem;
+            flex-shrink: 0;
         }
-        .product-details {
+
+        .product-item__details {
             flex-grow: 1;
         }
-        .product-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
+
+        .product-item__name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
         }
-        .product-description {
-            color: #555;
-            font-size: 16px;
-            margin-bottom: 10px;
+
+        .product-item__description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
         }
-        .product-price {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 10px;
+
+        .product-item__spec {
+            display: inline-block;
+            margin-right: 1rem;
+            font-size: 0.875rem;
         }
+
+        .product-item__price {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin: 0.75rem 0;
+        }
+
+        .product-item__actions {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
         .quantity-control {
             display: flex;
             align-items: center;
-            gap: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
         }
-        .quantity-button {
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        .quantity-button:hover {
-            background-color: #e0e0e0;
-        }
-        .delete-button {
-            background-color: #ff4d4d;
+
+        .quantity-control__btn {
+            width: 36px;
+            height: 36px;
+            background-color: var(--background);
             border: none;
-            color: white;
-            padding: 10px 20px;
+            font-size: 1rem;
             cursor: pointer;
-            border-radius: 5px;
-            margin-left: 15px;
-            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
         }
-        .delete-button:hover {
-            background-color: #ff1a1a;
+
+        .quantity-control__btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
         }
-        .button {
-            display: inline-block;
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
+
+        .quantity-control__value {
+            width: 50px;
             text-align: center;
-            text-decoration: none;
-            color: #fff;
-            background-color: #4CAF50;
+            font-weight: 500;
+        }
+
+        .product-item__delete-btn {
+            margin-left: 1rem;
+            background: none;
             border: none;
-            border-radius: 15px;
-            margin: 5px;
-            transition: background-color 0.3s;
+            color: var(--error);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
         }
-        .button:hover {
-            background-color: #45a049;
+
+        .product-item__delete-btn:hover {
+            background-color: rgba(211, 47, 47, 0.1);
         }
-        .checkout-container h2 {
-            margin-bottom: 20px;
-            font-size: 24px;
+
+        .product-item__delete-icon {
+            margin-right: 0.25rem;
         }
-        .checkout-container label {
+
+        /* Checkout section */
+        .checkout-section {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            position: sticky;
+            top: 1rem;
+        }
+
+        .checkout-section__title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
             display: block;
-            margin: 10px 0 5px;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
         }
-        .checkout-container select,
-        .checkout-container input {
-            padding: 10px;
-            font-size: 18px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            margin-bottom: 10px;
+
+        .form-control {
             width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 1.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1;
+            color: white;
+            background-color: var(--primary);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn--secondary {
+            background-color: var(--secondary);
+        }
+
+        .btn--secondary:hover {
+            background-color: #e64a19;
+        }
+
+        .btn i {
+            margin-right: 0.5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+
+            .product-item {
+                flex-direction: column;
+            }
+
+            .product-item__image {
+                width: 100%;
+                height: auto;
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+
+            .cart-section__header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Manual distribution modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .distribution-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .distribution-source {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .distribution-target {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .distribution-source h4, .distribution-target h4 {
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .product-list, .trucks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-height: 200px;
+        }
+
+        .trucks-container {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .distribution-item {
+            background-color: var(--background);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            cursor: move;
+            user-select: none;
+        }
+
+        .distribution-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .distribution-item-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .distribution-item__name {
+            font-weight: 500;
+        }
+
+        .distribution-item__actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .distribution-item__quantity {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quantity-input {
+            width: 50px;
+            text-align: center;
+            padding: 0.25rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .split-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .split-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .split-btn i {
+            font-size: 14px;
+        }
+
+        .truck {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .truck-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .truck-header i {
+            cursor: pointer;
+            color: var(--error);
+        }
+
+        .truck-products {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-height: 50px;
+            padding: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            border-radius: var(--radius-sm);
+        }
+
+        .btn--small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Drag and drop styles */
+        .dragging {
+            opacity: 0.5;
+            transform: scale(1.02);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .dropzone {
+            border: 2px dashed var(--primary-light);
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        .dropzone-hover {
+            border-color: var(--primary) !important;
+            background-color: rgba(76, 175, 80, 0.2) !important;
+        }
+
+        .loading, .empty, .error {
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .loading i, .empty i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .error {
+            color: var(--error);
+        }
+
+        .auto-distribute-btn {
+            margin-top: 1rem;
+            background-color: var(--primary-light);
+        }
+
+        .auto-distribute-btn:hover {
+            background-color: var(--primary);
+        }
+
+        .trucks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
 <body>
-<header>
-    <div class="header-title">ЗАО Муром</div>
-    <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+    <div class="app-header__title">
+        ЗАО Муром
+    </div>
+    <button class="app-header__menu-btn" onclick="openNav()">
+        <i class="fas fa-bars"></i>
+    </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-    <a th:href="@{/profile}">Личный кабинет</a>
-    <a th:href="@{/products}">Номенклатура</a>
-    <a href="/cart">Корзина</a>
-    <a th:href="@{/orders(username=${username})}">Заказы</a>
-    <a href="/documents">Документация</a>
-    <a th:href="@{/messenger}">Мои обращения</a>
-    <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+    <div class="app-sidebar__header">
+        <h3>Меню</h3>
+        <button class="app-sidebar__close-btn" onclick="closeNav()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <nav class="app-sidebar__nav">
+        <a th:href="@{/profile}" class="app-sidebar__nav-item">
+            <i class="fas fa-user"></i>
+            Личный кабинет
+        </a>
+        <a th:href="@{/products}" class="app-sidebar__nav-item">
+            <i class="fas fa-box-open"></i>
+            Номенклатура
+        </a>
+        <a href="/cart" class="app-sidebar__nav-item">
+            <i class="fas fa-shopping-cart"></i>
+            Корзина
+        </a>
+        <a th:href="@{/orders(username=${username})}" class="app-sidebar__nav-item">
+            <i class="fas fa-clipboard-list"></i>
+            Заказы
+        </a>
+        <a href="/documents" class="app-sidebar__nav-item">
+            <i class="fas fa-file-alt"></i>
+            Документация
+        </a>
+        <a th:href="@{/messenger}" class="app-sidebar__nav-item">
+            <i class="fas fa-comments"></i>
+            Мои обращения
+        </a>
+        <a th:href="@{/login}" class="app-sidebar__nav-item">
+            <i class="fas fa-sign-out-alt"></i>
+            Выйти
+        </a>
+    </nav>
+</aside>
 
-<div class="container">
-    <div class="cart-items">
-        <div th:if="${cart == null or cart.cartItems.isEmpty()}">
-            <p>Ваша корзина пуста.</p>
+<main class="app-container">
+    <section class="cart-section">
+        <div class="cart-section__header">
+            <h1 class="cart-section__title">Ваша корзина</h1>
+            <div class="cart-section__actions" th:if="${cart != null and !cart.cartItems.isEmpty()}">
+                <button id="manualDistributionBtn" class="distribution-btn">
+                    <i class="fas fa-edit"></i> Редактирование
+                </button>
+                <button id="clearCartBtn" class="distribution-btn">
+                    <i class="fas fa-trash"></i> Очистить корзину
+                </button>
+            </div>
         </div>
+
+        <div th:if="${cart == null or cart.cartItems.isEmpty()}">
+            <div class="cart-empty">
+                <div class="cart-empty__icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h3 class="cart-empty__text">Ваша корзина пуста</h3>
+                <a th:href="@{/products}" class="cart-empty__btn">
+                    <i class="fas fa-arrow-left"></i> Перейти к товарам
+                </a>
+            </div>
+        </div>
+
         <div th:if="${cart != null and !cart.cartItems.isEmpty()}">
-            <div class="product-item" th:each="entry : ${cart.cartItems}">
-                <img th:src="@{/product/image/{id}(id=${entry.product.id})}" class="product-image" alt="Product Image">
-                <div class="product-details">
-                    <div class="product-name" th:text="${entry.product.name}"></div>
-                    <div class="product-description">
-                        <span>Сорт: </span><span th:text="${entry.product.sort}"></span><br>
-                        <span>Толщина: </span><span th:text="${entry.product.tolsh}"></span>
-                    </div>
-                    <div class="product-price">Цена: <span th:text="${entry.sum.summa}"></span></div>
+            <div th:each="truck, stat : ${cart.trucks}" class="truck-block animate-fade">
+                <div class="truck-block__header">
+                    <i class="fas fa-truck truck-block__icon"></i>
+                    <span th:text="'Машина' + ' ' +  ${stat.count}"></span>
+                </div>
 
-                    <div class="quantity-control" th:data-item-id="${entry.id}">
-                        <button class="quantity-button" onclick="decreaseQuantity(this)">-</button>
-                        <span class="quantity-value" th:data-quantity="${entry.quantity}" th:text="${entry.quantity}"></span>
-                        <button class="quantity-button" onclick="increaseQuantity(this)">+</button>
-                        <button class="delete-button" onclick="deleteItem(this)">Удалить</button>
-                    </div>
+                <div class="product-item" th:each="item : ${truck.items}">
+                    <img th:src="@{/product/image/{id}(id=${item.product.images[0].id})}" class="product-item__image" alt="Product Image">
+                    <div class="product-item__details">
+                        <h3 class="product-item__name" th:text="${item.product.name}"></h3>
+                        <div class="product-item__description">
+                            <span class="product-item__spec">Сорт: <span th:text="${item.product.sort}"></span></span>
+                            <span class="product-item__spec">Толщина: <span th:text="${item.product.tolsh}"></span></span>
+                            <span class="product-item__spec">Длина: <span th:text="${item.product.length}"></span></span>
+                        </div>
+                        <div class="product-item__price">
+                            <span th:text="${item.sum.summa} + ' ₽'"></span>
+                        </div>
 
+                        <div class="product-item__actions">
+                            <div class="quantity-control" th:data-item-id="${item.product.id}" th:data-sum-id="${item.sum.id}">
+                                <button class="quantity-control__btn" onclick="decreaseQuantity(this)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="quantity-control__value" th:text="${item.quantity}"></span>
+                                <button class="quantity-control__btn" onclick="increaseQuantity(this)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="checkout-container">
-        <h2>Оформление заказа</h2>
+    </section>
+
+    <aside class="checkout-section">
+        <h2 class="checkout-section__title">
+            <i class="fas fa-receipt"></i> Оформление заказа
+        </h2>
+
         <form th:action="@{/cart/checkout}" method="post">
-            <label for="addressId">Адрес доставки:</label>
-            <select id="addressId" name="addressId">
-                <option th:each="address : ${client.addresses}" th:value="${address.id}" th:text="${address.postalcode + ', ' + address.country + ', ' + address.region + ', '  + address.rayon + ', '  + address.city + ', ' + address.street + ', ' + address.home + ', ' + address.roomnumber}"></option>
-            </select>
-            <br>
-            <label for="deliveryDateTime">Дата доставки:</label>
-            <input type="datetime-local" id="deliveryDateTime" name="deliveryDateTime" th:attr="min=${minDateTime}" required />
-            <br>
-            <button type="submit" class="button">Оформить заказ</button>
+            <div class="form-group">
+                <label for="addressId" class="form-label">Адрес доставки</label>
+                <select id="addressId" name="addressId" class="form-control">
+                    <option th:each="address : ${client.addresses}"
+                            th:value="${address.id}"
+                            th:text="${address.postalcode + ', ' + address.country + ', ' + address.region + ', ' + address.city + ', ' + address.street + ', ' + address.home + (address.roomnumber != null ? ', ' + address.roomnumber : '')}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="deliveryDateTime" class="form-label">Дата доставки</label>
+                <input type="datetime-local" id="deliveryDateTime" name="deliveryDateTime"
+                       th:attr="min=${minDateTime}" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn">
+                <i class="fas fa-check-circle"></i> Оформить заказ
+            </button>
         </form>
+    </aside>
+</main>
+
+<!-- Модальное окно ручного распределения -->
+<div id="manualDistributionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Ручное распределение товаров</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="distribution-container">
+                <div class="distribution-source">
+                    <h4>Доступные товары</h4>
+                    <div class="product-list dropzone" id="allProducts">
+                        <!-- Товары будут добавлены через JS -->
+                    </div>
+                </div>
+
+                <!-- Правая часть - машины -->
+                <div class="distribution-target">
+                    <div class="trucks-header">
+                        <h4>Машины</h4>
+                        <button id="autoDistributeBtn" class="btn btn--small auto-distribute-btn">
+                            <i class="fas fa-magic"></i> Автораспределение
+                        </button>
+                    </div>
+                    <div class="trucks-container" id="trucksContainer">
+                        <!-- Машины будут добавлены через JS -->
+                    </div>
+                    <button id="addTruckBtn" class="btn btn--small">
+                        <i class="fas fa-plus"></i> Добавить машину
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="saveDistributionBtn" class="btn">
+                <i class="fas fa-save"></i> Сохранить распределение
+            </button>
+            <button id="cancelDistributionBtn" class="btn btn--secondary">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+        </div>
     </div>
 </div>
+
 <script>
+    // Обработчики сайдбара
     function openNav() {
-        document.getElementById("mySidebar").style.width = "250px";
+        document.getElementById("sidebar").classList.add("app-sidebar--open");
     }
 
     function closeNav() {
-        document.getElementById("mySidebar").style.width = "0";
-    }
-    function decreaseQuantity(button) {
-        const itemId = button.parentElement.getAttribute('data-item-id');
-        fetch(`/cart/decreaseQuantity/${itemId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                const quantitySpan = button.parentElement.querySelector('.quantity-value');
-                quantitySpan.textContent = data.quantity;
-                quantitySpan.setAttribute('data-quantity', data.quantity);
-            })
-            .catch(error => console.error('Error:', error));
+        document.getElementById("sidebar").classList.remove("app-sidebar--open");
     }
 
-    function increaseQuantity(button) {
-        const itemId = button.parentElement.getAttribute('data-item-id');
-        fetch(`/cart/increaseQuantity/${itemId}`, {
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.querySelector('.app-header__menu-btn');
+
+        if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+            closeNav();
+        }
+    });
+    document.getElementById('clearCartBtn').addEventListener('click', function() {
+        if (confirm('Вы уверены, что хотите полностью очистить корзину? Это действие нельзя отменить.')) {
+            fetch('/cart/clear', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        throw new Error('Ошибка при очистке корзины');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message);
+                });
+        }
+    });
+
+    function updateQuantity(button, delta) {
+        const container = button.closest('.quantity-control');
+        const productId = container.getAttribute('data-item-id');
+        const sumId = container.getAttribute('data-sum-id');
+        const username = document.querySelector('meta[name="username"]').content;
+
+        fetch(`/cart/updateQuantity?productId=${productId}&sumId=${sumId}&delta=${delta}&username=${username}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                const quantitySpan = button.parentElement.querySelector('.quantity-value');
-                quantitySpan.textContent = data.quantity;
-                quantitySpan.setAttribute('data-quantity', data.quantity);
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    function deleteItem(button) {
-        const itemId = button.parentElement.getAttribute('data-item-id');
-        fetch(`/cart/deleteItem/${itemId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content,
+                'Content-Type': 'application/json'
             }
         })
             .then(response => {
                 if (response.ok) {
-                    const productItem = button.closest('.product-item');
-                    if (productItem) {
-                        productItem.remove();
-                    }
+                    location.reload();
                 } else {
-                    console.error('Error deleting item:', response.statusText);
+                    throw new Error('Ошибка при обновлении количества');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message);
+            });
     }
 
-</script>
+    function increaseQuantity(button) {
+        updateQuantity(button, 1);
+    }
 
+    function decreaseQuantity(button) {
+        updateQuantity(button, -1);
+    }
+
+    let draggedItem = null;
+
+    document.getElementById('manualDistributionBtn').addEventListener('click', function() {
+        const modal = document.getElementById('manualDistributionModal');
+        modal.style.display = 'block';
+        loadManualDistributionData();
+    });
+
+    document.querySelector('.modal-close').addEventListener('click', closeManualDistributionModal);
+    document.getElementById('cancelDistributionBtn').addEventListener('click', closeManualDistributionModal);
+
+    function closeManualDistributionModal() {
+        document.getElementById('manualDistributionModal').style.display = 'none';
+    }
+
+    async function loadManualDistributionData() {
+        const allProductsContainer = document.getElementById('allProducts');
+        const trucksContainer = document.getElementById('trucksContainer');
+
+        allProductsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i>Загрузка данных...</div>';
+        trucksContainer.innerHTML = '';
+
+        try {
+            const response = await fetch('/cart/manualDistribution', {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки данных');
+            }
+
+            const cartData = await response.json();
+
+            allProductsContainer.innerHTML = '';
+            if (cartData.trucks && cartData.trucks.length > 0) {
+                cartData.trucks.forEach((truck, index) => {
+                    const truckElement = createTruckElement(truck, index + 1);
+                    trucksContainer.appendChild(truckElement);
+                });
+            } else {
+                const truckElement = createTruckElement({items: []}, 1);
+                trucksContainer.appendChild(truckElement);
+            }
+            initDragAndDrop();
+        } catch (error) {
+            console.error('Error:', error);
+            allProductsContainer.innerHTML = `<div class="error">${error.message}</div>`;
+        }
+    }
+
+    function createProductElement(item, isAvailableProduct = false) {
+        const element = document.createElement('div');
+        element.className = 'distribution-item';
+        element.dataset.productId = item.productId;
+        element.dataset.sumId = item.sumId;
+        element.dataset.length = item.length;
+        element.draggable = true;
+
+        const splitButton = isAvailableProduct ?
+            `<button class="split-btn" title="Разделить товар">
+            <i class="fas fa-cut"></i>
+        </button>` : '';
+
+        element.innerHTML = `
+        <div class="distribution-item-content">
+            <span class="distribution-item__name">${item.productName}</span>
+            <div class="distribution-item__actions">
+                <div class="distribution-item__quantity">
+                    <input type="number" class="quantity-input" value="${item.quantity}" min="1">
+                    <span>шт.</span>
+                </div>
+                ${splitButton}
+            </div>
+        </div>
+    `;
+
+        if (isAvailableProduct) {
+            element.querySelector('.split-btn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                splitProductItem(element);
+            });
+        }
+
+        return element;
+    }
+
+
+    function splitProductItem(itemElement) {
+        const quantityInput = itemElement.querySelector('.quantity-input');
+        const currentQuantity = parseInt(quantityInput.value);
+
+        if (currentQuantity <= 1) {
+            alert('Нельзя разделить товар с количеством 1');
+            return;
+        }
+
+        const half = Math.ceil(currentQuantity / 2);
+        const remainder = currentQuantity - half;
+
+        quantityInput.value = half;
+
+        const newItem = itemElement.cloneNode(true);
+        newItem.querySelector('.quantity-input').value = remainder;
+
+        itemElement.parentNode.insertBefore(newItem, itemElement.nextSibling);
+    }
+
+    function createTruckElement(truck, truckNumber) {
+        const element = document.createElement('div');
+        element.className = 'truck';
+        element.dataset.truckId = truck.id || Date.now();
+
+        element.innerHTML = `
+        <div class="truck-header">
+            <span>Машина ${truckNumber}</span>
+            <i class="fas fa-trash delete-truck"></i>
+        </div>
+        <div class="truck-products dropzone" data-truck-id="${truck.id || Date.now()}">
+            ${truck.items ? truck.items.map(item => `
+                <div class="distribution-item"
+                     data-product-id="${item.productId}"
+                     data-sum-id="${item.sumId}"
+                     data-length="${item.length}"
+                     draggable="true">
+                    <div class="distribution-item-content">
+                        <span class="distribution-item__name">${item.productName}</span>
+                        <div class="distribution-item__quantity">
+                            <input type="number" class="quantity-input" value="${item.quantity}" min="1">
+                            <span>шт.</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : ''}
+        </div>
+    `;
+
+        element.querySelector('.delete-truck').addEventListener('click', function() {
+            if (confirm('Удалить эту машину? Товары будут перенесены в доступные.')) {
+                const items = element.querySelectorAll('.distribution-item');
+                const allProducts = document.getElementById('allProducts');
+
+                items.forEach(item => {
+                    const productData = {
+                        productId: item.dataset.productId,
+                        sumId: item.dataset.sumId,
+                        length: item.dataset.length,
+                        productName: item.querySelector('.distribution-item__name').textContent,
+                        quantity: parseInt(item.querySelector('.quantity-input').value)
+                    };
+                    const newItem = createProductElement(productData, true);
+                    allProducts.appendChild(newItem);
+                });
+
+                element.remove();
+                updateTruckNumbers();
+            }
+        });
+
+        return element;
+    }
+
+    document.getElementById('addTruckBtn').addEventListener('click', function() {
+        const trucksContainer = document.getElementById('trucksContainer');
+        const truckElement = createTruckElement({items: []}, trucksContainer.children.length + 1);
+        trucksContainer.appendChild(truckElement);
+    });
+
+    function updateTruckNumbers() {
+        const trucks = document.querySelectorAll('.truck');
+        trucks.forEach((truck, index) => {
+            truck.querySelector('.truck-header span').textContent = `Машина ${index + 1}`;
+        });
+    }
+
+    function initDragAndDrop() {
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('distribution-item')) {
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+            }
+        });
+
+        document.addEventListener('dragend', function(e) {
+            if (e.target.classList.contains('distribution-item')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        document.addEventListener('dragover', function(e) {
+            const dropzone = getDropzone(e.target);
+            if (dropzone) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            }
+        });
+
+        document.addEventListener('dragenter', function(e) {
+            const dropzone = getDropzone(e.target);
+            if (dropzone) {
+                e.preventDefault();
+                dropzone.classList.add('dropzone-hover');
+            }
+        });
+
+        document.addEventListener('dragleave', function(e) {
+            const dropzone = getDropzone(e.target);
+            if (dropzone) {
+                dropzone.classList.remove('dropzone-hover');
+            }
+        });
+
+        document.addEventListener('drop', function(e) {
+            const dropzone = getDropzone(e.target);
+
+            if (dropzone && draggedItem) {
+                e.preventDefault();
+                dropzone.classList.remove('dropzone-hover');
+
+                if (draggedItem.parentNode !== dropzone) {
+
+                    if (dropzone.id === 'allProducts') {
+                        const productData = {
+                            productId: draggedItem.dataset.productId,
+                            sumId: draggedItem.dataset.sumId,
+                            length: draggedItem.dataset.length,
+                            productName: draggedItem.querySelector('.distribution-item__name').textContent,
+                            quantity: parseInt(draggedItem.querySelector('.quantity-input').value)
+                        };
+
+                        const newItem = createProductElement(productData, true);
+
+                        dropzone.appendChild(newItem);
+
+                        draggedItem.remove();
+                    }
+
+                    else if (dropzone.classList.contains('truck-products')) {
+                        if (!validateTruckCapacity(dropzone, draggedItem)) {
+                            return;
+                        }
+
+                        const existingItem = findExistingItem(dropzone, draggedItem);
+
+                        if (existingItem) {
+                            updateItemQuantity(existingItem, draggedItem);
+                        } else {
+                            const productData = {
+                                productId: draggedItem.dataset.productId,
+                                sumId: draggedItem.dataset.sumId,
+                                length: draggedItem.dataset.length,
+                                productName: draggedItem.querySelector('.distribution-item__name').textContent,
+                                quantity: parseInt(draggedItem.querySelector('.quantity-input').value)
+                            };
+
+                            const newItem = createProductElement(productData, false);
+
+                            // Добавляем в машину
+                            dropzone.appendChild(newItem);
+
+                            // Удаляем оригинальный элемент
+                            draggedItem.remove();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Обработчик для кнопки разделения
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.split-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    }
+
+    function getDropzone(element) {
+        return element.classList.contains('dropzone')
+            ? element
+            : element.closest('.dropzone');
+    }
+
+    function validateTruckCapacity(dropzone, draggedItem) {
+        const truckProducts = dropzone.querySelectorAll('.distribution-item');
+        const totalItems = Array.from(truckProducts).reduce((sum, item) => {
+            return sum + parseInt(item.querySelector('.quantity-input').value);
+        }, 0);
+
+        const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
+        const productLength = parseFloat(draggedItem.dataset.length);
+
+        // Определяем максимальное количество для этой машины
+        const longProductsCount = Array.from(truckProducts).filter(item => {
+            return parseFloat(item.dataset.length) === 2.8;
+        }).length;
+
+        let maxItems;
+        if (productLength === 2.8 || longProductsCount >= 6) {
+            maxItems = 13; // MAX_ITEMS_LONG
+        } else {
+            maxItems = 16; // MAX_ITEMS_SHORT
+        }
+
+        if (totalItems + draggedQuantity > maxItems) {
+            alert(`В машину можно добавить не более ${maxItems} пачек.`);
+            return false;
+        }
+        return true;
+    }
+
+    function findExistingItem(dropzone, draggedItem) {
+        return dropzone.querySelector(
+            `[data-product-id="${draggedItem.dataset.productId}"][data-sum-id="${draggedItem.dataset.sumId}"]`
+        );
+    }
+
+    function updateItemQuantity(existingItem, draggedItem) {
+        const existingQuantity = parseInt(existingItem.querySelector('.quantity-input').value);
+        const newQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
+        existingItem.querySelector('.quantity-input').value = existingQuantity + newQuantity;
+        draggedItem.remove();
+    }
+
+    // Автораспределение
+    document.getElementById('autoDistributeBtn').addEventListener('click', async function() {
+        if (confirm('Выполнить автораспределение товаров? Текущее распределение будет сброшено.')) {
+            try {
+                const token = document.querySelector('meta[name="_csrf"]').content;
+                const header = document.querySelector('meta[name="_csrf_header"]').content;
+
+                const response = await fetch('/cart/autoDistribute', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка автораспределения');
+                }
+
+                // Перезагружаем данные
+                loadManualDistributionData();
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
+    });
+
+    // Сохранение распределения
+    document.getElementById('saveDistributionBtn').addEventListener('click', async function() {
+        const trucks = [];
+        const truckElements = document.querySelectorAll('.truck');
+
+        truckElements.forEach(truckElement => {
+            const truck = {
+                id: truckElement.dataset.truckId,
+                items: []
+            };
+
+            truckElement.querySelectorAll('.distribution-item').forEach(item => {
+                truck.items.push({
+                    productId: item.dataset.productId,
+                    sumId: item.dataset.sumId,
+                    quantity: parseInt(item.querySelector('.quantity-input').value),
+                    productName: item.querySelector('.distribution-item__name').textContent,
+                    length: parseFloat(item.dataset.length)
+                });
+            });
+
+            trucks.push(truck);
+        });
+
+        try {
+            const token = document.querySelector('meta[name="_csrf"]').content;
+            const header = document.querySelector('meta[name="_csrf_header"]').content;
+
+            const response = await fetch('/cart/saveManualDistribution', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [header]: token
+                },
+                body: JSON.stringify({trucks})
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            closeManualDistributionModal();
+            location.reload();
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Ошибка сохранения: ' + error.message);
+        }
+    });
+
+</script>
 </body>
 </html>

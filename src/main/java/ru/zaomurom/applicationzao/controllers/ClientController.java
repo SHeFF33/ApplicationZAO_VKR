@@ -1,16 +1,22 @@
 package ru.zaomurom.applicationzao.controllers;
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import ru.zaomurom.applicationzao.dto.CartDistributionDTO;
+import ru.zaomurom.applicationzao.dto.ManualDistributionRequest;
 import ru.zaomurom.applicationzao.models.DocumentZAO;
 import ru.zaomurom.applicationzao.models.client.*;
 import ru.zaomurom.applicationzao.models.order.Order;
 import ru.zaomurom.applicationzao.models.order.OrderDocumentation;
+import ru.zaomurom.applicationzao.models.order.OrderTruck;
 import ru.zaomurom.applicationzao.models.order.TCHOrder;
 import ru.zaomurom.applicationzao.models.product.*;
+import ru.zaomurom.applicationzao.repositories.TchOrderRepository;
 import ru.zaomurom.applicationzao.services.*;
 
 import java.nio.charset.StandardCharsets;
@@ -56,10 +62,10 @@ public class ClientController {
     private OrderDocumentationService orderDocumentationService;
 
     @Autowired
-    private DocumentTypeService documentTypeService;
+    private DocumentZAOService documentZAOService;
 
     @Autowired
-    private DocumentZAOService documentZAOService;
+    private TchOrderRepository tchOrderRepository;
 
     @GetMapping("/profile")
     public String profile(Model model, Principal principal) {
@@ -79,17 +85,17 @@ public class ClientController {
             @RequestParam int postalcode,
             @RequestParam String country,
             @RequestParam String region,
-            @RequestParam String rayon,
+            @RequestParam(required = false) String rayon,
             @RequestParam String city,
             @RequestParam String street,
             @RequestParam String home,
-            @RequestParam String roomnumber,
+            @RequestParam(required = false) String roomnumber,
+            @RequestParam(required = false) String schedule,
             Principal principal
     ) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
-
         Addresses address = new Addresses();
         address.setPostalcode(postalcode);
         address.setCountry(country);
@@ -99,10 +105,9 @@ public class ClientController {
         address.setStreet(street);
         address.setHome(home);
         address.setRoomnumber(roomnumber);
+        address.setSchedule(schedule);
         address.setClient(client);
-
         addressesService.save(address);
-
         return "redirect:/profile";
     }
 
@@ -112,13 +117,10 @@ public class ClientController {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
-
         for (Map<String, String> addressData : addresses) {
             try {
                 Long id = Long.parseLong(addressData.get("id"));
                 Addresses address = addressesService.findById(id).orElseThrow(() -> new RuntimeException("Адрес не найден"));
-
-                // Обновляем все поля, если они присутствуют в запросе
                 if (addressData.containsKey("postalcode")) {
                     address.setPostalcode(Integer.parseInt(addressData.get("postalcode")));
                 }
@@ -143,8 +145,9 @@ public class ClientController {
                 if (addressData.containsKey("roomnumber")) {
                     address.setRoomnumber(addressData.get("roomnumber"));
                 }
-
-                // Обновление контакта
+                if (addressData.containsKey("schedule")) {
+                    address.setSchedule(addressData.get("schedule"));
+                }
                 if (addressData.containsKey("contactId")) {
                     String contactIdStr = addressData.get("contactId");
                     if (contactIdStr != null && !contactIdStr.isEmpty()) {
@@ -155,14 +158,12 @@ public class ClientController {
                         address.setContact(null);
                     }
                 }
-
                 addressesService.save(address);
             } catch (Exception e) {
                 System.err.println("Ошибка при обработке адреса: " + e.getMessage());
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
             }
         }
-
         return ResponseEntity.ok("Адреса обновлены");
     }
 
@@ -178,7 +179,6 @@ public class ClientController {
                 Long id = Long.parseLong(contactData.get("id"));
                 Contacts contact = contactsService.findById(id).orElseThrow(() -> new RuntimeException("Контакт не найден"));
 
-                // Обновляем все поля, если они присутствуют в запросе
                 if (contactData.containsKey("contactType")) {
                     contact.setContactType(contactData.get("contactType"));
                 }
@@ -232,7 +232,7 @@ public class ClientController {
         User user = userService.findByUsername(username);
         Client client = user.getClient();
 
-        List<Product> products = productService.findAll();
+        List<Product> products = productService.findAllVisible();
         model.addAttribute("products", products);
         model.addAttribute("username", username);
         Long selectedPriceId = client.getSelectedPrice() != null ? client.getSelectedPrice().getId() : null;
@@ -262,11 +262,11 @@ public class ClientController {
     public String searchProducts(@RequestParam(required = false) String query, Model model, Principal principal) {
         List<Product> products;
         if (query != null && !query.isEmpty()) {
-            products = productService.findAll().stream()
+            products = productService.findAllVisible().stream()
                     .filter(product -> product.getName().toLowerCase().contains(query.toLowerCase()))
                     .collect(Collectors.toList());
         } else {
-            products = productService.findAll();
+            products = productService.findAllVisible();
         }
 
         String username = principal.getName();
@@ -313,7 +313,13 @@ public class ClientController {
     }
 
     @PostMapping("/product/addToCart")
-    public String ProductaddToCart(@RequestParam Long productId, @RequestParam Long sumId, @RequestParam String username, @RequestParam int quantity) {
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> ProductaddToCart(
+            @RequestParam Long productId,
+            @RequestParam Long sumId,
+            @RequestParam String username,
+            @RequestParam int quantity) {
+
         User user = userService.findByUsername(username);
         Client client = user.getClient();
         Cart cart = cartService.findByClient(client);
@@ -321,13 +327,43 @@ public class ClientController {
             cart = new Cart();
             cart.setClient(client);
         }
+
         Product product = productService.findById(productId).orElse(null);
         Sum sum = productService.findSumById(sumId).orElse(null);
+
         if (product != null && sum != null) {
             cart.addProduct(product, quantity, sum);
             cartService.save(cart);
+
+            int filledTrucksCount = 0;
+            for (CartTruck truck : cart.getTrucks()) {
+                int totalItems = truck.getItems().stream()
+                        .mapToInt(CartTruckItem::getQuantity)
+                        .sum();
+
+                int maxCapacity = truck.getItems().stream()
+                        .anyMatch(item -> item.getProduct().getLength() == 2.8) ?
+                        Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
+
+                if (totalItems >= maxCapacity) {
+                    filledTrucksCount++;
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("redirect", "/products");
+
+            if (filledTrucksCount > 0) {
+                String message = filledTrucksCount == 1 ?
+                        "Первая грузовая машина заполнена" :
+                        "Количество заполненных грузовых машин: " + filledTrucksCount;
+                response.put("message", message);
+            }
+
+            return ResponseEntity.ok(response);
         }
-        return "redirect:/products";
+
+        return ResponseEntity.badRequest().build();
     }
 
     @GetMapping("/orders")
@@ -352,8 +388,11 @@ public class ClientController {
 
     @GetMapping("/orderDetails")
     public String orderDetails(Model model, @RequestParam Long id) {
-        Order order = orderService.findById(id).orElse(null);
-        if (order != null) {
+        Optional<Order> orderOpt = orderService.findWithTrucksAndTchOrdersById(id);
+
+        if (orderOpt.isPresent()) {
+            Order order = orderOpt.get();
+
             double totalSum = order.getTchOrders().stream()
                     .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getPrice())
                     .sum();
@@ -365,6 +404,7 @@ public class ClientController {
             return "error";
         }
     }
+
 
     @GetMapping("/orders/{orderId}/document/{docId}")
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long docId) {
@@ -454,7 +494,8 @@ public class ClientController {
     }
 
     @PostMapping("/addToCart")
-    public String addToCart(@RequestParam Long productId, @RequestParam Long sumId, @RequestParam String username, @RequestParam int quantity) {
+    public String addToCart(@RequestParam Long productId, @RequestParam Long sumId,
+                            @RequestParam String username, @RequestParam int quantity) {
         User user = userService.findByUsername(username);
         Client client = user.getClient();
         Cart cart = cartService.findByClient(client);
@@ -468,6 +509,8 @@ public class ClientController {
             cart.addProduct(product, quantity, sum);
             product.setQuantity(product.getQuantity() - quantity);
             productService.save(product);
+
+            // Сохраняем корзину (внутри save будет распределение)
             cartService.save(cart);
         }
         return "redirect:/cart";
@@ -557,6 +600,7 @@ public class ClientController {
     }
 
     @PostMapping("/cart/confirmOrder")
+    @Transactional
     public String confirmOrder(
             @RequestParam Long addressId,
             @RequestParam String deliveryDate,
@@ -573,10 +617,11 @@ public class ClientController {
             return "cart";
         }
 
-        List<Addresses> addresses = addressesService.findByClientId(client.getId());
-        if (addresses == null || addresses.isEmpty()) {
-            model.addAttribute("error", "Нет адресов доставки. Пожалуйста, добавьте адрес перед оформлением заказа.");
-            return "cart";
+        // Используем существующее распределение из корзины, а не создаем новое
+        List<CartTruck> cartTrucks = cart.getTrucks();
+        if (cartTrucks.isEmpty()) {
+            // Если по какой-то причине распределения нет, создаем его
+            cartTrucks = cart.distributeItemsToTrucks();
         }
 
         SimpleDateFormat dateTimeFormat = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
@@ -584,35 +629,49 @@ public class ClientController {
         try {
             parsedDeliveryDate = dateTimeFormat.parse(deliveryDate);
         } catch (ParseException e) {
-            model.addAttribute("error", "Неверный формат даты и времени. Используйте формат HH:mm:ss dd.MM.yyyy.");
+            model.addAttribute("error", "Неверный формат даты и времени.");
             return "cart";
         }
 
         Order order = new Order();
         order.setClient(client);
-        order.setDeliveryAddress(addresses.stream().filter(a -> a.getId().equals(addressId)).findFirst().orElse(null));
+        order.setDeliveryAddress(addressesService.findById(addressId).orElse(null));
         order.setDeliveryDate(parsedDeliveryDate);
         order.setOrderDate(new Date());
         order.setStatus("В обработке");
 
-        List<TCHOrder> tchOrders = cart.getCartItems().stream().map(cartItem -> {
-            TCHOrder tchOrder = new TCHOrder();
-            tchOrder.setOrder(order);
-            tchOrder.setProduct(cartItem.getProduct());
-            tchOrder.setQuantity(cartItem.getQuantity());
-            tchOrder.setPrice(cartItem.getSum().getSumma());
-            return tchOrder;
-        }).toList();
+        List<OrderTruck> orderTrucks = new ArrayList<>();
+        List<TCHOrder> tchOrders = new ArrayList<>();
+
+        // Берем данные из распределенных машин корзины
+        for (CartTruck cartTruck : cartTrucks) {
+            OrderTruck orderTruck = new OrderTruck(order);
+            orderTrucks.add(orderTruck);
+
+            for (CartTruckItem cartTruckItem : cartTruck.getItems()) {
+                TCHOrder tchOrder = new TCHOrder(
+                        order,
+                        cartTruckItem.getProduct(),
+                        cartTruckItem.getQuantity(),
+                        cartTruckItem.getSum().getSumma()
+                );
+                tchOrder.setTruck(orderTruck);
+                tchOrders.add(tchOrder);
+            }
+        }
 
         order.setTchOrders(tchOrders);
+        order.setTrucks(orderTrucks);
         orderService.save(order);
 
         orderService.addStatusHistory(order, "В обработке", user);
 
+        // Очищаем корзину
         cart.getCartItems().clear();
+        cart.getTrucks().clear();
         cartService.save(cart);
 
-        return "redirect:/products";
+        return "redirect:/orders";
     }
 
     public Double getProductPrice(Product product, Long selectedPriceId) {
@@ -683,35 +742,132 @@ public class ClientController {
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
+    @PostMapping("/repeatOrder")
+    public String repeatOrder(@RequestParam Long orderId, Principal principal) {
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Order order = orderService.findById(orderId).orElseThrow(() -> new RuntimeException("Заказ не найден"));
+        Cart cart = cartService.findByClient(client);
+        if (cart == null) {
+            cart = new Cart(client);
+            cartService.save(cart);
+        }
+        for (TCHOrder tchOrder : order.getTchOrders()) {
+            Product product = tchOrder.getProduct();
+            Sum sum = product.getSums().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Для товара не установлена цена"));
 
-    @DeleteMapping("/cart/deleteItem/{itemId}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId, Principal principal) {
+            cart.addProduct(product, tchOrder.getQuantity(), sum);
+        }
+
+        cartService.save(cart);
+
+        return "redirect:/cart";
+    }
+
+    @PostMapping("/cart/updateQuantity")
+    public ResponseEntity<Void> updateQuantity(
+            @RequestParam Long productId,
+            @RequestParam Long sumId,
+            @RequestParam int delta,
+            @RequestParam String username) {
+
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Cart cart = cartService.findByClient(client);
+
+        if (cart != null) {
+            CartItem item = cart.getCartItems().stream()
+                    .filter(i -> i.getProduct().getId().equals(productId) && i.getSum().getId().equals(sumId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (item != null) {
+                int newQuantity = item.getQuantity() + delta;
+                if (newQuantity > 0) {
+                    item.setQuantity(newQuantity);
+                    cartService.saveCartItem(item);
+                } else {
+                    cart.getCartItems().remove(item);
+                    cartService.deleteCartItem(item);
+                }
+
+                cart.distributeItemsToTrucks();
+                cartService.save(cart);
+                return ResponseEntity.ok().build();
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+
+    @GetMapping("/cart/manualDistribution")
+    @ResponseBody
+    public ResponseEntity<CartDistributionDTO> getCartForManualDistribution(Principal principal) {
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Cart cart = cartService.findByClient(client);
+
+        if (cart == null || cart.getCartItems().isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        CartDistributionDTO dto = cartService.prepareCartDistributionDTO(cart);
+        return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/cart/saveManualDistribution")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> saveManualDistribution(@RequestBody ManualDistributionRequest request, Principal principal) {
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Cart cart = cartService.findByClient(client);
+
+        if (cart == null) {
+            return ResponseEntity.badRequest().body("Корзина пуста");
+        }
+
+        cartService.applyManualDistribution(cart, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cart/autoDistribute")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> autoDistribute(Principal principal) {
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Cart cart = cartService.findByClient(client);
+
+        if (cart == null) {
+            return ResponseEntity.badRequest().body("Корзина пуста");
+        }
+
+        cartService.autoDistribute(cart);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cart/clear")
+    @Transactional
+    public ResponseEntity<?> clearCart(Principal principal) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
         Cart cart = cartService.findByClient(client);
 
         if (cart != null) {
-            CartItem cartItem = cart.getCartItems().stream()
-                    .filter(item -> item.getId().equals(itemId))
-                    .findFirst()
-                    .orElse(null);
-
-            if (cartItem != null) {
-                System.out.println("Deleting cart item: " + cartItem.getId());
-                cartService.deleteCartItem(cartItem);
-                cart.getCartItems().remove(cartItem);
-                cartService.save(cart);
-                System.out.println("Cart item deleted successfully.");
-                return ResponseEntity.ok().build();
-            } else {
-                System.out.println("Cart item not found.");
-            }
-        } else {
-            System.out.println("Cart not found.");
+            cart.getCartItems().clear();
+            cart.getTrucks().clear();
+            cartService.save(cart);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-    }
 
+        return ResponseEntity.ok().build();
+    }
 }
 

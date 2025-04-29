@@ -1,155 +1,380 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Подтверждение заказа</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Подтверждение заказа | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --error: #d32f2f;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --radius-md: 8px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
-      width: 100%;
-      position: fixed;
-      top: 0;
-      left: 0;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .container {
-      background-color: white;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 80%;
-      max-width: 800px;
+
+    .app-header__logo {
+      height: 32px;
     }
-    h2, h3 {
-      margin-bottom: 20px;
+
+    /* Main container - УВЕЛИЧИЛИ МАКСИМАЛЬНУЮ ШИРИНУ */
+    .app-container {
+      max-width: 1400px; /* Было 1200px */
+      margin: 2rem auto;
+      padding: 0 2rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
     }
-    table {
+
+    /* Order section - УБРАЛИ ОГРАНИЧЕНИЕ ПО ШИРИНЕ */
+    .order-section {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      width: 100%; /* Добавили 100% ширины */
+    }
+
+    .order-section__header {
+      margin-bottom: 2rem;
+    }
+
+    .order-section__title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .order-info {
+      margin-bottom: 2rem;
+    }
+
+    .order-info__title {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: var(--primary-dark);
+    }
+
+    .order-info__content {
+      padding: 1.5rem; /* Увеличили padding */
+      background-color: #f9f9f9;
+      border-radius: var(--radius-md);
+      font-size: 1.05rem; /* Увеличили размер шрифта */
+    }
+
+    /* Trucks table - УЛУЧШИЛИ ТАБЛИЦУ */
+    .truck-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
+      margin-bottom: 1.5rem;
+      font-size: 1.05rem; /* Увеличили размер шрифта */
     }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
+
+    .truck-table th,
+    .truck-table td {
+      padding: 1.25rem 1.5rem; /* Увеличили padding */
       text-align: left;
+      border-bottom: 1px solid var(--border);
     }
-    th {
-      background-color: #f2f2f2;
+
+    .truck-table th {
+      background-color: #f9f9f9;
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 1.1rem; /* Увеличили размер шрифта */
     }
+
+    .truck-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .truck-table tr:hover td {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Total sum */
     .total-sum {
-      margin-top: 20px;
-      font-size: 1.2em;
+      text-align: right;
+      padding: 2rem; /* Увеличили padding */
+      background-color: #f9f9f9;
+      border-radius: var(--radius-md);
+      margin-top: 2rem;
+      font-size: 1.15rem; /* Увеличили размер шрифта */
     }
-    .button-container {
-      margin-top: 20px;
+
+    .total-sum__title {
+      font-size: 1.5rem; /* Увеличили размер шрифта */
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .total-sum__amount {
+      font-size: 1.75rem; /* Увеличили размер шрифта */
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Buttons */
+    .button-group {
       display: flex;
-      gap: 10px;
+      gap: 1.5rem; /* Увеличили gap */
+      justify-content: flex-end;
+      margin-top: 2rem;
     }
-    .button {
-      padding: 10px 20px;
-      font-size: 16px;
-      color: #fff;
-      background-color: #4CAF50;
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 2rem; /* Увеличили padding */
+      font-family: inherit;
+      font-size: 1.1rem; /* Увеличили размер шрифта */
+      font-weight: 500;
+      line-height: 1;
+      color: white;
+      background-color: var(--primary);
       border: none;
-      border-radius: 5px;
+      border-radius: var(--radius-md);
       cursor: pointer;
+      transition: var(--transition);
       text-decoration: none;
+      min-width: 200px; /* Добавили минимальную ширину */
     }
-    .button:hover {
-      background-color: #45a049;
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-sm);
     }
-    .cancel-button {
-      background-color: #f44336;
+
+    .btn--outline {
+      background-color: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
     }
-    .cancel-button:hover {
-      background-color: #e57373;
+
+    .btn--outline:hover {
+      background-color: rgba(46, 125, 50, 0.1);
     }
+
+    .btn i {
+      margin-right: 0.75rem; /* Увеличили отступ */
+      font-size: 1.2rem; /* Увеличили размер иконки */
+    }
+
+    /* Notification */
     .notification {
-      display: none;
       position: fixed;
-      top: 60px;
+      top: 1rem;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #333;
-      color: #fff;
-      padding: 15px 25px;
-      border-radius: 5px;
+      background-color: var(--primary);
+      color: white;
+      padding: 1.25rem 2.5rem; /* Увеличили padding */
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
       z-index: 1000;
-      font-size: 16px;
+      display: none;
+      align-items: center;
+      gap: 1rem; /* Увеличили gap */
+      font-size: 1.1rem; /* Увеличили размер шрифта */
+    }
+
+    .notification--show {
+      display: flex;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .notification i {
+      font-size: 1.5rem; /* Увеличили размер иконки */
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .app-container {
+        padding: 0 1.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 0 1rem;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        min-width: auto;
+      }
+
+      .truck-table {
+        display: block;
+        overflow-x: auto;
+        font-size: 1rem;
+      }
+
+      .truck-table th,
+      .truck-table td {
+        padding: 1rem;
+      }
+
+      .order-info__content,
+      .total-sum {
+        padding: 1.25rem;
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
+<header class="app-header">
+  <div class="app-header__title">
+    ЗАО Муром
+  </div>
 </header>
 
-<div class="container">
-  <h2>Подтверждение заказа</h2>
-  <form th:action="@{/cart/confirmOrder}" method="post">
-    <input type="hidden" name="addressId" th:value="${addressId}" />
-    <input type="hidden" name="deliveryDate" th:value="${deliveryDate}" />
-
-    <h3>Адрес доставки:</h3>
-    <p th:text="${selectedAddress.postalcode + ', ' + selectedAddress.country + ', ' + selectedAddress.region + ', '  + selectedAddress.rayon + ', '  + selectedAddress.city + ', ' + selectedAddress.street + ', ' + selectedAddress.home + ', ' + selectedAddress.roomnumber}"></p>
-
-    <h3>Дата доставки:</h3>
-    <p th:text="${deliveryDate}"></p>
-
-    <h3>Товары в заказе:</h3>
-    <table>
-      <tr>
-        <th>Название продукта</th>
-        <th>Количество</th>
-        <th>Цена</th>
-      </tr>
-      <tr th:each="entry : ${cart.cartItems}">
-        <td th:text="${entry.product.name}"></td>
-        <td th:text="${entry.quantity}"></td>
-        <td th:text="${entry.sum.summa}"></td>
-      </tr>
-    </table>
-
-    <div class="total-sum">
-      <h3>Итоговая сумма: <span th:text="${totalSum}"></span></h3>
+<main class="app-container">
+  <div class="order-section">
+    <div class="order-section__header">
+      <h1 class="order-section__title">Подтверждение заказа</h1>
     </div>
 
-    <div class="button-container">
-      <button type="submit" class="button">Подтвердить заказ</button>
-      <a href="/cart" class="button cancel-button">Отмена</a>
-    </div>
-  </form>
-</div>
+    <form th:action="@{/cart/confirmOrder}" method="post">
+      <input type="hidden" name="addressId" th:value="${addressId}" />
+      <input type="hidden" name="deliveryDate" th:value="${deliveryDate}" />
 
-<div id="confirmationNotification" class="notification">
-  Ваш заказ находится в обработке.
-</div>
+      <div class="order-info">
+        <h3 class="order-info__title">Адрес доставки:</h3>
+        <div class="order-info__content">
+          <p th:text="${selectedAddress.postalcode + ', ' + selectedAddress.country + ', ' + selectedAddress.region + ', '  + selectedAddress.rayon + ', '  + selectedAddress.city + ', ' + selectedAddress.street + ', ' + selectedAddress.home + (selectedAddress.roomnumber != null ? ', ' + selectedAddress.roomnumber : '')}"></p>
+        </div>
+      </div>
+
+      <div class="order-info">
+        <h3 class="order-info__title">Дата доставки:</h3>
+        <div class="order-info__content">
+          <p th:text="${deliveryDate}"></p>
+        </div>
+      </div>
+
+      <div class="order-info">
+        <h3 class="order-info__title">Товары в заказе:</h3>
+
+        <div th:each="truck, stat : ${cart.trucks}" style="margin-bottom: 2.5rem;">
+          <h4 style="margin-bottom: 1.25rem; font-size: 1.3rem;">Машина <span th:text="${stat.count}"></span></h4>
+          <table class="truck-table">
+            <thead>
+            <tr>
+              <th>Название продукта</th>
+              <th>Количество</th>
+              <th>Цена</th>
+              <th>Сумма</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${truck.items}">
+              <td th:text="${item.product.name}"></td>
+              <td th:text="${item.quantity}"></td>
+              <td th:text="${item.sum.summa} + ' руб.'"></td>
+              <td th:text="${item.sum.summa * item.quantity} + ' руб.'"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="total-sum">
+        <h3 class="total-sum__title">Итоговая сумма:</h3>
+        <p class="total-sum__amount" th:text="${totalSum} + ' руб.'"></p>
+      </div>
+
+      <div class="button-group">
+        <a href="/cart" class="btn btn--outline">
+          <i class="fas fa-arrow-left"></i> Назад
+        </a>
+        <button type="submit" class="btn">
+          <i class="fas fa-check-circle"></i> Подтвердить заказ
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div id="notification" class="notification">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Ваш заказ находится в обработке...</span>
+  </div>
+</main>
 
 <script>
-  var notification = document.getElementById("confirmationNotification");
-  document.querySelector('form').onsubmit = function(event) {
-    notification.style.display = "block";
-    event.preventDefault();
-    setTimeout(function() {
-      event.target.submit();
-    }, 2000);
-  }
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const notification = document.getElementById('notification');
+    notification.classList.add('notification--show');
+
+    // Показываем уведомление на 3 секунды перед перенаправлением
+    setTimeout(() => {
+      notification.classList.remove('notification--show');
+    }, 3000);
+  });
 </script>
 </body>
 </html>

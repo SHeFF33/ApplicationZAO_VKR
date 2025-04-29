@@ -3,14 +3,18 @@ package ru.zaomurom.applicationzao.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.zaomurom.applicationzao.models.client.Addresses;
 import ru.zaomurom.applicationzao.models.client.Client;
 import ru.zaomurom.applicationzao.models.client.User;
 import ru.zaomurom.applicationzao.models.order.Order;
 import ru.zaomurom.applicationzao.models.order.OrderStatusHistory;
+import ru.zaomurom.applicationzao.models.order.OrderTruck;
 import ru.zaomurom.applicationzao.models.order.TCHOrder;
-import ru.zaomurom.applicationzao.repositories.OrderRepository;
-import ru.zaomurom.applicationzao.repositories.OrderStatusHistoryRepository;
-import ru.zaomurom.applicationzao.repositories.TchOrderRepository;
+import ru.zaomurom.applicationzao.models.product.Cart;
+import ru.zaomurom.applicationzao.models.product.CartTruck;
+import ru.zaomurom.applicationzao.models.product.CartTruckItem;
+import ru.zaomurom.applicationzao.repositories.*;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -25,6 +29,9 @@ public class OrderService {
     private TchOrderRepository tchOrderRepository;
 
     @Autowired
+    private OrderTruckRepository orderTruckRepository;
+
+    @Autowired
     private OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     public List<Order> findAll() {
@@ -35,8 +42,24 @@ public class OrderService {
         return orderRepository.findById(id);
     }
 
+    @Transactional
     public Order save(Order order) {
-        return orderRepository.save(order);
+        // Сохраняем Order
+        Order savedOrder = orderRepository.save(order);
+
+        // Сохраняем OrderTruck
+        for (OrderTruck truck : order.getTrucks()) {
+            truck.setOrder(savedOrder);
+            orderTruckRepository.save(truck);
+        }
+
+        // Сохраняем TCHOrder
+        for (TCHOrder tchOrder : order.getTchOrders()) {
+            tchOrder.setOrder(savedOrder);
+            tchOrderRepository.save(tchOrder);
+        }
+
+        return savedOrder;
     }
 
     public List<OrderStatusHistory> getStatusHistory(Order order) {
@@ -100,5 +123,17 @@ public class OrderService {
 
     public void saveTchOrder(TCHOrder tchOrder) {
         tchOrderRepository.save(tchOrder);
+    }
+
+    public Optional<Order> findWithTrucksAndTchOrdersById(Long id) {
+        Optional<Order> orderWithTrucks = orderRepository.findWithTrucksById(id);
+        Optional<Order> orderWithTchOrders = orderRepository.findWithTchOrdersById(id);
+
+        if (orderWithTrucks.isPresent() && orderWithTchOrders.isPresent()) {
+            Order order = orderWithTrucks.get();
+            order.setTchOrders(orderWithTchOrders.get().getTchOrders());
+            return Optional.of(order);
+        }
+        return Optional.empty();
     }
 }

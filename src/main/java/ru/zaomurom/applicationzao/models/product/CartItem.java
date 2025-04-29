@@ -8,12 +8,12 @@
         private Long id;
 
         @ManyToOne
-        @JoinColumn(name = "cart_id")
-        private Cart cart;
+        @JoinColumn(name = "product_id", nullable = false)
+        private Product product;
 
         @ManyToOne
-        @JoinColumn(name = "product_id")
-        private Product product;
+        @JoinColumn(name = "cart_id", nullable = false)
+        private Cart cart;
 
         private int quantity;
 

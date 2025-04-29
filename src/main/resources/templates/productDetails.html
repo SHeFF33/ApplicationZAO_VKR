@@ -1,249 +1,775 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Карточка товара</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${product.name} + ' | ЗАО Муром'"></title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .header-button {
+
+    .app-header__logo {
+      height: 32px;
+    }
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
+
+    .app-sidebar--open {
+      width: 320px;
+    }
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-sidebar__close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
       text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+      transition: var(--transition);
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
     }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
     }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
+
+    /* Main container */
+    .app-container {
       max-width: 1200px;
-      border-top: 1px solid #ddd;
-      border-left: 1px solid #ddd;
-      border-right: 1px solid #ddd;
+      margin: 2rem auto;
+      padding: 0 2rem;
     }
-    .image-slider {
+
+    /* Product section */
+    .product-section {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .product-section__header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .product-section__title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Product gallery */
+    .product-gallery {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .product-gallery {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .product-gallery__main {
       position: relative;
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
       height: 400px;
+      background-color: #f9f9f9;
+      border-radius: var(--radius-md);
+      overflow: hidden;
     }
-    .image-slider img {
+
+    .product-gallery__image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    .product-gallery__image--active {
+      display: block;
+    }
+
+    .product-gallery__nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .product-gallery__thumb {
+      height: 80px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .product-gallery__thumb:hover {
+      border-color: var(--primary-light);
+    }
+
+    .product-gallery__thumb--active {
+      border-color: var(--primary);
+    }
+
+    .product-gallery__thumb img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: none;
     }
-    .image-slider img.active {
-      display: block;
-    }
-    .image-slider .prev, .image-slider .next {
-      position: absolute;
-      top: 50%;
-      width: auto;
-      padding: 30px;
-      color: white;
-      font-weight: bold;
-      font-size: 18px;
-      transition: 0.6s ease;
-      border-radius: 0 3px 3px 0;
-      user-select: none;
-      cursor: pointer;
-    }
-    .image-slider .next {
-      right: 0;
-      border-radius: 3px 0 0 3px;
-    }
-    .image-slider .prev:hover, .image-slider .next:hover {
-      background-color: rgba(0, 0, 0, 0.8);
-    }
-    .product-details {
+
+    .product-gallery__no-image {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+    }
+
+    .product-gallery__controls {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
       justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      pointer-events: none;
     }
-    .product-details div {
-      width: 48%;
-    }
-    .documentation-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    .documentation-table th, .documentation-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    .documentation-table th {
-      background-color: #f2f2f2;
-    }
-    .add-to-cart-form {
-      margin-top: 20px;
-    }
-    .add-to-cart-form input[type="number"] {
-      width: 50px;
-      padding: 5px;
-      margin-right: 10px;
-    }
-    .add-to-cart-form button {
-      padding: 10px 20px;
-      background-color: #4CAF50;
+
+    .product-gallery__control {
+      pointer-events: auto;
+      width: 40px;
+      height: 40px;
+      background-color: rgba(0, 0, 0, 0.5);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      transition: var(--transition);
     }
-    .add-to-cart-form button:hover {
-      background-color: #45a049;
+
+    .product-gallery__control:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    /* Product details */
+    .product-details {
+      padding: 1.5rem;
+    }
+
+    .product-details__description {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .product-details__specs {
+      margin-bottom: 1.5rem;
+    }
+
+    .product-details__spec {
+      display: flex;
+      margin-bottom: 0.5rem;
+    }
+
+    .product-details__spec-label {
+      font-weight: 500;
+      width: 150px;
+      color: var(--text-primary);
+    }
+
+    .product-details__spec-value {
+      color: var(--text-secondary);
+    }
+
+    .product-details__price {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin: 1.5rem 0;
+    }
+
+    /* Documents */
+    .product-documents {
+      margin-top: 2rem;
+    }
+
+    .product-documents__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .product-documents__table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+    }
+
+    .product-documents__table th,
+    .product-documents__table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .product-documents__table th {
+      font-weight: 500;
+      color: var(--text-primary);
+      background-color: #f9f9f9;
+    }
+
+    .product-documents__link {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .product-documents__link:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+
+    /* Add to cart form */
+    .add-to-cart-form {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .quantity-control__btn {
+      width: 36px;
+      height: 36px;
+      background-color: var(--background);
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .quantity-control__btn:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .quantity-control__input {
+      width: 50px;
+      text-align: center;
+      border: none;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 0.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1;
+      color: white;
+      background-color: var(--primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .product-gallery__main {
+        height: 300px;
+      }
+
+      .add-to-cart-form {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .notification {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      max-width: 80%;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeInDown 0.4s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+
+    .notification.hide {
+      animation: fadeOutUp 0.4s ease-in;
+    }
+
+    @keyframes fadeOutUp {
+      from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      to {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+      }
+    }
+
+    .notification i {
+      margin-right: 0.5rem;
     }
   </style>
-  <script>
-    let currentIndex = 0;
-
-    function showImage(index) {
-      const images = document.querySelectorAll('.image-slider img');
-      images.forEach((img, i) => {
-        img.classList.toggle('active', i === index);
-      });
-    }
-
-    function nextImage() {
-      const images = document.querySelectorAll('.image-slider img');
-      currentIndex = (currentIndex + 1) % images.length;
-      showImage(currentIndex);
-    }
-
-    function prevImage() {
-      const images = document.querySelectorAll('.image-slider img');
-      currentIndex = (currentIndex - 1 + images.length) % images.length;
-      showImage(currentIndex);
-    }
-
-    setInterval(nextImage, 10000);
-
-    document.addEventListener('DOMContentLoaded', () => {
-      showImage(currentIndex);
-      document.querySelector('.image-slider .next').addEventListener('click', nextImage);
-      document.querySelector('.image-slider .prev').addEventListener('click', prevImage);
-    });
-
-    function openNav() {
-      document.getElementById("mySidebar").style.width = "250px";
-    }
-
-    function closeNav() {
-      document.getElementById("mySidebar").style.width = "0";
-    }
-  </script>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">
+    ЗАО Муром
+  </div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/profile}">Личный кабинет</a>
-  <a th:href="@{/products}">Товары</a>
-  <a href="/cart">Корзина</a>
-  <a th:href="@{/orders(username=${username})}">Заказы</a>
-  <a href="/documents">Документация</a>
-  <a th:href="@{/messenger}">Мои обращения</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/profile}" class="app-sidebar__nav-item">
+      <i class="fas fa-user"></i>
+      Личный кабинет
+    </a>
+    <a th:href="@{/products}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Товары
+    </a>
+    <a href="/cart" class="app-sidebar__nav-item">
+      <i class="fas fa-shopping-cart"></i>
+      Корзина
+    </a>
+    <a th:href="@{/orders(username=${username})}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a href="/documents" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Мои обращения
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
-<div class="container">
-  <h2 th:text="${product.name}"></h2>
-  <div class="image-slider">
-    <img th:each="image : ${product.images}" th:src="@{/product/image/{id}(id=${image.id})}" class="product-image" alt="Product Image"/>
-    <a class="prev">&#10094;</a>
-    <a class="next">&#10095;</a>
-  </div>
-  <div class="product-details">
-    <div>
-      <p th:text="${product.description}"></p>
-      <p>Сорт: <span th:text="${product.sort}"></span></p>
-      <p>Толщина: <span th:text="${product.tolsh}"></span></p>
-      <p>Количество: <span th:text="${product.quantity}"></span></p>
-      <p>
-        Цена:
-        <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} != null" th:text="${@clientController.getProductPrice(product, selectedPriceId)}"></span>
-        <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} == null">Цена не найдена</span>
-      </p>
+<main class="app-container">
+  <div class="product-section">
+    <div class="product-section__header">
+      <h1 class="product-section__title" th:text="${product.name}"></h1>
     </div>
-    <div>
-      <h3>Документы:</h3>
-      <table class="documentation-table">
-        <tr>
-          <th>Описание</th>
-          <th></th>
-        </tr>
-        <tr th:each="doc : ${product.documentations}">
-          <td th:text="${doc.description}"></td>
-          <td><a th:href="@{/products/{id}/document/{docId}(id=${product.id}, docId=${doc.id})}" th:text="Скачать"></a></td>
-        </tr>
-      </table>
+
+    <div class="product-gallery">
+      <div class="product-gallery__main">
+        <div th:if="${#lists.isEmpty(product.images)}" class="product-gallery__no-image">
+          <i class="fas fa-image fa-3x"></i>
+          <p>Фото не добавлено</p>
+        </div>
+
+        <img th:each="image, iter : ${product.images}"
+             th:src="@{/product/image/{id}(id=${image.id})}"
+             class="product-gallery__image"
+             th:classappend="${iter.index == 0} ? 'product-gallery__image--active'"
+             th:attr="data-index=${iter.index}"
+             alt="Product Image">
+
+        <div class="product-gallery__controls">
+          <button class="product-gallery__control" onclick="prevImage()">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button class="product-gallery__control" onclick="nextImage()">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="product-details">
+        <p class="product-details__description" th:text="${product.description}"></p>
+
+        <div class="product-details__specs">
+          <div class="product-details__spec">
+            <span class="product-details__spec-label">Сорт:</span>
+            <span class="product-details__spec-value" th:text="${product.sort}"></span>
+          </div>
+          <div class="product-details__spec">
+            <span class="product-details__spec-label">Толщина:</span>
+            <span class="product-details__spec-value" th:text="${product.tolsh}"></span>
+          </div>
+          <div class="product-details__spec">
+            <span class="product-details__spec-label">Количество листов в пачке:</span>
+            <span class="product-details__spec-value" th:text="${product.quantity}"></span>
+          </div>
+        </div>
+
+        <div class="product-details__price">
+                    <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} != null"
+                          th:text="${@clientController.getProductPrice(product, selectedPriceId)} + ' руб.'"></span>
+          <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} == null">Цена не найдена</span>
+        </div>
+
+        <form th:action="@{/product/addToCart}" method="post" class="add-to-cart-form" id="addToCartForm">
+          <input type="hidden" name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <input type="hidden" name="productId" th:value="${product.id}" />
+          <input type="hidden" name="sumId" th:value="${@clientController.getProductPriceId(product, selectedPriceId)}" />
+          <input type="hidden" name="username" th:value="${username}" />
+
+          <div class="quantity-control">
+            <button type="button" class="quantity-control__btn" onclick="decreaseQuantity()">
+              <i class="fas fa-minus"></i>
+            </button>
+            <input type="number" name="quantity" value="1" min="1" class="quantity-control__input" id="quantityInput">
+            <button type="button" class="quantity-control__btn" onclick="increaseQuantity()">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+
+          <button type="submit" class="btn">
+            <i class="fas fa-cart-plus"></i> Добавить в корзину
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(product.images)}" class="product-gallery__nav">
+      <div th:each="image, iter : ${product.images}"
+           class="product-gallery__thumb"
+           th:classappend="${iter.index == 0} ? 'product-gallery__thumb--active'"
+           th:attr="data-index=${iter.index}, onclick='showImage(${iter.index})'">
+        <img th:src="@{/product/image/{id}(id=${image.id})}" alt="Product Thumbnail">
+      </div>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(product.documentations)}" class="product-documents">
+      <div class="product-details">
+        <h3 class="product-documents__title">Документы</h3>
+        <table class="product-documents__table">
+          <thead>
+          <tr>
+            <th>Описание</th>
+            <th>Действие</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="doc : ${product.documentations}">
+            <td th:text="${doc.description}"></td>
+            <td>
+              <a th:href="@{/products/{id}/document/{docId}(id=${product.id}, docId=${doc.id})}"
+                 class="product-documents__link">
+                <i class="fas fa-download"></i> Скачать
+              </a>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-  <form th:action="@{/product/addToCart}" method="post" class="add-to-cart-form">
-    <input type="hidden" name="productId" th:value="${product.id}" />
-    <input type="hidden" name="sumId" th:value="${@clientController.getProductPriceId(product, selectedPriceId)}" />
-    <input type="hidden" name="username" th:value="${username}" />
-    <input type="number" name="quantity" value="1" min="1" />
-    <button type="submit">Добавить в корзину</button>
-  </form>
-</div>
+
+  <div id="notification" class="notification" style="display: none;">
+    <i class="fas fa-truck"></i>
+    <span id="notification-text"></span>
+  </div>
+</main>
+
+<script>
+  function showNotification(message) {
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notification-text');
+
+    notificationText.textContent = message;
+    notification.style.display = 'flex';
+
+    setTimeout(() => {
+      notification.classList.add('hide');
+      setTimeout(() => {
+        notification.style.display = 'none';
+        notification.classList.remove('hide');
+      }, 400);
+    }, 2600);
+  }
+
+  document.getElementById('addToCartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+            .then(response => response.json())
+            .then(data => {
+              if (data.message) {
+                showNotification(data.message);
+              }
+
+              setTimeout(() => {
+                window.location.href = data.redirect;
+              }, data.message ? 3000 : 0);
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              window.location.href = '/products';
+            });
+  });
+
+  let currentImageIndex = 0;
+  const images = document.querySelectorAll('.product-gallery__image');
+  const thumbs = document.querySelectorAll('.product-gallery__thumb');
+
+  function showImage(index) {
+    // Hide all images
+    images.forEach(img => img.classList.remove('product-gallery__image--active'));
+    thumbs.forEach(thumb => thumb.classList.remove('product-gallery__thumb--active'));
+
+    // Show selected image
+    images[index].classList.add('product-gallery__image--active');
+    if (thumbs[index]) {
+      thumbs[index].classList.add('product-gallery__thumb--active');
+    }
+
+    currentImageIndex = index;
+  }
+
+  function nextImage() {
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    showImage(nextIndex);
+  }
+
+  function prevImage() {
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    showImage(prevIndex);
+  }
+
+  function increaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    input.value = parseInt(input.value) + 1;
+  }
+
+  function decreaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    if (parseInt(input.value) > 1) {
+      input.value = parseInt(input.value) - 1;
+    }
+  }
+
+  function openNav() {
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
+  }
+
+  function closeNav() {
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
+  }
+
+  // Auto-rotate images every 10 seconds
+  let slideInterval = setInterval(nextImage, 10000);
+
+  // Pause auto-rotation when hovering over gallery
+  document.querySelector('.product-gallery__main').addEventListener('mouseenter', () => {
+    clearInterval(slideInterval);
+  });
+
+  // Resume auto-rotation when leaving gallery
+  document.querySelector('.product-gallery__main').addEventListener('mouseleave', () => {
+    slideInterval = setInterval(nextImage, 10000);
+  });
+
+  // Close sidebar when clicking outside
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
+</script>
 </body>
 </html>

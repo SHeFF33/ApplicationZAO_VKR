@@ -20,4 +20,12 @@ public class DocumentationService {
     public Optional<Documentation> findById(Long id) {
         return documentationRepository.findById(id);
     }
+    public void deleteById(Long id) {
+        documentationRepository.deleteById(id);
+    }
+
+    public void deleteByProductId(Long productId) {
+        documentationRepository.deleteByProductId(productId);
+    }
+
 }

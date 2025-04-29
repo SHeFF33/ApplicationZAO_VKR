@@ -36,8 +36,14 @@ public class AdminMessengerController {
     public String messenger(Model model, Principal principal) {
         User admin = getUserFromPrincipal(principal);
         model.addAttribute("openConversations", messengerService.getOpenConversations());
-        model.addAttribute("myConversations", messengerService.getAdminConversations(admin));
+        model.addAttribute("myConversations", messengerService.getAllAdminConversations(admin)); // Изменено на все обращения
         return "admin/messenger";
+    }
+
+    @PostMapping("/reopen/{conversationId}")
+    public String reopenConversation(@PathVariable Long conversationId) {
+        messengerService.reopenConversation(conversationId);
+        return "redirect:/admin/messenger/" + conversationId;
     }
 
     @GetMapping("/{id}")

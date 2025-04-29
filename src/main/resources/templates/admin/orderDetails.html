@@ -1,290 +1,724 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Детали заказа</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Детали заказа | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
-      text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+
+    .app-sidebar--open {
+      width: 320px;
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
     }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
-    }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
-      max-width: 1200px;
-    }
-    h2 {
-      border-bottom: 2px solid #4CAF50;
-      padding-bottom: 10px;
-    }
-    h3 {
-      margin-top: 20px;
-    }
-    .success-message {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #4CAF50;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    tr:hover {
-      background-color: #ddd;
-    }
-    select, input[type="file"] {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
+
+    .app-sidebar__close-btn {
+      background: none;
       border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
+      font-size: 1.5rem;
       cursor: pointer;
+      color: var(--text-secondary);
     }
-    button:hover {
-      background-color: #45a049;
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
     }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
+    }
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main container */
+    .app-container {
+      max-width: 1440px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Card */
+    .card {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Order info */
+    .order-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-item__label {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .info-item__value {
+      font-size: 1rem;
+    }
+
+    /* Status */
     .status-form {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
-    .document-table {
-      margin-top: 20px;
+
+    .status-form__label {
+      font-weight: 500;
+      color: var(--text-secondary);
     }
-    .document-table th, .document-table td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
+
+    .form-control {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      transition: var(--transition);
     }
-    .document-table th {
-      background-color: #4CAF50;
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn--primary {
+      background-color: var(--primary);
       color: white;
     }
-    .document-table tr:nth-child(even) {
-      background-color: #f2f2f2;
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
     }
-    .document-table tr:hover {
-      background-color: #ddd;
+
+    .btn--secondary {
+      background-color: var(--secondary);
+      color: white;
     }
-    .upload-form {
+
+    .btn--secondary:hover {
+      background-color: #E64A19;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    /* Truck block */
+    .truck-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      background-color: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .truck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .truck-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .discount-form {
       display: flex;
       align-items: center;
-      gap: 10px;
     }
-    .delete-btn {
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
+
+    .discount-input {
+      width: 60px;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-right: 0.5rem;
+      text-align: center;
     }
-    .delete-btn:hover {
-      background-color: #cc0000;
+
+    /* Table */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
     }
+
+    .table th {
+      background-color: #f5f5f5;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .truck-total {
+      text-align: right;
+      font-weight: 600;
+      font-size: 1.125rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Documents */
+    .document-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+
+    .document-table th {
+      background-color: #f5f5f5;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .document-table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .document-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .document-link {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .document-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Actions */
     .actions-form {
       display: flex;
-      gap: 10px;
+      gap: 1rem;
       align-items: center;
-      margin-top: 20px;
+      margin-top: 2rem;
     }
-    .history-btn {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      text-decoration: none;
-      cursor: pointer;
+
+    .upload-form {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-grow: 1;
     }
-    .history-btn:hover {
-      background-color: #45a049;
+
+    .file-input {
+      flex-grow: 1;
+    }
+
+    /* Message */
+    .message {
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .message--success {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .message i {
+      margin-right: 0.5rem;
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .status-badge--processing {
+      background-color: #FFF3E0;
+      color: #E65100;
+    }
+
+    .status-badge--accepted {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .status-badge--paid-working {
+      background-color: #E3F2FD;
+      color: #1565C0;
+    }
+
+    .status-badge--paid-waiting {
+      background-color: #E0F7FA;
+      color: #00838F;
+    }
+
+    .status-badge--loading {
+      background-color: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .status-badge--transit {
+      background-color: #E8EAF6;
+      color: #303F9F;
+    }
+
+    .status-badge--closed {
+      background-color: #F5F5F5;
+      color: #424242;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .order-info {
+        grid-template-columns: 1fr;
+      }
+
+      .actions-form {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .upload-form {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">ЗАО Муром</div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/dashboard}">Панель администратора</a>
-  <a th:href="@{/admin/products}">Товары</a>
-  <a th:href="@{/admin/clients}">Клиенты</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
-
-<div class="container">
-  <h2>Детали заказа</h2>
-  <div th:if="${successMessage}" class="success-message">
-    <p th:text="${successMessage}"></p>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
-  <h3>Заказ от <span th:text="${order.formattedOrderDate}"></span></h3>
-  <p><strong>Клиент:</strong> <span th:text="${order.client.name}"></span></p>
-  <p><strong>Адрес доставки:</strong> <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span></p>
-  <p><strong>Дата доставки:</strong> <span th:text="${order.formattedDeliveryDate}"></span></p>
-  <div class="status-form">
-    <h3>Статус:</h3>
-    <form th:action="@{/admin/updateOrderStatus}" method="post">
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
+
+<main class="app-container">
+  <div class="page-header">
+    <h1 class="page-title">Детали заказа</h1>
+  </div>
+
+  <div th:if="${successMessage}" class="message message--success">
+    <i class="fas fa-check-circle"></i>
+    <span th:text="${successMessage}"></span>
+  </div>
+
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">Информация о заказе</h2>
+    </div>
+    <div class="order-info">
+      <div class="info-item">
+        <span class="info-item__label">Номер заказа</span>
+        <span class="info-item__value" th:text="${order.id}"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-item__label">Дата создания</span>
+        <span class="info-item__value" th:text="${order.formattedOrderDate}"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-item__label">Клиент</span>
+        <span class="info-item__value" th:text="${order.client.name}"></span>
+      </div>
+      <div class="info-item">
+        <span class="info-item__label">Дата доставки</span>
+        <span class="info-item__value" th:text="${order.formattedDeliveryDate}"></span>
+      </div>
+    </div>
+    <div class="info-item">
+      <span class="info-item__label">Адрес доставки</span>
+      <span class="info-item__value">
+                <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+            </span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">Статус заказа</h2>
+    </div>
+    <form th:action="@{/admin/updateOrderStatus}" method="post" class="status-form">
       <input type="hidden" name="orderId" th:value="${order.id}" />
-      <select name="status">
+      <span class="status-form__label">Текущий статус:</span>
+      <select name="status" class="form-control">
         <option th:selected="${order.status == 'В обработке'}" value="В обработке">В обработке</option>
-        <option th:selected="${order.status == 'Подтвержден'}" value="Подтвержден">Подтвержден</option>
+        <option th:selected="${order.status == 'Принят'}" value="Принят">Принят</option>
+        <option th:selected="${order.status == 'Оплачен. В работе'}" value="Оплачен. В работе">Оплачен. В работе</option>
+        <option th:selected="${order.status == 'Оплачен. В ожидании'}" value="Оплачен. В ожидании">Оплачен. В ожидании</option>
         <option th:selected="${order.status == 'Назначена погрузка'}" value="Назначена погрузка">Назначена погрузка</option>
         <option th:selected="${order.status == 'В пути'}" value="В пути">В пути</option>
         <option th:selected="${order.status == 'Закрыт'}" value="Закрыт">Закрыт</option>
       </select>
-      <button type="submit">Изменить статус</button>
+      <button type="submit" class="btn btn--primary">
+        <i class="fas fa-sync-alt"></i> Обновить статус
+      </button>
     </form>
+    <div>
+      <span class="status-form__label">Текущий статус:</span>
+      <span th:switch="${order.status}" class="status-badge">
+                <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
+                <span th:case="'Принят'" class="status-badge--accepted">Принят</span>
+                <span th:case="'Оплачен. В работе'" class="status-badge--paid-working">Оплачен. В работе</span>
+                <span th:case="'Оплачен. В ожидании'" class="status-badge--paid-waiting">Оплачен. В ожидании</span>
+                <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
+                <span th:case="'В пути'" class="status-badge--transit">В пути</span>
+                <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
+            </span>
+    </div>
   </div>
-  <h3>Товары в заказе:</h3>
-  <form th:action="@{/admin/updateOrderPrice/{id}(id=${order.id})}" method="post">
-    <table>
-      <tr>
-        <th>Название товара</th>
-        <th>Количество</th>
-        <th>Цена</th>
-        <th>Изменить цену</th>
-      </tr>
-      <tr th:each="tchOrder, iterStat : ${tchOrders}">
-        <td th:text="${tchOrder.product.name}"></td>
-        <td th:text="${tchOrder.quantity}"></td>
-        <td>
-          <input type="number" name="prices" th:value="${tchOrder.price}" />
-          <input type="hidden" name="tchOrderIds" th:value="${tchOrder.id}" />
-        </td>
-        <td>
-          <button type="submit">Обновить цену</button>
-        </td>
-      </tr>
-    </table>
-  </form>
 
-  <h3>Документация:</h3>
-  <table class="document-table">
-    <tr>
-      <th>Название</th>
-      <th>Тип документа</th>
-      <th>Действия</th>
-    </tr>
-    <tr th:each="doc : ${order.documentations}" th:if="${doc != null}">
-      <td>
-        <a th:href="@{/admin/orders/{id}/document/{docId}(id=${order.id}, docId=${doc.id})}" th:text="${doc.name}"></a>
-      </td>
-      <td th:text="${doc.documentType.name}"></td>
-      <td>
-        <form th:action="@{/admin/deleteOrderDocumentation}" method="post" style="display: inline;">
-          <input type="hidden" name="orderId" th:value="${order.id}" />
-          <input type="hidden" name="docId" th:value="${doc.id}" />
-          <button type="submit" class="delete-btn">Удалить</button>
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">Товары в заказе</h2>
+    </div>
+
+    <div th:each="truck, stat : ${order.trucks}" class="truck-block">
+      <div class="truck-header">
+        <h3 class="truck-title">Машина <span th:text="${stat.count}"></span></h3>
+        <form th:action="@{/admin/applyDiscountToTruck/{orderId}/{truckId}(orderId=${order.id}, truckId=${truck.id})}"
+              method="post" class="discount-form">
+          <input type="number" class="discount-input" name="discount" min="0" max="100" placeholder="%">
+          <button type="submit" class="btn btn--secondary">
+            <i class="fas fa-percentage"></i> Скидка
+          </button>
         </form>
-      </td>
-    </tr>
-  </table>
-  <h3>Действия:</h3>
-  <div class="actions-form">
-    <form th:action="@{/admin/addOrderDocumentation}" method="post" enctype="multipart/form-data" class="upload-form">
-      <input type="hidden" name="orderId" th:value="${order.id}" />
-      <select name="documentTypeId">
-        <option th:each="type : ${documentTypes}" th:value="${type.id}" th:text="${type.name}"></option>
-      </select>
-      <input type="file" name="documentation" required />
-      <button type="submit">Загрузить документ</button>
-    </form>
-    <a th:href="@{/admin/orderStatusHistory/{id}(id=${order.id})}" class="history-btn">История статусов</a>
+      </div>
+
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Товар</th>
+          <th>Количество</th>
+          <th>Цена за единицу</th>
+          <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="tchOrder : ${truck.tchOrders}">
+          <td th:text="${tchOrder.product.name}"></td>
+          <td th:text="${tchOrder.quantity} + ' шт.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.price, 1, 2)} + ' руб.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.price * tchOrder.quantity, 1, 2)} + ' руб.'"></td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="truck-total">
+        Итого по машине: <span th:text="${#numbers.formatDecimal(truck.total, 1, 2)} + ' руб.'"></span>
+      </div>
+    </div>
   </div>
-</div>
+
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">Документация</h2>
+    </div>
+
+    <table class="document-table">
+      <thead>
+      <tr>
+        <th>Название</th>
+        <th>Тип документа</th>
+        <th>Действия</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="doc : ${order.documentations}" th:if="${doc != null}">
+        <td>
+          <a th:href="@{/admin/orders/{id}/document/{docId}(id=${order.id}, docId=${doc.id})}"
+             class="document-link" th:text="${doc.name}"></a>
+        </td>
+        <td th:text="${doc.documentType.name}"></td>
+        <td>
+          <form th:action="@{/admin/deleteOrderDocumentation}" method="post" style="display: inline;">
+            <input type="hidden" name="orderId" th:value="${order.id}" />
+            <input type="hidden" name="docId" th:value="${doc.id}" />
+            <button type="submit" class="btn btn--secondary" style="padding: 0.5rem 1rem;">
+              <i class="fas fa-trash"></i> Удалить
+            </button>
+          </form>
+        </td>
+      </tr>
+      <tr th:if="${order.documentations == null or order.documentations.empty}">
+        <td colspan="3">Нет загруженных документов</td>
+      </tr>
+      </tbody>
+    </table>
+
+    <div class="actions-form">
+      <form th:action="@{/admin/addOrderDocumentation}" method="post" enctype="multipart/form-data" class="upload-form">
+        <input type="hidden" name="orderId" th:value="${order.id}" />
+        <select name="documentTypeId" class="form-control">
+          <option th:each="type : ${documentTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+        </select>
+        <input type="file" name="documentation" required class="form-control file-input" />
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-upload"></i> Загрузить
+        </button>
+      </form>
+      <a th:href="@{/admin/orderStatusHistory/{id}(id=${order.id})}" class="btn btn--secondary">
+        <i class="fas fa-history"></i> История статусов
+      </a>
+    </div>
+  </div>
+</main>
 
 <script>
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
+
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

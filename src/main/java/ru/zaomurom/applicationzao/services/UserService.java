@@ -44,4 +44,7 @@
             }
             return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), authorities);
         }
+        public boolean existsByUsername(String username) {
+            return userRepository.existsByUsername(username);
+        }
     }

@@ -1,229 +1,527 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
-  <title>Типы документов и Цены</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Типы документов и прайсы | Админ-панель | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --success: #388E3C;
+      --warning: #FFA000;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --transition-slow: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition-slow);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
-      text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+
+    .app-sidebar--open {
+      width: 320px;
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
     }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
-    }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
-      max-width: 1200px;
-    }
-    h2 {
-      border-bottom: 2px solid #4CAF50;
-      padding-bottom: 10px;
-    }
-    h3 {
-      margin-top: 20px;
-    }
-    .success-message {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #4CAF50;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    tr:hover {
-      background-color: #ddd;
-    }
-    select, input[type="text"], input[type="file"] {
-      width: calc(100% - 20px);
-      padding: 8px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
+
+    .app-sidebar__close-btn {
+      background: none;
       border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
+      font-size: 1.5rem;
       cursor: pointer;
-      margin-top: 10px;
+      color: var(--text-secondary);
     }
-    button:hover {
-      background-color: #45a049;
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
     }
-    .status-form {
+
+    .app-sidebar__nav-item {
       display: flex;
       align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
     }
-    .status-form select {
-      margin-right: 10px;
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
     }
-    .document-table {
-      margin-top: 20px;
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
     }
-    .document-table th, .document-table td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
+
+    /* Main container */
+    .app-container {
+      max-width: 1440px;
+      margin: 2rem auto;
+      padding: 0 2rem;
     }
-    .document-table th {
-      background-color: #4CAF50;
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    .btn--primary {
+      background-color: var(--primary);
       color: white;
     }
-    .document-table tr:nth-child(even) {
-      background-color: #f2f2f2;
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
     }
-    .document-table tr:hover {
-      background-color: #ddd;
+
+    .btn--secondary {
+      background-color: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--primary);
     }
-    .upload-form {
+
+    .btn--secondary:hover {
+      background-color: rgba(46, 125, 50, 0.05);
+    }
+
+    /* Form styles */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background-color: var(--surface);
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    /* Card styles */
+    .card {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 2rem;
+    }
+
+    .card__header {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
     }
-    .upload-form label {
-      margin-bottom: 5px;
-      font-weight: bold;
+
+    .card__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Table styles */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      min-width: 600px;
+    }
+
+    .data-table thead tr {
+      background-color: var(--primary);
+      color: white;
+      text-align: left;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 1rem;
+      white-space: nowrap;
+    }
+
+    .data-table th {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      background-color: var(--surface);
+      transition: var(--transition);
+    }
+
+    .data-table tbody tr:last-of-type {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: rgba(76, 175, 80, 0.05);
+    }
+
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge--primary {
+      background-color: var(--primary-light);
+      color: white;
+    }
+
+    .badge--secondary {
+      background-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: var(--border);
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 0 1rem;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">Панель администратора | ЗАО Муром</div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/dashboard}">Панель администратора</a>
-  <a th:href="@{/admin/products}">Товары</a>
-  <a th:href="@{/admin/clients}">Клиенты</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
-<div class="container">
-  <h2>Типы документов</h2>
-  <table>
-    <tr>
-      <th>Название</th>
-    </tr>
-    <tr th:each="type : ${documentTypes}">
-      <td th:text="${type.name}"></td>
-    </tr>
-  </table>
-  <form th:action="@{/admin/addDocumentType}" method="post">
-    <input type="text" name="name" placeholder="Название типа" required />
-    <button type="submit">Добавить тип</button>
-  </form>
+<main class="app-container">
+  <div class="page-header">
+    <h1 class="page-title">Типы документов и прайсы</h1>
+  </div>
 
-  <h2>Прайсы</h2>
-  <table>
-    <tr>
-      <th>Вид</th>
-      <th>Имя</th>
-    </tr>
-    <tr th:each="price : ${prices}">
-      <td th:text="${price.vid}"></td>
-      <td th:text="${price.name}"></td>
-    </tr>
-  </table>
-  <form th:action="@{/admin/addPrice}" method="post">
-    <div>
-      <label>Вид:</label>
-      <input type="text" name="vid" required />
+  <!-- Document Types Section -->
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-file-alt"></i> Типы документов
+      </h2>
     </div>
-    <div>
-      <label>Имя:</label>
-      <input type="text" name="name" required />
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Название</th>
+          <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="type : ${documentTypes}">
+          <td th:text="${type.name}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(documentTypes)}">
+          <td colspan="2" class="empty-state">
+            <i class="fas fa-file-alt"></i>
+            <p>Типы документов не добавлены</p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
-    <div>
-      <button type="submit">Добавить прайс</button>
+
+    <form th:action="@{/admin/addDocumentType}" method="post" class="form-group">
+      <div class="form-group">
+        <label for="documentTypeName" class="form-label">Новый тип документа</label>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="text" id="documentTypeName" name="name" class="form-control" placeholder="Введите название типа" required />
+          <button type="submit" class="btn btn--primary">
+            <i class="fas fa-plus"></i> Добавить
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Prices Section -->
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-tags"></i> Прайсы
+      </h2>
     </div>
-  </form>
-</div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Вид</th>
+          <th>Имя</th>
+          <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="price : ${prices}">
+          <td th:text="${price.vid}"></td>
+          <td th:text="${price.name}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(prices)}">
+          <td colspan="3" class="empty-state">
+            <i class="fas fa-tags"></i>
+            <p>Прайсы не добавлены</p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <form th:action="@{/admin/addPrice}" method="post">
+      <div class="form-group">
+        <label for="priceVid" class="form-label">Вид прайса</label>
+        <input type="text" id="priceVid" name="vid" class="form-control" placeholder="Введите вид прайса" required />
+      </div>
+
+      <div class="form-group">
+        <label for="priceName" class="form-label">Имя прайса</label>
+        <input type="text" id="priceName" name="name" class="form-control" placeholder="Введите имя прайса" required />
+      </div>
+
+      <button type="submit" class="btn btn--primary">
+        <i class="fas fa-plus"></i> Добавить прайс
+      </button>
+    </form>
+  </div>
+</main>
 
 <script>
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
+
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

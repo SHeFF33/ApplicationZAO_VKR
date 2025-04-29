@@ -18,8 +18,17 @@ public class TCHOrder {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @ManyToOne
+    @JoinColumn(name = "truck_id")
+    private OrderTruck truck;
+
     private int quantity;
     private double price;
+    @Column(name = "original_price")
+    private Double originalPrice;
+
+    @Column(name = "discount")
+    private Double discount;
 
     public TCHOrder() {}
 
@@ -68,5 +77,37 @@ public class TCHOrder {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public OrderTruck getTruck() {
+        return truck;
+    }
+
+    public void setTruck(OrderTruck truck) {
+        this.truck = truck;
+    }
+
+    public Double getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Double discount) {
+        this.discount = discount;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void prePersist() {
+        if (originalPrice == null) {
+            originalPrice = price;
+        }
+    }
+
+    public Double getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(Double originalPrice) {
+        this.originalPrice = originalPrice;
     }
 }

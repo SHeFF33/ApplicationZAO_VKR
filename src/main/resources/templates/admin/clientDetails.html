@@ -1,271 +1,646 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Информация о клиенте</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Информация о клиенте | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
+
+    .app-sidebar--open {
+      width: 320px;
+    }
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-sidebar__close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
       text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+      transition: var(--transition);
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
     }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
     }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
+
+    /* Main container */
+    .app-container {
       max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
     }
-    .info-section {
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
+
+    /* Info card */
+    .info-card {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 2rem;
     }
-    .info-section h4 {
-      border-bottom: 2px solid #4CAF50;
-      padding-bottom: 5px;
-      margin-bottom: 10px;
+
+    .info-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
     }
-    .info-section div {
-      margin-bottom: 10px;
+
+    .info-card__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
-    .info-section label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
+
+    .info-card__title i {
+      color: var(--primary);
     }
-    .info-section span {
-      display: block;
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: #f9f9f9;
+
+    .info-card__actions {
+      display: flex;
+      gap: 0.75rem;
     }
-    .table-section {
-      margin-top: 20px;
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .info-group {
+      margin-bottom: 1rem;
+    }
+
+    .info-label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    .info-value {
+      font-size: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Table styles */
+    .table-container {
+      width: 100%;
       overflow-x: auto;
+      margin: 1.5rem 0;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
     }
-    .table-section table {
+
+    .data-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
-      table-layout: fixed;
+      font-size: 0.875rem;
+      min-width: 1000px; /* Минимальная ширина таблицы */
     }
-    .table-section th, .table-section td {
-      border: 1px solid #ddd;
-      padding: 8px;
+
+    .data-table thead tr {
+      background-color: var(--primary);
+      color: white;
       text-align: left;
-      word-wrap: break-word;
     }
-    .table-section th {
-      background-color: #4CAF50;
-      color: white;
+
+    .data-table th,
+    .data-table td {
+      padding: 0.75rem 1rem;
+      white-space: nowrap;
     }
-    .button-section {
-      margin-top: 20px;
+
+    .data-table th {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
     }
-    .button-section a {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
+
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      background-color: var(--surface);
+      transition: var(--transition);
+    }
+
+    .data-table tbody tr:last-of-type {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: rgba(76, 175, 80, 0.05);
+    }
+
+    .section {
+      margin-top: 2rem;
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title i {
+      color: var(--primary);
+    }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
       text-decoration: none;
-      border-radius: 4px;
-      margin-right: 10px;
+      border: none;
+      gap: 0.5rem;
     }
-    .button-section a:hover {
-      background-color: #45a049;
+
+    .btn--primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn--secondary {
+      background-color: var(--surface);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .btn--secondary:hover {
+      background-color: rgba(46, 125, 50, 0.05);
+    }
+
+    .btn--text {
+      background: none;
+      color: var(--primary);
+      padding: 0;
+    }
+
+    .btn--text:hover {
+      text-decoration: underline;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state i {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: var(--border);
+    }
+
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge--primary {
+      background-color: var(--primary-light);
+      color: white;
+    }
+
+    .badge--secondary {
+      background-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-container {
+        padding: 0 1rem;
+      }
+
+      .info-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .info-card__actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .info-card__actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">Информация о клиенте</div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/dashboard}">Панель администратора</a>
-  <a th:href="@{/admin/products}">Товары</a>
-  <a th:href="@{/admin/clients}">Клиенты</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
-<div class="container">
-  <div class="info-section">
-    <div>
-      <label>Имя:</label>
-      <span th:text="${client.name}"></span>
+<main class="app-container">
+  <div class="info-card">
+    <div class="info-card__header">
+      <h1 class="info-card__title">
+        <i class="fas fa-building"></i>
+        <span th:text="${client.name}"></span>
+      </h1>
+      <div class="info-card__actions">
+        <a th:href="@{/admin/editClient/{id}(id=${client.id})}" class="btn btn--secondary">
+          <i class="fas fa-edit"></i> Редактировать
+        </a>
+        <a th:href="@{/admin/clients}" class="btn btn--text">
+          <i class="fas fa-arrow-left"></i> Назад к списку
+        </a>
+      </div>
     </div>
-    <div>
-      <label>ИНН:</label>
-      <span th:text="${client.inn}"></span>
-    </div>
-    <div>
-      <label>КПП:</label>
-      <span th:text="${client.kpp}"></span>
-    </div>
-    <div>
-      <label>Юридический адрес:</label>
-      <span th:text="${client.uraddress}"></span>
-    </div>
-    <div>
-      <label>Фактический адрес:</label>
-      <span th:text="${client.factaddress}"></span>
-    </div>
-    <div>
-      <label>Выбранная цена:</label>
-      <span th:text="${client.selectedPrice.name}"></span>
+
+    <div class="info-grid">
+      <div class="info-group">
+        <div class="info-label">ИНН</div>
+        <div class="info-value" th:text="${client.inn}"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">КПП</div>
+        <div class="info-value" th:text="${client.kpp}"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">Юридический адрес</div>
+        <div class="info-value" th:text="${client.uraddress}"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">Фактический адрес</div>
+        <div class="info-value" th:text="${client.factaddress}"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">Денег на счету</div>
+        <div class="info-value" th:text="${client.sum1} ?: 'Не указана'"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">В том числе свободные</div>
+        <div class="info-value" th:text="${client.sum2} ?: 'Не указана'"></div>
+      </div>
+
+      <div class="info-group">
+        <div class="info-label">Выбранная цена</div>
+        <div class="info-value" th:text="${client.selectedPrice.name}"></div>
+      </div>
     </div>
   </div>
 
-  <div class="table-section">
-    <h4>Адреса</h4>
-    <table>
-      <thead>
-      <tr>
-        <th>Почтовый индекс</th>
-        <th>Страна</th>
-        <th>Регион</th>
-        <th>Район</th>
-        <th>Город</th>
-        <th>Улица</th>
-        <th>Дом</th>
-        <th>Номер комнаты</th>
-        <th>Контакт</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="address : ${client.addresses}">
-        <td th:text="${address.postalcode}"></td>
-        <td th:text="${address.country}"></td>
-        <td th:text="${address.region}"></td>
-        <td th:text="${address.rayon}"></td>
-        <td th:text="${address.city}"></td>
-        <td th:text="${address.street}"></td>
-        <td th:text="${address.home}"></td>
-        <td th:text="${address.roomnumber}"></td>
-        <td th:text="${address.contact != null ? address.contact.name : 'Нет контакта'}"></td>
-      </tr>
-      </tbody>
-    </table>
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">
+        <i class="fas fa-map-marker-alt"></i> Адреса
+      </h2>
+    </div>
+
+    <div class="section-content">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Почтовый индекс</th>
+            <th>Страна</th>
+            <th>Регион</th>
+            <th>Район</th>
+            <th>Город</th>
+            <th>Улица</th>
+            <th>Дом</th>
+            <th>Строение</th>
+            <th>График работы адреса доставки</th>
+            <th>Контакт</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="address : ${client.addresses}">
+            <td th:text="${address.postalcode}"></td>
+            <td th:text="${address.country}"></td>
+            <td th:text="${address.region}"></td>
+            <td th:text="${address.rayon}"></td>
+            <td th:text="${address.city}"></td>
+            <td th:text="${address.street}"></td>
+            <td th:text="${address.home}"></td>
+            <td th:text="${address.roomnumber}"></td>
+            <td th:text="${address.schedule} ?: 'Не указано'"></td>
+            <td th:text="${address.contact?.name} ?: 'Не указан'"></td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(client.addresses)}">
+            <td colspan="9" class="empty-state">
+              <i class="fas fa-map-marked-alt"></i>
+              <p>Адреса не добавлены</p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <div class="table-section">
-    <h4>Контакты</h4>
-    <table>
-      <thead>
-      <tr>
-        <th>Тип контакта</th>
-        <th>Имя</th>
-        <th>Номер телефона</th>
-        <th>Email</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="contact : ${client.contacts}">
-        <td th:text="${contact.contactType}"></td>
-        <td th:text="${contact.name}"></td>
-        <td th:text="${contact.phonenumber}"></td>
-        <td th:text="${contact.email}"></td>
-      </tr>
-      </tbody>
-    </table>
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">
+        <i class="fas fa-address-book"></i> Контакты
+      </h2>
+    </div>
+
+    <div class="section-content">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Тип контакта</th>
+            <th>Имя</th>
+            <th>Телефон</th>
+            <th>Email</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="contact : ${client.contacts}">
+            <td th:text="${contact.contactType}"></td>
+            <td th:text="${contact.name}"></td>
+            <td th:text="${contact.phonenumber}"></td>
+            <td th:text="${contact.email}"></td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(client.contacts)}">
+            <td colspan="4" class="empty-state">
+              <i class="fas fa-user-tie"></i>
+              <p>Контакты не добавлены</p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <div class="table-section">
-    <h4>Пользователи</h4>
-    <table>
-      <thead>
-      <tr>
-        <th>Имя пользователя</th>
-        <th>Имя</th>
-        <th>Роль</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="user : ${client.users}">
-        <td th:text="${user.username}"></td>
-        <td th:text="${user.name}"></td>
-        <td th:text="${user.admin} ? 'Администратор' : 'Пользователь'"></td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">
+        <i class="fas fa-user-shield"></i> Пользователи
+      </h2>
+    </div>
 
-
-  <div class="button-section">
-    <a th:href="@{/admin/editClient/{id}(id=${client.id})}">Изменить</a>
-    <a href="/admin/clients">Назад к списку клиентов</a>
+    <div class="section-content">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Логин</th>
+            <th>Имя</th>
+            <th>Роль</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="user : ${client.users}">
+            <td th:text="${user.username}"></td>
+            <td th:text="${user.name}"></td>
+            <td>
+              <span th:if="${user.admin}" class="badge badge--primary">Администратор</span>
+              <span th:unless="${user.admin}" class="badge badge--secondary">Пользователь</span>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(client.users)}">
+            <td colspan="3" class="empty-state">
+              <i class="fas fa-users"></i>
+              <p>Пользователи не добавлены</p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-</div>
+</main>
 
 <script>
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
+
+  // Close sidebar when clicking outside
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

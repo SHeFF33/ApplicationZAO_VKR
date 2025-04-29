@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface SumRepository extends JpaRepository<Sum, Long> {
     List<Sum> findByProductId(Long productId);
+    void deleteByProductId(Long productId);
 }

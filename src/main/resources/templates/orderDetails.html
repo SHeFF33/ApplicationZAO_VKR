@@ -1,80 +1,395 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Детали заказа</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Детали заказа | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    .order-details {
-      padding: 20px;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    .order-details h3 {
-      margin-top: 0;
-    }
-    .order-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 10px;
-    }
-    .order-table th, .order-table td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-    }
-    .order-table th {
-      background-color: #f2f2f2;
-    }
-    .total-row {
-      text-align: right;
-      font-weight: bold;
-    }
-    .doc-list {
-      list-style-type: none;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
       padding: 0;
     }
-    .doc-list li {
-      margin-bottom: 5px;
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
     }
-    .doc-list a {
+
+    /* Order details */
+    .order-details {
+      display: grid;
+      gap: 1.5rem;
+      padding: 1.5rem;
+    }
+
+    .order-details__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .order-details__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .order-details__status {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-processing {
+      background-color: #FFF3E0;
+      color: #E65100;
+    }
+
+    .status-accepted {
+      background-color: #E8F5E9;
+      color: var(--primary-dark);
+    }
+
+    .status-paid-working {
+      background-color: #E3F2FD;
+      color: #1565C0;
+    }
+
+    .status-paid-waiting {
+      background-color: #E1F5FE;
+      color: #0277BD;
+    }
+
+    .status-loading {
+      background-color: #FFF8E1;
+      color: #FF8F00;
+    }
+
+    .status-shipping {
+      background-color: #E0F7FA;
+      color: #00838F;
+    }
+
+    .status-completed {
+      background-color: #F1F8E9;
+      color: #558B2F;
+    }
+
+    .order-details__section {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+    }
+
+    .order-details__section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .order-details__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .order-details__item {
+      margin-bottom: 0.75rem;
+    }
+
+    .order-details__label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .order-details__value {
+      color: var(--text-primary);
+    }
+
+    /* Delivery info */
+    .delivery-info {
+      margin-top: 1rem;
+    }
+
+    .delivery-info__contact {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Products table */
+    .products-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .products-table th {
+      text-align: left;
+      padding: 0.75rem;
+      background-color: #f9f9f9;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .products-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .products-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .products-table tr:hover td {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .products-table__total {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Truck section */
+    .truck-section {
+      margin-top: 2rem;
+    }
+
+    .truck-section__header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .truck-section__title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1;
+      color: white;
+      background-color: var(--primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
       text-decoration: none;
-      color: #4CAF50;
     }
-    .doc-list a:hover {
-      text-decoration: underline;
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .order-details__grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
 <div class="order-details">
-  <h3>Заказ от <span th:text="${order.formattedOrderDate}"></span></h3>
-  <p><strong>Дата доставки:</strong> <span th:text="${order.formattedDeliveryDate}"></span></p>
-  <p><strong>Адрес доставки:</strong><span th:text="' ' + ${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.rayon} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
-  <p><strong>Контактные данные:</strong><span th:if="${order.deliveryAddress.contact != null}"><span th:text="${'Имя: ' + order.deliveryAddress.contact.name + ', Должность: ' + order.deliveryAddress.contact.contactType  + ', Номер телефона: ' +  order.deliveryAddress.contact.phonenumber + ', Почтовый адрес: ' + order.deliveryAddress.contact.email}"></span></span>
-  </p><p><strong>Статус:</strong> <span th:text="${order.status}"></span></p>
+  <div class="order-details__header">
+    <h1 class="order-details__title">Заказ №<span th:text="${order.id}"></span></h1>
+    <span class="order-card__status"
+          th:with="statusClass=${#strings.equals(order.status, 'В обработке') ? 'status-processing' :
+                   #strings.equals(order.status, 'Принят') ? 'status-accepted' :
+                   #strings.equals(order.status, 'Оплачен. В работе') ? 'status-paid-working' :
+                   #strings.equals(order.status, 'Оплачен. В ожидании') ? 'status-paid-waiting' :
+                   #strings.equals(order.status, 'Назначена погрузка') ? 'status-loading' :
+                   #strings.equals(order.status, 'В пути') ? 'status-shipping' :
+                   #strings.equals(order.status, 'Закрыт') ? 'status-completed' : ''}"
+          th:classappend="${statusClass}"
+          th:text="${order.status}"></span>
+  </div>
 
-  <h4>Товары:</h4>
-  <table class="order-table">
-    <tr>
-      <th>Название</th>
-      <th>Количество</th>
-      <th>Цена</th>
-    </tr>
-    <tr th:each="tchOrder : ${order.tchOrders}">
-      <td th:text="${tchOrder.product.name}"></td>
-      <td th:text="${tchOrder.quantity}"></td>
-      <td th:text="${tchOrder.price}"></td>
-    </tr>
-    <tr class="total-row">
-      <td colspan="2" style="text-align: right;">Итого:</td>
-      <td th:text="${#numbers.formatDecimal(totalSum, 0, 'COMMA', 2, 'POINT')}"></td>
-    </tr>
-  </table>
+  <div class="order-details__section">
+    <h2 class="order-details__section-title">
+      <i class="fas fa-info-circle"></i> Основная информация
+    </h2>
 
-  <h4>Документация:</h4>
-  <ul class="doc-list">
-    <li th:each="doc : ${order.documentations}" th:if="${doc != null}">
-      <span th:text="${doc.name + ' (' + doc.documentType.name + ')'}"></span>
-      <a th:href="@{/orders/{id}/document/{docId}(id=${order.id}, docId=${doc.id})}" th:text="'Скачать'"></a>
-    </li>
-  </ul>
+    <div class="order-details__grid">
+      <div class="order-details__item">
+        <div class="order-details__label">Дата заказа</div>
+        <div class="order-details__value" th:text="${order.formattedOrderDate}"></div>
+      </div>
+      <div class="order-details__item">
+        <div class="order-details__label">Дата доставки</div>
+        <div class="order-details__value" th:text="${order.formattedDeliveryDate}"></div>
+      </div>
+      <div class="order-details__item">
+        <div class="order-details__label">Статус</div>
+        <div class="order-details__value" th:text="${order.status}"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-details__section">
+    <h2 class="order-details__section-title">
+      <i class="fas fa-truck"></i> Адрес доставки
+    </h2>
+
+    <div class="order-details__grid">
+      <div class="order-details__item">
+        <div class="order-details__label">Адрес</div>
+        <div class="order-details__value">
+                    <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' +
+                                 ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' +
+                                 ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} +
+                                 (${order.deliveryAddress.roomnumber} != null ? ', ' + ${order.deliveryAddress.roomnumber} : '')"></span>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${order.deliveryAddress.contact != null}" class="delivery-info__contact">
+      <div class="order-details__item">
+        <div class="order-details__label">Контактное лицо</div>
+        <div class="order-details__value" th:text="${order.deliveryAddress.contact.name}"></div>
+      </div>
+      <div class="order-details__item">
+        <div class="order-details__label">Телефон</div>
+        <div class="order-details__value" th:text="${order.deliveryAddress.contact.phonenumber}"></div>
+      </div>
+      <div class="order-details__item">
+        <div class="order-details__label">Email</div>
+        <div class="order-details__value" th:text="${order.deliveryAddress.contact.email}"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-details__section">
+    <h2 class="order-details__section-title">
+      <i class="fas fa-boxes"></i> Состав заказа
+    </h2>
+
+    <div th:each="truck, stat : ${order.trucks}" class="truck-section">
+      <div class="truck-section__header">
+        <i class="fas fa-truck"></i>
+        <h3 class="truck-section__title">Машина <span th:text="${stat.count}"></span></h3>
+      </div>
+
+      <table class="products-table">
+        <thead>
+        <tr>
+          <th>Наименование</th>
+          <th>Количество</th>
+          <th>Цена</th>
+          <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="tchOrder : ${truck.tchOrders}">
+          <td th:text="${tchOrder.product.name}"></td>
+          <td th:text="${tchOrder.quantity}"></td>
+          <td th:text="${tchOrder.price} + ' руб.'"></td>
+          <td th:text="${tchOrder.price * tchOrder.quantity} + ' руб.'"></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="order-details__item" style="text-align: right; margin-top: 1.5rem;">
+      <div class="order-details__label">Итого</div>
+      <div class="order-details__value" style="font-size: 1.25rem; font-weight: 600;">
+        <span th:text="${totalSum} + ' руб.'"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-details__section">
+    <h2 class="order-details__section-title">
+      <i class="fas fa-file-alt"></i> Документы заказа
+    </h2>
+
+    <div th:if="${order.documentations != null and !order.documentations.empty}">
+      <table class="products-table">
+        <thead>
+        <tr>
+          <th>Тип документа</th>
+          <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="doc : ${order.documentations}">
+          <td th:text="${doc.documentType.name}"></td>
+          <td>
+            <a th:href="@{/orders/{orderId}/document/{docId}(orderId=${order.id}, docId=${doc.id})}"
+               class="btn" style="padding: 0.5rem 1rem;">
+              <i class="fas fa-download"></i> Скачать
+            </a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div th:if="${order.documentations == null or order.documentations.empty}"
+         style="text-align: center; padding: 1rem; color: var(--text-secondary);">
+      Нет прикрепленных документов
+    </div>
+  </div>
+
+
+  <form th:action="@{/repeatOrder}" method="post" style="margin-top: 2rem; text-align: center;">
+    <input type="hidden" name="orderId" th:value="${order.id}" />
+    <button type="submit" class="btn">
+      <i class="fas fa-redo"></i> Повторить заказ
+    </button>
+  </form>
 </div>
 </body>
 </html>

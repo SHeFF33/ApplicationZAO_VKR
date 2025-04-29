@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Редактировать товар | Админ-панель | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --success: #388E3C;
+      --warning: #FFA000;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --transition-slow: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .app-header__menu-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Sidebar */
+    .app-sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1000;
+      top: 0;
+      right: 0;
+      background-color: var(--surface);
+      overflow-x: hidden;
+      transition: var(--transition-slow);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .app-sidebar--open {
+      width: 320px;
+    }
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-sidebar__close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
+    }
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main container */
+    .app-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Form styles */
+    .form-card {
+      background-color: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: var(--transition);
+    }
+
+    .form-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background-color: var(--surface);
+      transition: var(--transition);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    textarea.form-control {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    /* Checkbox */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .checkbox-container input {
+      width: auto;
+      margin-right: 0.75rem;
+      height: 18px;
+      width: 18px;
+      accent-color: var(--primary);
+    }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    .btn--primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn--danger {
+      background-color: var(--error);
+      color: white;
+    }
+
+    .btn--danger:hover {
+      background-color: #c62828;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn--outline {
+      background-color: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn--outline:hover {
+      background-color: rgba(46, 125, 50, 0.1);
+    }
+
+    .btn--icon {
+      padding: 0.5rem;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    /* Sections */
+    .section {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title i {
+      margin-right: 0.75rem;
+      color: var(--primary-light);
+    }
+
+    /* Image gallery */
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .image-item {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      aspect-ratio: 1/1;
+      transition: var(--transition);
+    }
+
+    .image-item:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Document list */
+    .document-list {
+      list-style: none;
+      margin-top: 1rem;
+    }
+
+    .document-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background-color: var(--background);
+      border-radius: var(--radius-md);
+      margin-bottom: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .document-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .document-icon {
+      margin-right: 1rem;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+    }
+
+    .document-name {
+      flex-grow: 1;
+      font-size: 0.875rem;
+    }
+
+    /* Price table */
+    .price-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .price-table th, .price-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .price-table th {
+      background-color: var(--background);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .price-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .price-table tr:hover td {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-badge--success {
+      background-color: rgba(56, 142, 60, 0.1);
+      color: var(--success);
+    }
+
+    .status-badge--error {
+      background-color: rgba(211, 47, 47, 0.1);
+      color: var(--error);
+    }
+
+    .status-badge i {
+      margin-right: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    /* Section actions */
+    .section-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal--show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+    }
+
+    .modal__content {
+      background-color: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+
+    .modal--show .modal__content {
+      transform: translateY(0);
+    }
+
+    .modal__header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .modal__close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .modal__close:hover {
+      color: var(--text-primary);
+      transform: rotate(90deg);
+    }
+
+    .modal__body {
+      padding: 1.5rem;
+    }
+
+    /* File upload */
+    .file-upload {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .file-upload__input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      cursor: pointer;
+    }
+
+    .file-upload__label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      background-color: rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .file-upload__label:hover {
+      border-color: var(--primary-light);
+      background-color: rgba(76, 175, 80, 0.05);
+    }
+
+    .file-upload__icon {
+      font-size: 2rem;
+      color: var(--primary-light);
+      margin-bottom: 1rem;
+    }
+
+    .file-upload__text {
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .file-upload__hint {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Image preview */
+    .image-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .image-preview__item {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      aspect-ratio: 1/1;
+    }
+
+    .image-preview__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .image-preview__remove {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background-color: var(--error);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .image-preview__item:hover .image-preview__remove {
+      opacity: 1;
+    }
+
+    /* Alert */
+    .alert {
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .alert i {
+      margin-right: 0.75rem;
+    }
+
+    .alert--success {
+      background-color: rgba(56, 142, 60, 0.1);
+      color: var(--success);
+      border-left: 4px solid var(--success);
+    }
+
+    .alert--error {
+      background-color: rgba(211, 47, 47, 0.1);
+      color: var(--error);
+      border-left: 4px solid var(--error);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 0 1rem;
+      }
+
+      .form-card {
+        padding: 1.5rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .section-actions {
+        flex-direction: column;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); }
+      to { transform: translateY(0); }
+    }
+
+    .animate-fade {
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.3s ease forwards;
+    }
+  </style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-header__title">
+    Панель администратора | ЗАО Муром
+  </div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
+</header>
+
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
+
+<main class="app-container">
+  <div class="page-header">
+    <h1 class="page-title">Редактирование товара</h1>
+  </div>
+
+  <div id="alertContainer">
+    <div th:if="${successMessage}" class="alert alert--success animate-fade">
+      <i class="fas fa-check-circle"></i>
+      <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert--error animate-fade">
+      <i class="fas fa-exclamation-circle"></i>
+      <span th:text="${errorMessage}"></span>
+    </div>
+  </div>
+
+  <form th:action="@{/admin/updateProduct/{id}(id=${product.id})}" method="post" class="form-card">
+    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+    <div class="form-group">
+      <label for="name" class="form-label">Название товара</label>
+      <input type="text" id="name" name="name" class="form-control" th:value="${product.name}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="sort" class="form-label">Сорт</label>
+      <input type="text" id="sort" name="sort" class="form-control" th:value="${product.sort}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="tolsh" class="form-label">Толщина</label>
+      <input type="text" id="tolsh" name="tolsh" class="form-control" th:value="${product.tolsh}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="length" class="form-label">Длина</label>
+      <select id="length" name="length" class="form-control" required>
+        <option value="">Выберите длину</option>
+        <option th:value="2.8" th:selected="${product.length == 2.8}">2,8</option>
+        <option th:value="2.5" th:selected="${product.length == 2.5}">2,5</option>
+        <option th:value="2.4" th:selected="${product.length == 2.4}">2,4</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="quantity" class="form-label">Количество листов в пачке</label>
+      <input type="number" id="quantity" name="quantity" class="form-control" th:value="${product.quantity}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="description" class="form-label">Описание товара</label>
+      <textarea id="description" name="description" class="form-control" required th:text="${product.description}"></textarea>
+    </div>
+
+    <div class="checkbox-container">
+      <input type="checkbox" name="visible" id="visible" th:checked="${product.visible}"/>
+      <label for="visible">Отображать у клиентов</label>
+    </div>
+
+    <div th:if="${!product.readyForDisplay}" class="status-badge status-badge--error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>Товар не будет отображаться клиентам, пока не добавлены цены и изображения</span>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">
+        <i class="fas fa-images"></i>
+        Изображения товара
+      </h3>
+
+      <div th:if="${product.images.empty}" class="status-badge status-badge--error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Нет загруженных изображений</span>
+      </div>
+
+      <div th:if="${!product.images.empty}" class="image-gallery">
+        <div th:each="image : ${product.images}" class="image-item">
+          <img th:src="@{/images/{id}(id=${image.id})}" alt="Product Image"/>
+        </div>
+      </div>
+
+      <div class="section-actions">
+        <button type="button" class="btn btn--primary" onclick="openModal('addImageModal')">
+          <i class="fas fa-plus"></i> Добавить фото
+        </button>
+        <button th:if="${!product.images.empty}" type="button" class="btn btn--outline" onclick="openModal('deleteImageModal')">
+          <i class="fas fa-trash-alt"></i> Удалить фото
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">
+        <i class="fas fa-file-alt"></i>
+        Документация
+      </h3>
+
+      <div th:if="${product.documentations.empty}" class="status-badge status-badge--error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Нет загруженной документации</span>
+      </div>
+
+      <ul th:if="${!product.documentations.empty}" class="document-list">
+        <li th:each="doc : ${product.documentations}" class="document-item">
+          <i class="fas fa-file-pdf document-icon"></i>
+          <span class="document-name" th:text="${doc.name} + ' - ' + ${doc.description}"></span>
+        </li>
+      </ul>
+
+      <div class="section-actions">
+        <button type="button" class="btn btn--primary" onclick="openModal('addDocumentModal')">
+          <i class="fas fa-plus"></i> Добавить документ
+        </button>
+        <button th:if="${!product.documentations.empty}" type="button" class="btn btn--outline" onclick="openModal('deleteDocumentModal')">
+          <i class="fas fa-trash-alt"></i> Удалить документ
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3 class="section-title">
+        <i class="fas fa-tags"></i>
+        Цены
+      </h3>
+
+      <div th:if="${product.sums.empty}" class="status-badge status-badge--error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Нет установленных цен</span>
+      </div>
+
+      <table th:if="${!product.sums.empty}" class="price-table">
+        <thead>
+        <tr>
+          <th>Цена</th>
+          <th>Период</th>
+          <th>Прайс-лист</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="sum : ${product.sums}">
+          <td th:text="${sum.summa} + ' руб.'"></td>
+          <td th:text="${sum.period}"></td>
+          <td th:text="${sum.price.name}"></td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="section-actions">
+        <button type="button" class="btn btn--primary" onclick="openModal('addPriceModal')">
+          <i class="fas fa-plus"></i> Добавить цену
+        </button>
+        <button th:if="${!product.sums.empty}" type="button" class="btn btn--outline" onclick="openModal('deletePriceModal')">
+          <i class="fas fa-trash-alt"></i> Удалить цену
+        </button>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button type="submit" class="btn btn--primary">
+        <i class="fas fa-save"></i> Сохранить изменения
+      </button>
+      <button type="button" class="btn btn--danger" onclick="confirmDelete()">
+        <i class="fas fa-trash-alt"></i> Удалить товар
+      </button>
+    </div>
+  </form>
+</main>
+
+<!-- Модальное окно для добавления фотографий -->
+<div id="addImageModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Добавление фотографий</h3>
+      <button class="modal__close" onclick="closeModal('addImageModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form id="imageForm" th:action="@{/admin/addProductImagesEditProducts}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <div class="file-upload">
+          <input type="file" id="addImageInput" class="file-upload__input" name="images" multiple accept="image/*"/>
+          <label for="addImageInput" class="file-upload__label">
+            <i class="fas fa-cloud-upload-alt file-upload__icon"></i>
+            <span class="file-upload__text">Перетащите сюда фотографии или нажмите для выбора</span>
+            <span class="file-upload__hint">Поддерживаемые форматы: JPG, PNG (макс. 5 файлов)</span>
+          </label>
+        </div>
+
+        <div class="image-preview" id="addImagePreview"></div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('addImageModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--primary" id="submitImagesBtn" disabled>
+            <i class="fas fa-save"></i> Сохранить фотографии
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для удаления фотографий -->
+<div id="deleteImageModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Удаление фотографий</h3>
+      <button class="modal__close" onclick="closeModal('deleteImageModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form th:action="@{/admin/deleteProductImages}" method="post">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <div class="image-gallery">
+          <div th:each="image : ${product.images}" class="image-item">
+            <input type="checkbox" class="delete-checkbox" name="imageIds" th:value="${image.id}" id="img-${image.id}"/>
+            <label for="img-${image.id}" class="image-select-overlay"></label>
+            <img th:src="@{/images/{id}(id=${image.id})}" alt="Product Image"/>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('deleteImageModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--danger">
+            <i class="fas fa-trash-alt"></i> Удалить выбранные
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для добавления документации -->
+<div id="addDocumentModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Добавление документации</h3>
+      <button class="modal__close" onclick="closeModal('addDocumentModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form id="documentationForm" th:action="@{/admin/addDocumentationEditProducts}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <div class="file-upload">
+          <input type="file" id="addDocInput" class="file-upload__input" name="documentation"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"/>
+          <label for="addDocInput" class="file-upload__label">
+            <i class="fas fa-file-upload file-upload__icon"></i>
+            <span class="file-upload__text">Выберите документ для загрузки</span>
+            <span class="file-upload__hint">Поддерживаемые форматы: PDF, Word, Excel, PowerPoint</span>
+          </label>
+          <div class="file-name" id="addDocName">Файл не выбран</div>
+        </div>
+
+        <div class="form-group">
+          <label for="docDescription" class="form-label">Описание документа</label>
+          <textarea id="docDescription" name="description" class="form-control" required></textarea>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('addDocumentModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--primary" id="submitDocBtn" disabled>
+            <i class="fas fa-save"></i> Сохранить документацию
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для удаления документации -->
+<div id="deleteDocumentModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Удаление документации</h3>
+      <button class="modal__close" onclick="closeModal('deleteDocumentModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form th:action="@{/admin/deleteProductDocumentation}" method="post">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <ul class="document-list">
+          <li th:each="doc : ${product.documentations}" class="document-item">
+            <input type="checkbox" name="docIds" th:value="${doc.id}" id="doc-${doc.id}"/>
+            <label for="doc-${doc.id}" class="document-name" th:text="${doc.name} + ' - ' + ${doc.description}"></label>
+          </li>
+        </ul>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('deleteDocumentModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--danger">
+            <i class="fas fa-trash-alt"></i> Удалить выбранные
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для добавления цен -->
+<div id="addPriceModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Добавление цены</h3>
+      <button class="modal__close" onclick="closeModal('addPriceModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form id="priceForm" th:action="@{/admin/addSumEditProducts}" method="post">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <div class="form-group">
+          <label for="summas" class="form-label">Цена (руб.)</label>
+          <input type="number" id="summas" name="summas" step="0.01" min="0" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="periods" class="form-label">Период действия</label>
+          <input type="date" id="periods" name="periods" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="priceIds" class="form-label">Тип прайса</label>
+          <select id="priceIds" name="priceIds" class="form-control" required>
+            <option value="">Выберите прайс</option>
+            <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}"></option>
+          </select>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('addPriceModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--primary">
+            <i class="fas fa-save"></i> Сохранить цену
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для удаления цен -->
+<div id="deletePriceModal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <h3 class="modal__title">Удаление цен</h3>
+      <button class="modal__close" onclick="closeModal('deletePriceModal')">&times;</button>
+    </div>
+    <div class="modal__body">
+      <form th:action="@{/admin/deleteProductPrices}" method="post">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+
+        <table class="price-table">
+          <thead>
+          <tr>
+            <th>Выбрать</th>
+            <th>Цена</th>
+            <th>Период</th>
+            <th>Прайс-лист</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="sum : ${product.sums}">
+            <td><input type="checkbox" name="sumIds" th:value="${sum.id}" id="sum-${sum.id}"/></td>
+            <td th:text="${sum.summa} + ' руб.'"></td>
+            <td th:text="${sum.period}"></td>
+            <td th:text="${sum.price.name}"></td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div class="action-buttons">
+          <button type="button" class="btn btn--outline" onclick="closeModal('deletePriceModal')">
+            <i class="fas fa-times"></i> Отмена
+          </button>
+          <button type="submit" class="btn btn--danger">
+            <i class="fas fa-trash-alt"></i> Удалить выбранные
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Глобальные переменные
+  let selectedImages = [];
+  let selectedDocument = null;
+  const maxImages = 5;
+
+  // Инициализация при загрузке страницы
+  document.addEventListener('DOMContentLoaded', function() {
+    // Установка минимальной даты для периода действия цены (сегодня)
+    document.getElementById('periods').min = new Date().toISOString().split('T')[0];
+
+    // Инициализация обработчиков событий
+    initEventListeners();
+  });
+
+  // Инициализация всех обработчиков событий
+  function initEventListeners() {
+    // Обработчики для загрузки изображений
+    const addImageInput = document.getElementById('addImageInput');
+    if (addImageInput) {
+      addImageInput.addEventListener('change', handleImageUpload);
+    }
+
+    // Обработчики для загрузки документа
+    const addDocInput = document.getElementById('addDocInput');
+    if (addDocInput) {
+      addDocInput.addEventListener('change', handleDocumentUpload);
+    }
+
+    // Обработчики для форм
+    document.getElementById('imageForm')?.addEventListener('submit', handleImageFormSubmit);
+    document.getElementById('documentationForm')?.addEventListener('submit', handleDocumentFormSubmit);
+    document.getElementById('priceForm')?.addEventListener('submit', handlePriceFormSubmit);
+
+    // Обработчик перетаскивания файлов
+    setupDragAndDrop();
+  }
+
+  // Настройка drag and drop для загрузки файлов
+  function setupDragAndDrop() {
+    const dropAreas = document.querySelectorAll('.file-upload__label');
+
+    dropAreas.forEach(area => {
+      area.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        area.style.borderColor = 'var(--primary-light)';
+        area.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+      });
+
+      area.addEventListener('dragleave', () => {
+        area.style.borderColor = 'var(--border)';
+        area.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+      });
+
+      area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        area.style.borderColor = 'var(--border)';
+        area.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
+
+        if (area.htmlFor === 'addImageInput') {
+          handleDroppedFiles(e.dataTransfer.files, 'image');
+        } else if (area.htmlFor === 'addDocInput') {
+          handleDroppedFiles(e.dataTransfer.files, 'document');
+        }
+      });
+    });
+  }
+
+  // Обработка перетаскиваемых файлов
+  function handleDroppedFiles(files, type) {
+    if (type === 'image') {
+      const imageInput = document.getElementById('addImageInput');
+      const dataTransfer = new DataTransfer();
+
+      for (let i = 0; i < Math.min(files.length, maxImages); i++) {
+        if (files[i].type.startsWith('image/')) {
+          dataTransfer.items.add(files[i]);
+        }
+      }
+
+      imageInput.files = dataTransfer.files;
+      handleImageUpload({ target: imageInput });
+    } else if (type === 'document') {
+      const docInput = document.getElementById('addDocInput');
+      const validFiles = Array.from(files).filter(file =>
+              file.type.match(/(pdf|msword|vnd.openxmlformats-officedocument|vnd.ms-excel|vnd.ms-powerpoint)/)
+      );
+
+      if (validFiles.length > 0) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(validFiles[0]);
+        docInput.files = dataTransfer.files;
+        handleDocumentUpload({ target: docInput });
+      } else {
+        showAlert('error', 'Пожалуйста, выберите файл одного из разрешенных типов: PDF, Word, Excel или PowerPoint');
+      }
+    }
+  }
+
+  // Обработка загрузки изображений
+  function handleImageUpload(e) {
+    const files = e.target.files;
+    const preview = document.getElementById('addImagePreview');
+    preview.innerHTML = '';
+
+    if (files.length > 0) {
+      selectedImages = [];
+
+      for (let i = 0; i < Math.min(files.length, maxImages); i++) {
+        const file = files[i];
+
+        if (!file.type.startsWith('image/')) {
+          showAlert('error', 'Пожалуйста, выберите только изображения (JPG, PNG)');
+          continue;
+        }
+
+        selectedImages.push(file);
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const imgContainer = document.createElement('div');
+          imgContainer.className = 'image-preview__item';
+
+          imgContainer.innerHTML = `
+                        <img src="${event.target.result}" class="image-preview__img" alt="Preview">
+                        <div class="image-preview__remove" onclick="removeImage(${selectedImages.length - 1})">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    `;
+
+          preview.appendChild(imgContainer);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      document.getElementById('submitImagesBtn').disabled = selectedImages.length === 0;
+
+      if (files.length > maxImages) {
+        showAlert('warning', `Можно загрузить не более ${maxImages} изображений. Остальные файлы были проигнорированы.`);
+      }
+    }
+  }
+
+  // Удаление изображения из предпросмотра
+  function removeImage(index) {
+    selectedImages.splice(index, 1);
+    updateImagePreview();
+    document.getElementById('submitImagesBtn').disabled = selectedImages.length === 0;
+  }
+
+  // Обновление предпросмотра изображений
+  function updateImagePreview() {
+    const preview = document.getElementById('addImagePreview');
+    preview.innerHTML = '';
+
+    selectedImages.forEach((file, index) => {
+      const imgContainer = document.createElement('div');
+      imgContainer.className = 'image-preview__item';
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        imgContainer.innerHTML = `
+                    <img src="${event.target.result}" class="image-preview__img" alt="Preview">
+                    <div class="image-preview__remove" onclick="removeImage(${index})">
+                        <i class="fas fa-times"></i>
+                    </div>
+                `;
+
+        preview.appendChild(imgContainer);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Обработка загрузки документа
+  function handleDocumentUpload(e) {
+    const file = e.target.files[0];
+    const fileName = document.getElementById('addDocName');
+
+    if (file) {
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        showAlert('error', 'Пожалуйста, выберите файл одного из разрешенных типов: PDF, Word, Excel или PowerPoint');
+        e.target.value = '';
+        fileName.textContent = 'Файл не выбран';
+        return;
+      }
+
+      selectedDocument = file;
+      fileName.textContent = file.name;
+      document.getElementById('submitDocBtn').disabled = false;
+    } else {
+      fileName.textContent = 'Файл не выбран';
+      document.getElementById('submitDocBtn').disabled = true;
+    }
+  }
+
+  // Обработка отправки формы с изображениями
+  function handleImageFormSubmit(e) {
+    e.preventDefault();
+
+    if (selectedImages.length === 0) {
+      showAlert('error', 'Пожалуйста, выберите хотя бы одно изображение');
+      return;
+    }
+
+    const formData = new FormData(e.target);
+
+    selectedImages.forEach((image, index) => {
+      formData.append('images', image);
+    });
+
+    // Отправка данных на сервер
+    fetch(e.target.action, {
+      method: 'POST',
+      body: formData
+    })
+            .then(response => {
+              if (response.ok) {
+                showAlert('success', 'Фотографии успешно загружены');
+                closeModal('addImageModal');
+                selectedImages = [];
+                document.getElementById('addImagePreview').innerHTML = '';
+                document.getElementById('addImageInput').value = '';
+                document.getElementById('submitImagesBtn').disabled = true;
+                setTimeout(() => window.location.reload(), 1500);
+              } else {
+                throw new Error('Ошибка при загрузке фотографий');
+              }
+            })
+            .catch(error => {
+              showAlert('error', 'Произошла ошибка при загрузке фотографий');
+              console.error('Error:', error);
+            });
+  }
+
+  // Обработка отправки формы с документацией
+  function handleDocumentFormSubmit(e) {
+    e.preventDefault();
+
+    if (!selectedDocument) {
+      showAlert('error', 'Пожалуйста, выберите документ');
+      return;
+    }
+
+    const formData = new FormData(e.target);
+    formData.append('documentation', selectedDocument);
+
+    // Отправка данных на сервер
+    fetch(e.target.action, {
+      method: 'POST',
+      body: formData
+    })
+            .then(response => {
+              if (response.ok) {
+                showAlert('success', 'Документация успешно загружена');
+                closeModal('addDocumentModal');
+                selectedDocument = null;
+                document.getElementById('addDocName').textContent = 'Файл не выбран';
+                document.getElementById('addDocInput').value = '';
+                document.getElementById('docDescription').value = '';
+                document.getElementById('submitDocBtn').disabled = true;
+                setTimeout(() => window.location.reload(), 1500);
+              } else {
+                throw new Error('Ошибка при загрузке документации');
+              }
+            })
+            .catch(error => {
+              showAlert('error', 'Произошла ошибка при загрузке документации');
+              console.error('Error:', error);
+            });
+  }
+
+  // Обработка отправки формы с ценой
+  function handlePriceFormSubmit(e) {
+    e.preventDefault();
+
+    // Отправка данных на сервер
+    fetch(e.target.action, {
+      method: 'POST',
+      body: new FormData(e.target)
+    })
+            .then(response => {
+              if (response.ok) {
+                showAlert('success', 'Цена успешно добавлена');
+                closeModal('addPriceModal');
+                e.target.reset();
+                setTimeout(() => window.location.reload(), 1500);
+              } else {
+                throw new Error('Ошибка при добавлении цены');
+              }
+            })
+            .catch(error => {
+              showAlert('error', 'Произошла ошибка при добавлении цены');
+              console.error('Error:', error);
+            });
+  }
+
+  // Показать уведомление
+  function showAlert(type, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    let icon, alertClass;
+
+    if (type === 'success') {
+      icon = 'fas fa-check-circle';
+      alertClass = 'alert--success';
+    } else if (type === 'error') {
+      icon = 'fas fa-exclamation-circle';
+      alertClass = 'alert--error';
+    } else {
+      icon = 'fas fa-info-circle';
+      alertClass = 'alert--info';
+    }
+
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} animate-fade`;
+    alert.innerHTML = `
+            <i class="${icon}"></i>
+            <span>${message}</span>
+        `;
+
+    alertContainer.appendChild(alert);
+
+    // Автоматическое скрытие через 5 секунд
+    setTimeout(() => {
+      alert.style.opacity = '0';
+      setTimeout(() => alert.remove(), 300);
+    }, 5000);
+  }
+
+  // Открытие модального окна
+  function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('modal--show');
+
+    // Блокировка прокрутки фона
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Закрытие модального окна
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('modal--show');
+
+    // Разблокировка прокрутки фона
+    document.body.style.overflow = '';
+  }
+
+  // Подтверждение удаления товара
+  function confirmDelete() {
+    if (confirm('Вы уверены, что хотите удалить этот товар? Это действие нельзя отменить.')) {
+      // Создаем форму для отправки POST-запроса
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/admin/deleteProduct/' + [[${product.id}]];
+
+      // Добавляем CSRF-токен
+      const csrfToken = document.createElement('input');
+      csrfToken.type = 'hidden';
+      csrfToken.name = '_csrf';
+      csrfToken.value = document.querySelector('input[name="_csrf"]').value;
+      form.appendChild(csrfToken);
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+
+  // Открытие/закрытие бокового меню
+  function openNav() {
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
+  }
+
+  function closeNav() {
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
+  }
+
+  // Закрытие модальных окон при клике вне их области
+  window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+      event.target.classList.remove('modal--show');
+      document.body.style.overflow = '';
+    }
+  }
+</script>
+</body>
+</html>

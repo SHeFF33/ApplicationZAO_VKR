@@ -2,63 +2,134 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <title th:text="'Обращение: ' + ${conversation.subject}"></title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
     }
-    header {
-      background-color: #4CAF50;
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
+
+    .app-sidebar--open {
+      width: 320px;
+    }
+
+    .app-sidebar__header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-sidebar__close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
       text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+      transition: var(--transition);
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
     }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
     }
+
+    /* Остальные стили остаются без изменений */
     .container {
       padding: 20px;
       margin: 20px auto;
@@ -148,6 +219,17 @@
     .close-btn:hover {
       background-color: #d32f2f;
     }
+    .reopen-btn {
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .reopen-btn:hover {
+      background-color: #e68a00;
+    }
     .admin-message {
       background-color: #e6f7ff;
       border-left: 4px solid #1890ff;
@@ -225,22 +307,55 @@
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">ЗАО Муром</div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/products}">Добавить товар</a>
-  <a th:href="@{/admin/clients}">Клиенты</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
 <div class="container">
   <div class="conversation-header">
@@ -288,6 +403,13 @@
       <button type="button" onclick="closeConversation()" class="close-btn">Закрыть обращение</button>
     </form>
   </div>
+
+  <div class="reply-form" th:if="${conversation.closed}">
+    <form th:action="@{/admin/messenger/reopen/{id}(id=${conversation.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <button type="submit" class="reopen-btn">Открыть обращение</button>
+    </form>
+  </div>
 </div>
 
 <!-- Модальное окно для изображений -->
@@ -298,11 +420,11 @@
 
 <script>
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
 
   function closeConversation() {
@@ -369,6 +491,18 @@
     }
     return true;
   }
+
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

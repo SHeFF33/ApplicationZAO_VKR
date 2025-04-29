@@ -7,10 +7,7 @@ import org.springframework.http.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.zaomurom.applicationzao.models.DocumentZAO;
@@ -20,6 +17,7 @@ import ru.zaomurom.applicationzao.models.product.Documentation;
 import ru.zaomurom.applicationzao.models.product.Product;
 import ru.zaomurom.applicationzao.models.product.ProductImage;
 import ru.zaomurom.applicationzao.models.product.Sum;
+import ru.zaomurom.applicationzao.repositories.OrderTruckRepository;
 import ru.zaomurom.applicationzao.services.*;
 
 import java.io.IOException;
@@ -29,10 +27,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class AdminController {
@@ -42,8 +38,6 @@ public class AdminController {
     private ProductService productService;
     @Autowired
     private ClientService clientService;
-    @Autowired
-    private AddressesService addressesService;
     @Autowired
     private ContactsService contactsService;
     @Autowired
@@ -62,6 +56,8 @@ public class AdminController {
     private EmailService emailService;
     @Autowired
     private DocumentTypeService documentTypeService;
+    @Autowired
+    private OrderTruckRepository orderTruckRepository;
 
     @GetMapping("/admin/dashboard")
     public String dashboard(Model model) {
@@ -113,6 +109,8 @@ public class AdminController {
             @RequestParam String kpp,
             @RequestParam String uraddress,
             @RequestParam String factaddress,
+            @RequestParam(required = false) Double sum1,
+            @RequestParam(required = false) Double sum2,
             @RequestParam Long selectedPriceId,
             @RequestParam(required = false) List<String> postalcodes,
             @RequestParam(required = false) List<String> countries,
@@ -122,6 +120,7 @@ public class AdminController {
             @RequestParam(required = false) List<String> streets,
             @RequestParam(required = false) List<String> homes,
             @RequestParam(required = false) List<String> roomnumbers,
+            @RequestParam(required = false) List<String> schedules,
             @RequestParam(required = false) List<String> typeContacts,
             @RequestParam(required = false) List<String> contactNames,
             @RequestParam(required = false) List<String> phonenumbers,
@@ -129,14 +128,28 @@ public class AdminController {
             @RequestParam(required = false) List<String> usernames,
             @RequestParam(required = false) List<String> passwords,
             @RequestParam(required = false) List<String> isAdmins,
-            @RequestParam(required = false) List<String> nameuser
-    ) {
+            @RequestParam(required = false) List<String> nameuser,
+            RedirectAttributes redirectAttributes) {
+
+        // Проверка уникальности username перед созданием клиента
+        if (usernames != null) {
+            for (String username : usernames) {
+                if (userService.existsByUsername(username)) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "Пользователь с логином '" + username + "' уже существует");
+                    return "redirect:/admin/addClient";
+                }
+            }
+        }
+
         Client client = new Client();
         client.setName(name);
         client.setInn(inn);
         client.setKpp(kpp);
         client.setUraddress(uraddress);
         client.setFactaddress(factaddress);
+        client.setSum1(sum1);
+        client.setSum2(sum2);
 
         Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
         client.setSelectedPrice(selectedPrice);
@@ -153,12 +166,14 @@ public class AdminController {
                 address.setStreet(streets.get(i));
                 address.setHome(homes.get(i));
                 address.setRoomnumber(roomnumbers.get(i));
+                address.setSchedule(schedules != null && i < schedules.size() ? schedules.get(i) : null);
                 address.setClient(client);
                 addressesList.add(address);
             }
         }
         client.setAddresses(addressesList);
 
+        // Обработка контактов (остается без изменений)
         List<Contacts> contactsList = new ArrayList<>();
         if (contactNames != null && !contactNames.isEmpty()) {
             for (int i = 0; i < contactNames.size(); i++) {
@@ -173,6 +188,7 @@ public class AdminController {
         }
         client.setContacts(contactsList);
 
+        // Обработка пользователей
         List<User> usersList = new ArrayList<>();
         if (usernames != null && !usernames.isEmpty()) {
             for (int i = 0; i < usernames.size(); i++) {
@@ -180,6 +196,7 @@ public class AdminController {
                         (passwords == null || passwords.size() <= i)) {
                     continue;
                 }
+
                 User user = new User();
                 user.setUsername(usernames.get(i));
                 user.setPassword(new BCryptPasswordEncoder().encode(passwords.get(i)));
@@ -192,7 +209,7 @@ public class AdminController {
         client.setUsers(usersList);
 
         clientService.save(client);
-
+        redirectAttributes.addFlashAttribute("successMessage", "Клиент успешно добавлен");
         return "redirect:/admin/clients";
     }
 
@@ -216,6 +233,8 @@ public class AdminController {
             @RequestParam String kpp,
             @RequestParam String uraddress,
             @RequestParam String factaddress,
+            @RequestParam(required = false) Double sum1,
+            @RequestParam(required = false) Double sum2,
             @RequestParam Long selectedPriceId,
             @RequestParam(required = false) List<String> postalcodes,
             @RequestParam(required = false) List<String> countries,
@@ -225,6 +244,7 @@ public class AdminController {
             @RequestParam(required = false) List<String> streets,
             @RequestParam(required = false) List<String> homes,
             @RequestParam(required = false) List<String> roomnumbers,
+            @RequestParam(required = false) List<String> schedules,
             @RequestParam(required = false) List<String> typeContacts,
             @RequestParam(required = false) List<String> contactNames,
             @RequestParam(required = false) List<String> phonenumbers,
@@ -233,102 +253,137 @@ public class AdminController {
             @RequestParam(required = false) List<String> passwords,
             @RequestParam(required = false) List<String> isAdmins,
             @RequestParam(required = false) List<String> nameuser,
-            @RequestParam(required = false) List<Long> contactIds) {
+            @RequestParam(required = false) List<Long> contactIds,
+            @RequestParam(required = false) List<Long> userIds,
+            RedirectAttributes redirectAttributes) {
 
         Optional<Client> optionalClient = clientService.findById(id);
-        if (optionalClient.isPresent()) {
-            Client client = optionalClient.get();
-            client.setName(name);
-            client.setInn(inn);
-            client.setKpp(kpp);
-            client.setUraddress(uraddress);
-            client.setFactaddress(factaddress);
-
-            // Установка выбранного прайса
-            Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
-            client.setSelectedPrice(selectedPrice);
-
-            // Обработка адресов
-            List<Addresses> existingAddresses = client.getAddresses();
-            if (postalcodes != null && !postalcodes.isEmpty()) {
-                for (int i = 0; i < postalcodes.size(); i++) {
-                    Addresses address = (i < existingAddresses.size()) ? existingAddresses.get(i) : new Addresses();
-                    address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
-                    address.setCountry(countries.get(i));
-                    address.setRegion(regions.get(i));
-                    address.setRayon(rayons.get(i));
-                    address.setCity(cities.get(i));
-                    address.setStreet(streets.get(i));
-                    address.setHome(homes.get(i));
-                    address.setRoomnumber(roomnumbers.get(i));
-                    address.setClient(client);
-
-                    // Установка контакта для адреса, если указан
-                    if (contactIds != null && i < contactIds.size()) {
-                        Long contactId = contactIds.get(i);
-                        if (contactId != null) {
-                            Contacts contact = contactsService.findById(contactId).orElse(null);
-                            address.setContact(contact);
-                        }
-                    }
-
-                    if (i >= existingAddresses.size()) {
-                        existingAddresses.add(address);
-                    }
-                }
-            }
-
-            // Обработка контактов
-            List<Contacts> existingContacts = client.getContacts();
-            if (contactNames != null && !contactNames.isEmpty()) {
-                for (int i = 0; i < contactNames.size(); i++) {
-                    Contacts contact = (i < existingContacts.size()) ? existingContacts.get(i) : new Contacts();
-                    contact.setContactType(typeContacts.get(i));
-                    contact.setName(contactNames.get(i));
-                    contact.setPhonenumber(phonenumbers.get(i));
-                    contact.setEmail(emails.get(i));
-                    contact.setClient(client);
-                    if (i >= existingContacts.size()) {
-                        existingContacts.add(contact);
-                    }
-                }
-            }
-
-            // Обработка пользователей с хэшированием паролей
-            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-            List<User> existingUsers = client.getUsers();
-            if (usernames != null && !usernames.isEmpty()) {
-                for (int i = 0; i < usernames.size(); i++) {
-                    User user = (i < existingUsers.size()) ? existingUsers.get(i) : new User();
-                    user.setUsername(usernames.get(i));
-                    user.setName(nameuser.get(i));
-
-                    // Обработка пароля:
-                    // Если это новый пользователь (i >= existingUsers.size()) или пароль был изменен
-                    if (passwords != null && i < passwords.size() && !passwords.get(i).isEmpty()) {
-                        // Хэшируем новый пароль
-                        user.setPassword(passwordEncoder.encode(passwords.get(i)));
-                    } else if (user.getId() == null) {
-                        // Для нового пользователя, если пароль не указан, устанавливаем дефолтный
-                        user.setPassword(passwordEncoder.encode("defaultPassword"));
-                    }
-                    // Для существующего пользователя, если пароль не меняли - оставляем старый
-
-                    user.setAdmin(isAdmins != null && isAdmins.size() > i && "true".equals(isAdmins.get(i)));
-                    user.setClient(client);
-
-                    if (i >= existingUsers.size()) {
-                        existingUsers.add(user);
-                    }
-                }
-            }
-
-            clientService.save(client);
+        if (!optionalClient.isPresent()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Клиент не найден");
+            return "redirect:/admin/clients";
         }
-        return "redirect:/admin/clients";
+
+        Client client = optionalClient.get();
+
+        // Проверка уникальности username для всех пользователей
+        if (usernames != null) {
+            for (int i = 0; i < usernames.size(); i++) {
+                String username = usernames.get(i);
+                Long userId = (userIds != null && i < userIds.size()) ? userIds.get(i) : null;
+
+                // Пропускаем пустые username (если такое возможно)
+                if (username == null || username.trim().isEmpty()) {
+                    continue;
+                }
+
+                User existingUser = userService.findByUsername(username);
+
+                // Если пользователь с таким username уже существует и это не тот же самый пользователь
+                if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "Пользователь с логином '" + username + "' уже существует");
+                    return "redirect:/admin/editClient/" + id;
+                }
+            }
+        }
+
+        // Обновление основной информации клиента
+        client.setName(name);
+        client.setInn(inn);
+        client.setKpp(kpp);
+        client.setUraddress(uraddress);
+        client.setFactaddress(factaddress);
+        client.setSum1(sum1);
+        client.setSum2(sum2);
+
+        // Установка выбранного прайса
+        Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
+        client.setSelectedPrice(selectedPrice);
+
+        List<Addresses> existingAddresses = client.getAddresses();
+        if (postalcodes != null && !postalcodes.isEmpty()) {
+            for (int i = 0; i < postalcodes.size(); i++) {
+                Addresses address = (i < existingAddresses.size()) ? existingAddresses.get(i) : new Addresses();
+                address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
+                address.setCountry(countries.get(i));
+                address.setRegion(regions.get(i));
+                address.setRayon(rayons.get(i));
+                address.setCity(cities.get(i));
+                address.setStreet(streets.get(i));
+                address.setHome(homes.get(i));
+                address.setRoomnumber(roomnumbers.get(i));
+                address.setSchedule(schedules != null && i < schedules.size() ? schedules.get(i) : null);
+                address.setClient(client);
+
+                if (contactIds != null && i < contactIds.size()) {
+                    Long contactId = contactIds.get(i);
+                    if (contactId != null) {
+                        Contacts contact = contactsService.findById(contactId).orElse(null);
+                        address.setContact(contact);
+                    }
+                }
+
+                if (i >= existingAddresses.size()) {
+                    existingAddresses.add(address);
+                }
+            }
+        }
+
+        // Обработка контактов
+        List<Contacts> existingContacts = client.getContacts();
+        if (contactNames != null && !contactNames.isEmpty()) {
+            for (int i = 0; i < contactNames.size(); i++) {
+                Contacts contact = (i < existingContacts.size()) ? existingContacts.get(i) : new Contacts();
+                contact.setContactType(typeContacts.get(i));
+                contact.setName(contactNames.get(i));
+                contact.setPhonenumber(phonenumbers.get(i));
+                contact.setEmail(emails.get(i));
+                contact.setClient(client);
+                if (i >= existingContacts.size()) {
+                    existingContacts.add(contact);
+                }
+            }
+        }
+
+        // Обработка пользователей с хэшированием паролей
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        List<User> existingUsers = client.getUsers();
+        if (usernames != null && !usernames.isEmpty()) {
+            for (int i = 0; i < usernames.size(); i++) {
+                User user = (i < existingUsers.size()) ? existingUsers.get(i) : new User();
+                user.setUsername(usernames.get(i));
+                user.setName(nameuser.get(i));
+
+                // Обработка пароля:
+                // Если пароль был изменен (новый пароль не пустой)
+                if (passwords != null && i < passwords.size() && !passwords.get(i).isEmpty()) {
+                    user.setPassword(passwordEncoder.encode(passwords.get(i)));
+                } else if (user.getId() == null) {
+                    // Для нового пользователя, если пароль не указан, устанавливаем дефолтный
+                    user.setPassword(passwordEncoder.encode("defaultPassword"));
+                }
+
+                // Обработка роли администратора
+                boolean isAdmin = isAdmins != null && isAdmins.size() > i;
+                user.setAdmin(isAdmin);
+                user.setClient(client);
+
+                if (i >= existingUsers.size()) {
+                    existingUsers.add(user);
+                }
+            }
+        }
+
+        try {
+            clientService.save(client);
+            redirectAttributes.addFlashAttribute("successMessage", "Изменения клиента успешно сохранены");
+            return "redirect:/admin/clientDetails/" + id;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Ошибка при сохранении клиента: " + e.getMessage());
+            return "redirect:/admin/editClient/" + id;
+        }
     }
-
-
     @PostMapping("/admin/deleteUser/{clientId}/{userId}")
     public String deleteUser(@PathVariable Long clientId, @PathVariable Long userId) {
         Optional<Client> optionalClient = clientService.findById(clientId);
@@ -359,6 +414,7 @@ public class AdminController {
             @RequestParam String name,
             @RequestParam String sort,
             @RequestParam String tolsh,
+            @RequestParam Double length,
             @RequestParam int quantity,
             @RequestParam String description
     ) {
@@ -366,6 +422,7 @@ public class AdminController {
         product.setName(name);
         product.setSort(sort);
         product.setTolsh(tolsh);
+        product.setLength(length);
         product.setQuantity(quantity);
         product.setDescription(description);
 
@@ -378,8 +435,7 @@ public class AdminController {
     public String addDocumentation(
             @RequestParam Long productId,
             @RequestParam("documentation") MultipartFile documentationFile,
-            @RequestParam String description
-    ) throws IOException {
+            @RequestParam String description) throws IOException {
         Product product = productService.findById(productId).orElse(null);
         if (product != null) {
             Documentation documentation = new Documentation();
@@ -395,8 +451,7 @@ public class AdminController {
     @PostMapping("/admin/addProductImages")
     public String addProductImages(
             @RequestParam Long productId,
-            @RequestParam("images") List<MultipartFile> images
-    ) throws IOException {
+            @RequestParam("images") List<MultipartFile> images) throws IOException {
         Product product = productService.findById(productId).orElse(null);
         if (product != null) {
             List<ProductImage> imageList = new ArrayList<>();
@@ -407,20 +462,21 @@ public class AdminController {
                     productImage.setProduct(product);
                     imageList.add(productImage);
                 }
+                productImageService.saveAll(imageList); // Сохраняем все изображения
             }
-            product.getImages().addAll(imageList);
-            productService.save(product);
+            productService.updateProductVisibility(productId);
+            return "redirect:/admin/dashboard"; // Перенаправляем на страницу dashboard
         }
         return "redirect:/admin/products";
     }
+
 
     @PostMapping("/admin/addSum")
     public String addSum(
             @RequestParam Long productId,
             @RequestParam List<Double> summas,
             @RequestParam List<String> periods,
-            @RequestParam List<Long> priceIds
-    ) {
+            @RequestParam List<Long> priceIds) {
         Product product = productService.findById(productId).orElse(null);
         if (product != null) {
             for (int i = 0; i < summas.size(); i++) {
@@ -435,6 +491,7 @@ public class AdminController {
                 }
             }
         }
+        productService.updateProductVisibility(productId);
         return "redirect:/admin/products";
     }
 
@@ -458,19 +515,24 @@ public class AdminController {
 
     @GetMapping("/admin/orders/{id}")
     public String admorderDetails(Model model, @PathVariable Long id) {
+        List<DocumentType> documentTypes = documentTypeService.findAll();
         Optional<Order> orderOptional = orderService.findById(id);
         if (orderOptional.isPresent()) {
             Order order = orderOptional.get();
-            model.addAttribute("order", order);
-            model.addAttribute("tchOrders", order.getTchOrders()); // Добавьте эту строку
-            model.addAttribute("documentTypes", documentTypeService.findAll());
-            return "admin/orderDetails";
-        } else {
-            System.out.println("Order not found for id: " + id);
-            return "error";
-        }
-    }
 
+            order.getTrucks().forEach(truck -> {
+                double total = truck.getTchOrders().stream()
+                        .mapToDouble(t -> t.getPrice() * t.getQuantity())
+                        .sum();
+                truck.setTotal(total); // Добавьте поле total в OrderTruck
+            });
+
+            model.addAttribute("order", order);
+            model.addAttribute("documentTypes", documentTypes);
+            return "admin/orderDetails";
+        }
+        return "error";
+    }
 
     @PostMapping("/admin/updateOrderStatus")
     public String updateOrderStatus(
@@ -619,18 +681,50 @@ public class AdminController {
             @PathVariable Long id,
             @RequestParam List<Double> prices,
             @RequestParam List<Long> tchOrderIds,
+            @RequestParam List<Double> discounts,
             RedirectAttributes redirectAttributes) {
 
         for (int i = 0; i < prices.size(); i++) {
             TCHOrder tchOrder = orderService.findTchOrderById(tchOrderIds.get(i));
             if (tchOrder != null) {
                 tchOrder.setPrice(prices.get(i));
+                tchOrder.setDiscount(discounts.get(i));
                 orderService.saveTchOrder(tchOrder);
             }
         }
-        redirectAttributes.addFlashAttribute("successMessage", "Цены успешно обновлены.");
+        redirectAttributes.addFlashAttribute("successMessage", "Цены и скидки успешно обновлены.");
         return "redirect:/admin/orders/" + id;
     }
+
+    @PostMapping("/admin/applyDiscountToTruck/{orderId}/{truckId}")
+    public String applyDiscountToTruck(
+            @PathVariable Long orderId,
+            @PathVariable Long truckId,
+            @RequestParam Double discount,
+            RedirectAttributes redirectAttributes) {
+
+        OrderTruck truck = orderTruckRepository.findById(truckId).orElse(null);
+        if (truck != null) {
+            for (TCHOrder tchOrder : truck.getTchOrders()) {
+                if (tchOrder.getOriginalPrice() == null) {
+                    tchOrder.setOriginalPrice(tchOrder.getPrice());
+                }
+
+                // Применяем скидку к оригинальной цене
+                double discountedPrice = tchOrder.getOriginalPrice() * (100 - discount) / 100;
+                tchOrder.setPrice(discountedPrice);
+                tchOrder.setDiscount(discount);
+                orderService.saveTchOrder(tchOrder);
+            }
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Скидка " + discount + "% успешно применена. Цены обновлены.");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Не удалось найти грузовик с ID: " + truckId);
+        }
+        return "redirect:/admin/orders/" + orderId;
+    }
+
     @Autowired
     private DocumentZAOService documentZAOService;
 
@@ -686,5 +780,190 @@ public class AdminController {
         documentZAOService.deleteById(id);
         return "redirect:/admin/document";
     }
+    @GetMapping("/api/checkUsername")
+    @ResponseBody
+    public ResponseEntity<?> checkUsername(
+            @RequestParam String username,
+            @RequestParam(required = false) Long userId) {
 
+        User existingUser = userService.findByUsername(username);
+
+        if (existingUser != null && (userId == null || !existingUser.getId().equals(userId))) {
+            return ResponseEntity.ok().body(Collections.singletonMap("available", false));
+        }
+        return ResponseEntity.ok().body(Collections.singletonMap("available", true));
+    }
+
+    @GetMapping("/admin/editProduct/{id}")
+    public String editProductForm(@PathVariable Long id, Model model) {
+        Optional<Product> product = productService.findById(id);
+        if (product.isPresent()) {
+            model.addAttribute("product", product.get());
+            model.addAttribute("prices", priceService.findAll());
+            return "admin/editProduct";
+        }
+        return "redirect:/admin/dashboard";
+    }
+    @PostMapping("/admin/updateProduct/{id}")
+    public String updateProduct(
+            @PathVariable Long id,
+            @RequestParam String name,
+            @RequestParam String sort,
+            @RequestParam String tolsh,
+            @RequestParam Double length,
+            @RequestParam int quantity,
+            @RequestParam String description,
+            @RequestParam(required = false, defaultValue = "false") boolean visible,
+            RedirectAttributes redirectAttributes) {
+
+        Product product = productService.findById(id).orElseThrow();
+        product.setName(name);
+        product.setSort(sort);
+        product.setTolsh(tolsh);
+        product.setLength(length);
+        product.setQuantity(quantity);
+        product.setDescription(description);
+        if (product.isReadyForDisplay()) {
+            product.setVisible(visible);
+        } else {
+            product.setVisible(false);
+        }
+
+        productService.save(product);
+        redirectAttributes.addFlashAttribute("successMessage", "Товар успешно обновлен");
+        return "redirect:/admin/dashboard";
+    }
+
+    @GetMapping("/admin/search")
+    public String searchProducts(@RequestParam String query, Model model) {
+        List<Product> products = productService.findBySearch().stream()
+                .filter(product -> product.getName().toLowerCase().contains(query.toLowerCase()))
+                .collect(Collectors.toList());
+
+        model.addAttribute("products", products);
+        return "admin/product-grid-fragment :: productGrid";
+    }
+    @PostMapping("/admin/deleteProduct/{id}")
+    public String deleteProduct(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            productService.deleteProduct(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Продукт успешно удален");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении продукта: " + e.getMessage());
+        }
+        return "redirect:/admin/dashboard";
+    }
+
+    @PostMapping("/admin/deleteProductImages")
+    public String deleteProductImages(
+            @RequestParam Long productId,
+            @RequestParam List<Long> imageIds,
+            RedirectAttributes redirectAttributes) {
+        try {
+            for (Long imageId : imageIds) {
+                productImageService.deleteById(imageId);
+            }
+            productService.updateProductVisibility(productId);
+            redirectAttributes.addFlashAttribute("successMessage", "Фотографии успешно удалены");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении фотографий: " + e.getMessage());
+        }
+        return "redirect:/admin/editProduct/" + productId;
+    }
+
+    @PostMapping("/admin/deleteProductDocumentation")
+    public String deleteProductDocumentation(
+            @RequestParam Long productId,
+            @RequestParam List<Long> docIds,
+            RedirectAttributes redirectAttributes) {
+        try {
+            for (Long docId : docIds) {
+                documentationService.deleteById(docId);
+            }
+            redirectAttributes.addFlashAttribute("successMessage", "Документы успешно удалены");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении документов: " + e.getMessage());
+        }
+        return "redirect:/admin/editProduct/" + productId;
+    }
+
+    @PostMapping("/admin/deleteProductPrices")
+    public String deleteProductPrices(
+            @RequestParam Long productId,
+            @RequestParam List<Long> sumIds,
+            RedirectAttributes redirectAttributes) {
+        try {
+            for (Long sumId : sumIds) {
+                sumService.deleteById(sumId);
+            }
+            productService.updateProductVisibility(productId);
+            redirectAttributes.addFlashAttribute("successMessage", "Цены успешно удалены");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении цен: " + e.getMessage());
+        }
+        return "redirect:/admin/editProduct/" + productId;
+    }
+
+    @PostMapping("/admin/addProductImagesEditProducts")
+    public String addProductImagesEditProducts(
+            @RequestParam Long productId,
+            @RequestParam("images") List<MultipartFile> images) throws IOException {
+        Product product = productService.findById(productId).orElse(null);
+        if (product != null) {
+            List<ProductImage> imageList = new ArrayList<>();
+            if (images != null && !images.isEmpty()) {
+                for (MultipartFile image : images) {
+                    ProductImage productImage = new ProductImage();
+                    productImage.setBytes(image.getBytes());
+                    productImage.setProduct(product);
+                    imageList.add(productImage);
+                }
+                productImageService.saveAll(imageList); // Сохраняем все изображения
+            }
+            productService.updateProductVisibility(productId);
+            return "redirect:/admin/dashboard"; // Перенаправляем на страницу dashboard
+        }
+        return "redirect:/admin/editProduct/" + productId;
+    }
+
+    @PostMapping("/admin/addDocumentationEditProducts")
+    public String addDocumentationEditProducts(
+            @RequestParam Long productId,
+            @RequestParam("documentation") MultipartFile documentationFile,
+            @RequestParam String description) throws IOException {
+        Product product = productService.findById(productId).orElse(null);
+        if (product != null) {
+            Documentation documentation = new Documentation();
+            documentation.setName(documentationFile.getOriginalFilename());
+            documentation.setBytes(documentationFile.getBytes());
+            documentation.setDescription(description);
+            documentation.setProduct(product);
+            documentationService.save(documentation);
+        }
+        return "redirect:/admin/editProduct/" + productId;
+    }
+
+    @PostMapping("/admin/addSumEditProducts")
+    public String addSumEditProducts(
+            @RequestParam Long productId,
+            @RequestParam List<Double> summas,
+            @RequestParam List<String> periods,
+            @RequestParam List<Long> priceIds) {
+        Product product = productService.findById(productId).orElse(null);
+        if (product != null) {
+            for (int i = 0; i < summas.size(); i++) {
+                Price price = priceService.findById(priceIds.get(i)).orElse(null);
+                if (price != null) {
+                    Sum sum = new Sum();
+                    sum.setSumma(summas.get(i));
+                    sum.setPeriod(java.sql.Date.valueOf(periods.get(i)));
+                    sum.setProduct(product);
+                    sum.setPrice(price);
+                    sumService.save(sum);
+                }
+            }
+        }
+        productService.updateProductVisibility(productId);
+        return "redirect:/admin/editProduct/" + productId;
+    }
 }

@@ -17,6 +17,8 @@ public class Client {
     private String kpp;
     private String uraddress;
     private String factaddress;
+    private Double sum1;
+    private Double sum2;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Addresses> addresses;
@@ -131,5 +133,21 @@ public class Client {
 
     public void setCart(Cart cart) {
         this.cart = cart;
+    }
+
+    public Double getSum1() {
+        return sum1;
+    }
+
+    public void setSum1(Double sum1) {
+        this.sum1 = sum1;
+    }
+
+    public Double getSum2() {
+        return sum2;
+    }
+
+    public void setSum2(Double sum2) {
+        this.sum2 = sum2;
     }
 }

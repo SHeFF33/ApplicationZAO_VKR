@@ -1,183 +1,462 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
-  <title>Клиенты</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Клиенты | Админ-панель | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --success: #388E3C;
+      --warning: #FFA000;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --transition-slow: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition-slow);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
-      text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+
+    .app-sidebar--open {
+      width: 320px;
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
-    }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
-    }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
-      max-width: 1200px;
-    }
-    .client-block {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      padding: 15px;
-      margin-bottom: 15px;
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .client-block:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-      cursor: pointer;
-    }
-    .client-info {
+
+    .app-sidebar__header {
+      padding: 1.5rem;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .client-info div {
-      display: flex;
-      justify-content: flex-start;
+      justify-content: space-between;
       align-items: center;
-      padding: 5px 0;
-      width: 100%;
+      border-bottom: 1px solid var(--border);
     }
-    .client-info div span:first-child {
-      font-weight: bold;
-      color: #555;
-      margin-right: 10px;
-    }
-    .client-info div span:last-child {
-      color: #333;
-      text-align: left;
-    }
-    .add-client-btn {
-      display: block;
-      width: fit-content;
-      margin: 20px auto;
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
+
+    .app-sidebar__close-btn {
+      background: none;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
+      font-size: 1.5rem;
       cursor: pointer;
-      text-align: center;
-      text-decoration: none;
+      color: var(--text-secondary);
     }
-    .add-client-btn:hover {
-      background-color: #45a049;
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
+    }
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main container */
+    .app-container {
+      max-width: 1440px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    .btn--primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Search */
+    .search-bar {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .search-bar__input {
+      width: 100%;
+      padding: 0.875rem 1rem 0.875rem 3rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background-color: var(--surface);
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .search-bar__input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .search-bar__icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+
+    /* Client cards */
+    .clients-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .client-card {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .client-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+      cursor: pointer;
+    }
+
+    .client-card__header {
+      padding: 1.25rem;
+      background-color: var(--primary-light);
+      color: white;
+    }
+
+    .client-card__title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .client-card__inn {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    .client-card__content {
+      padding: 1.25rem;
+    }
+
+    .client-card__detail {
+      display: flex;
+      margin-bottom: 0.75rem;
+    }
+
+    .client-card__label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      min-width: 120px;
+    }
+
+    .client-card__value {
+      flex-grow: 1;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 0;
+      grid-column: 1 / -1;
+    }
+
+    .empty-state__icon {
+      font-size: 3rem;
+      color: var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .empty-state__title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .clients-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .client-card__detail {
+        flex-direction: column;
+      }
+
+      .client-card__label {
+        margin-bottom: 0.25rem;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">
+    Панель администратора | ЗАО Муром
+  </div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/dashboard}">Панель администратора</a>
-  <a th:href="@{/admin/products}">Товары</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
-<div class="container">
-  <a href="/admin/addClient" class="add-client-btn">Добавить клиента</a>
-  <div th:each="client : ${clients}">
-    <div class="client-block" th:onclick="'window.location.href = \'' + @{/admin/clientDetails/{id}(id=${client.id})} + '\''">
-      <div class="client-info">
-        <div>
-          <span>Имя:</span>
-          <span th:text="${client.name}"></span>
+<main class="app-container">
+  <div class="page-header">
+    <h1 class="page-title">Управление клиентами</h1>
+    <a th:href="@{/admin/addClient}" class="btn btn--primary">
+      <i class="fas fa-plus"></i> Добавить клиента
+    </a>
+  </div>
+
+  <div class="search-bar">
+    <i class="fas fa-search search-bar__icon"></i>
+    <input type="text" class="search-bar__input" placeholder="Поиск клиентов..." id="searchInput">
+  </div>
+
+  <div th:if="${clients == null or clients.empty}" class="empty-state">
+    <div class="empty-state__icon">
+      <i class="fas fa-users-slash"></i>
+    </div>
+    <h3 class="empty-state__title">Клиенты не найдены</h3>
+    <a th:href="@{/admin/addClient}" class="btn btn--primary">
+      <i class="fas fa-plus"></i> Добавить первого клиента
+    </a>
+  </div>
+
+  <div th:if="${clients != null and not clients.empty}" class="clients-grid">
+    <div th:each="client : ${clients}" class="client-card"
+         th:onclick="'window.location.href=\'' + @{/admin/clientDetails/{id}(id=${client.id})} + '\''">
+      <div class="client-card__header">
+        <h3 class="client-card__title" th:text="${client.name}"></h3>
+        <div class="client-card__inn" th:text="'ИНН: ' + ${client.inn}"></div>
+      </div>
+      <div class="client-card__content">
+        <div class="client-card__detail">
+          <div class="client-card__label">КПП:</div>
+          <div class="client-card__value" th:text="${client.kpp}"></div>
         </div>
-        <div>
-          <span>ИНН:</span>
-          <span th:text="${client.inn}"></span>
+        <div class="client-card__detail">
+          <div class="client-card__label">Юр. адрес:</div>
+          <div class="client-card__value" th:text="${client.uraddress}"></div>
         </div>
-        <div>
-          <span>КПП:</span>
-          <span th:text="${client.kpp}"></span>
+        <div class="client-card__detail">
+          <div class="client-card__label">Факт. адрес:</div>
+          <div class="client-card__value" th:text="${client.factaddress}"></div>
         </div>
-        <div>
-          <span>Юридический адрес:</span>
-          <span th:text="${client.uraddress}"></span>
-        </div>
-        <div>
-          <span>Фактический адрес:</span>
-          <span th:text="${client.factaddress}"></span>
+        <div class="client-card__detail">
+          <div class="client-card__label">Тип прайса:</div>
+          <div class="client-card__value" th:text="${client.selectedPrice.name}"></div>
         </div>
       </div>
     </div>
   </div>
-</div>
+</main>
 
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const clientCards = document.querySelectorAll('.client-card');
+
+        clientCards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          if (text.includes(query)) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    }
+  });
+
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
+
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

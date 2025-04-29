@@ -1,79 +1,258 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Вход</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | ЗАО Муром</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        :root {
+            --primary: #2E7D32;
+            --primary-light: #4CAF50;
+            --primary-dark: #1B5E20;
+            --error: #d32f2f;
+            --background: #f5f5f5;
+            --surface: #ffffff;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border: #e0e0e0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --radius-md: 8px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f9f9f9;
+            min-height: 100vh;
+            padding: 1rem;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
         }
-        .container {
-            background-color: white;
-            padding: 40px;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+
+        .login-container {
             width: 100%;
             max-width: 400px;
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: var(--transition);
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+        .login-header {
+            padding: 2rem 2rem 1rem;
             text-align: center;
         }
-        h2 {
-            margin-bottom: 20px;
-            font-size: 2em;
-            color: #333;
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 2rem;
         }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .login-form {
+            padding: 1.5rem 2rem 2rem;
+        }
+
         .form-group {
-            margin-bottom: 20px;
-            text-align: left;
+            margin-bottom: 1.25rem;
         }
-        label {
+
+        .form-label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 1.2em;
-            color: #555;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
         }
-        input[type="text"], input[type="password"] {
+
+        .form-control {
             width: 100%;
-            padding: 10px;
-            font-size: 1.2em;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+            background-color: #f9f9f9;
         }
-        button {
-            padding: 15px 25px;
-            font-size: 1.4em;
-            color: #fff;
-            background-color: #4CAF50;
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+            background-color: var(--surface);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: white;
+            background-color: var(--primary);
             border: none;
-            border-radius: 25px;
+            border-radius: var(--radius-md);
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
-        button:hover {
-            background-color: #45a049;
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .login-footer {
+            padding: 1rem 2rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .login-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                max-width: 100%;
+            }
+
+            .login-form {
+                padding: 1.5rem 1.5rem 2rem;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h2>Авторизация</h2>
-    <form th:action="@{/login}" method="post">
-        <div class="form-group">
-            <label>Имя пользователя:</label>
-            <input type="text" name="username" required/>
+<div class="login-container">
+    <div class="login-header">
+        <div class="login-logo">
+            <i class="fas fa-building"></i>
         </div>
-        <div class="form-group">
-            <label>Пароль:</label>
-            <input type="password" name="password" required/>
+        <h1 class="login-title">ЗАО Муром</h1>
+        <p class="login-subtitle">Войдите в свой аккаунт</p>
+    </div>
+
+    <form th:action="@{/login}" method="post" class="login-form">
+        <div th:if="${param.error}" class="form-group">
+            <div class="error-message" style="display: block;">
+                Неверное имя пользователя или пароль
+            </div>
         </div>
-        <button type="submit">Войти</button>
+
+        <div class="form-group">
+            <label for="username" class="form-label">Имя пользователя</label>
+            <input type="text" id="username" name="username" class="form-control" required autofocus>
+        </div>
+
+        <div class="form-group password-field">
+            <label for="password" class="form-label">Пароль</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+            <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility()"></i>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn">
+                <i class="fas fa-sign-in-alt"></i> Войти
+            </button>
+        </div>
+
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
     </form>
+
+    <div class="login-footer">
+        <p>Нет аккаунта? <a href="#">Свяжитесь с администратором</a></p>
+    </div>
 </div>
+
+<script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const icon = document.querySelector('.toggle-password');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
 </body>
 </html>

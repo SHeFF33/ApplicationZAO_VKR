@@ -1,13 +1,16 @@
 package ru.zaomurom.applicationzao.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.zaomurom.applicationzao.dto.*;
 import ru.zaomurom.applicationzao.models.client.Client;
-import ru.zaomurom.applicationzao.models.product.Cart;
-import ru.zaomurom.applicationzao.models.product.CartItem;
-import ru.zaomurom.applicationzao.repositories.CartItemRepository;
-import ru.zaomurom.applicationzao.repositories.CartRepository;
+import ru.zaomurom.applicationzao.models.product.*;
+import ru.zaomurom.applicationzao.repositories.*;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CartService {
@@ -16,11 +19,29 @@ public class CartService {
     @Autowired
     private CartItemRepository cartItemRepository;
 
+    @Autowired
+    private CartTruckRepository cartTruckRepository;
+
+    @Autowired
+    private SumRepository sumRepository;
+
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CartTruckItemRepository cartTruckItemRepository;
+
     public Cart findByClient(Client client) {
         return cartRepository.findByClient(client);
     }
 
+    @Transactional
     public void save(Cart cart) {
+        // Перед сохранением выполняем распределение
+        if (!cart.getCartItems().isEmpty()) {
+            cart.distributeItemsToTrucks();
+        }
         cartRepository.save(cart);
     }
 
@@ -31,5 +52,223 @@ public class CartService {
     @Transactional
     public void deleteCartItem(CartItem cartItem) {
         cartItemRepository.delete(cartItem);
+    }
+    @Transactional
+    public void saveTrucksWithItems(Cart cart) {
+        // Удаляем старые записи только если они есть
+        if (!cart.getTrucks().isEmpty()) {
+            cartTruckRepository.deleteAll(cart.getTrucks());
+            cart.getTrucks().clear();
+        }
+
+        // Распределяем товары по машинам
+        cart.distributeItemsToTrucks();
+
+        // Сохраняем новые записи
+        for (CartTruck truck : cart.getTrucks()) {
+            cartTruckRepository.save(truck);
+            for (CartTruckItem item : truck.getItems()) {
+                item.setTruck(truck); // Убедимся, что связь установлена
+                cartTruckItemRepository.save(item);
+            }
+        }
+    }
+
+
+    public CartDistributionDTO prepareCartDistributionDTO(Cart cart) {
+        CartDistributionDTO dto = new CartDistributionDTO();
+
+        // Все товары в корзине
+        dto.setItems(cart.getCartItems().stream()
+                .map(item -> new CartItemDTO(
+                        item.getId(),
+                        item.getProduct().getId(),
+                        item.getSum().getId(),
+                        item.getQuantity(),
+                        item.getProduct().getName(),
+                        item.getProduct().getLength()
+                ))
+                .collect(Collectors.toList()));
+
+        // Автоматически распределенные машины
+        cart.distributeItemsToTrucks();
+        dto.setTrucks(cart.getTrucks().stream()
+                .map(truck -> new CartTruckDTO(
+                        truck.getId(),
+                        truck.getItems().stream()
+                                .map(item -> new CartTruckItemDTO(
+                                        item.getId(),
+                                        item.getProduct().getId(),
+                                        item.getSum().getId(),
+                                        item.getQuantity(),
+                                        item.getProduct().getName(),
+                                        item.getProduct().getLength()
+                                ))
+                                .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList()));
+
+        return dto;
+    }
+
+    @Transactional
+    public void applyManualDistribution(Cart cart, ManualDistributionRequest request) {
+        // 1. Очищаем текущие trucks и их items
+        cart.getTrucks().forEach(truck -> {
+            cartTruckItemRepository.deleteAll(truck.getItems());
+            truck.getItems().clear();
+        });
+        cartTruckRepository.deleteAll(cart.getTrucks());
+        cart.getTrucks().clear();
+
+        // 2. Сохраняем новое распределение
+        for (ManualDistributionRequest.TruckDTO truckDTO : request.getTrucks()) {
+            CartTruck truck = new CartTruck();
+            truck.setCart(cart);
+            cart.getTrucks().add(truck);
+            cartTruckRepository.save(truck);
+
+            for (ManualDistributionRequest.TruckItemDTO itemDTO : truckDTO.getItems()) {
+                Product product = productRepository.findById(itemDTO.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found"));
+                Sum sum = sumRepository.findById(itemDTO.getSumId())
+                        .orElseThrow(() -> new RuntimeException("Sum not found"));
+
+                CartTruckItem item = new CartTruckItem();
+                item.setTruck(truck);
+                item.setProduct(product);
+                item.setSum(sum);
+                item.setQuantity(itemDTO.getQuantity());
+
+                cartTruckItemRepository.save(item);
+                truck.getItems().add(item);
+            }
+        }
+
+        // 3. Обновляем cartItems на основе текущего распределения
+        updateCartItemsFromTrucks(cart);
+        cartRepository.save(cart);
+    }
+
+    private void updateCartItemsFromTrucks(Cart cart) {
+        // Удаляем все текущие CartItems
+        cartItemRepository.deleteAll(cart.getCartItems());
+        cart.getCartItems().clear();
+
+        // Собираем все товары из всех машин
+        Map<Pair<Long, Long>, Integer> productQuantities = new HashMap<>();
+
+        cart.getTrucks().forEach(truck -> {
+            truck.getItems().forEach(item -> {
+                Pair<Long, Long> key = Pair.of(item.getProduct().getId(), item.getSum().getId());
+                productQuantities.merge(key, item.getQuantity(), Integer::sum);
+            });
+        });
+
+        // Создаем новые CartItems
+        productQuantities.forEach((key, quantity) -> {
+            Product product = productRepository.findById(key.getFirst())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+            Sum sum = sumRepository.findById(key.getSecond())
+                    .orElseThrow(() -> new RuntimeException("Sum not found"));
+
+            CartItem cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
+            cartItem.setSum(sum);
+            cartItem.setQuantity(quantity);
+
+            cartItemRepository.save(cartItem);
+            cart.getCartItems().add(cartItem);
+        });
+    }
+    @Transactional
+    public void autoDistribute(Cart cart) {
+        // 1. Очищаем текущие trucks и их items
+        cart.getTrucks().forEach(truck -> {
+            cartTruckItemRepository.deleteAll(truck.getItems());
+            truck.getItems().clear();
+        });
+        cartTruckRepository.deleteAll(cart.getTrucks());
+        cart.getTrucks().clear();
+
+        // 2. Сортируем товары по длине (2.8 в начало)
+        List<CartItem> sortedItems = cart.getCartItems().stream()
+                .sorted(Comparator.comparing(item ->
+                        item.getProduct().getLength() == 2.8 ? 0 : 1))
+                .collect(Collectors.toList());
+
+        // 3. Распределяем товары по машинам
+        CartTruck currentTruck = new CartTruck();
+        currentTruck.setCart(cart);
+        cart.getTrucks().add(currentTruck);
+        cartTruckRepository.save(currentTruck);
+
+        for (CartItem item : sortedItems) {
+            int remainingQuantity = item.getQuantity();
+
+            while (remainingQuantity > 0) {
+                // Определяем доступное место в текущей машине
+                int availableSpace = calculateAvailableSpace(currentTruck);
+
+                if (availableSpace <= 0) {
+                    // Создаем новую машину
+                    currentTruck = new CartTruck();
+                    currentTruck.setCart(cart);
+                    cart.getTrucks().add(currentTruck);
+                    cartTruckRepository.save(currentTruck);
+                    availableSpace = calculateAvailableSpace(currentTruck);
+                }
+
+                int quantityToAdd = Math.min(remainingQuantity, availableSpace);
+                addItemToTruck(currentTruck, item, quantityToAdd);
+                remainingQuantity -= quantityToAdd;
+            }
+        }
+
+        // 4. Сохраняем изменения
+        cartRepository.save(cart);
+    }
+
+    private int calculateAvailableSpace(CartTruck truck) {
+        long longProductsCount = truck.getItems().stream()
+                .filter(item -> item.getProduct().getLength() == 2.8)
+                .count();
+
+        int totalItems = truck.getItems().stream()
+                .mapToInt(CartTruckItem::getQuantity)
+                .sum();
+
+        // Определяем максимальное количество для этой машины
+        if (longProductsCount >= 6) {
+            return 13 - totalItems; // MAX_ITEMS_LONG
+        } else {
+            return 16 - totalItems; // MAX_ITEMS_SHORT
+        }
+    }
+
+    private void addItemToTruck(CartTruck truck, CartItem cartItem, int quantity) {
+        // Проверяем, есть ли уже такой товар в машине
+        Optional<CartTruckItem> existingItem = truck.getItems().stream()
+                .filter(item -> item.getProduct().getId().equals(cartItem.getProduct().getId()) &&
+                        item.getSum().getId().equals(cartItem.getSum().getId()))
+                .findFirst();
+
+        if (existingItem.isPresent()) {
+            // Увеличиваем количество существующего товара
+            CartTruckItem item = existingItem.get();
+            item.setQuantity(item.getQuantity() + quantity);
+            cartTruckItemRepository.save(item);
+        } else {
+            // Создаем новый элемент в машине
+            CartTruckItem newItem = new CartTruckItem();
+            newItem.setTruck(truck);
+            newItem.setProduct(cartItem.getProduct());
+            newItem.setSum(cartItem.getSum());
+            newItem.setQuantity(quantity);
+
+            cartTruckItemRepository.save(newItem);
+            truck.getItems().add(newItem);
+        }
     }
 }

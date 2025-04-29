@@ -7,14 +7,21 @@ import java.util.List;
 
 @Entity
 public class Product {
+    public static final int MAX_ITEMS_SHORT = 16;
+    public static final int MAX_ITEMS_LONG = 13;
+    public static final int THRESHOLD_LONG = 6;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String sort;
     private String tolsh;
+    private Double length;
     private int quantity;
+    @Column(length = 3000)
     private String description;
+    private boolean visible = false;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sum> sums;
@@ -25,17 +32,19 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "products")
-    private List<Cart> carts;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> cartItems;
 
     public Product() {}
 
-    public Product(String name, String sort, String tolsh, int quantity, String description) {
+    public Product(String name, String sort, String tolsh, double length, int quantity, String description, boolean visible) {
         this.name = name;
         this.sort = sort;
         this.tolsh = tolsh;
+        this.length = length;
         this.quantity = quantity;
         this.description = description;
+        this.visible = visible;
     }
 
     public Long getId() {
@@ -110,11 +119,48 @@ public class Product {
         this.images = images;
     }
 
-    public List<Cart> getCarts() {
-        return carts;
+    public List<CartItem> getCarts() {
+        return cartItems;
     }
 
-    public void setCarts(List<Cart> carts) {
-        this.carts = carts;
+    public void setCarts(List<CartItem> cartItems) {
+        this.cartItems = cartItems;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public boolean isReadyForDisplay() {
+        return !images.isEmpty() && !sums.isEmpty();
+    }
+
+    public Double getLength() {
+        return length;
+    }
+
+    public void setLength(Double length) {
+        this.length = length;
+    }
+    public int getMaxItemsPerTruck(List<Product> productsInTruck) {
+        long longProductsCount = productsInTruck.stream()
+                .filter(p -> p.length == 2.8)
+                .count();
+
+        if (this.length == 2.8 || longProductsCount >= 6) {
+            return MAX_ITEMS_LONG;
+        }
+        return MAX_ITEMS_SHORT;
+    }
+
+    public boolean affectsTruckCapacity(List<Product> productsInTruck) {
+        long longProductsCount = productsInTruck.stream()
+                .filter(p -> p.length == 2.8)
+                .count();
+        return this.length == 2.8 || longProductsCount >= 6;
     }
 }

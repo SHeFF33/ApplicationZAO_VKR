@@ -1,679 +1,799 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Редактировать клиента</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать клиента | ЗАО Муром</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
+        :root {
+            --primary: #2E7D32;
+            --primary-light: #4CAF50;
+            --primary-dark: #1B5E20;
+            --secondary: #FF5722;
+            --background: #f5f5f5;
+            --surface: #ffffff;
+            --error: #d32f2f;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border: #e0e0e0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        header {
-            background-color: #4CAF50;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .app-header {
+            background-color: var(--primary);
             color: white;
-            padding: 10px 20px;
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .header-title {
-            font-size: 24px;
+
+        .app-header__title {
+            font-size: 1.5rem;
+            font-weight: 600;
         }
-        .header-button {
+
+        .app-header__menu-btn {
             background: none;
             border: none;
             color: white;
-            font-size: 24px;
+            font-size: 1.5rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: var(--transition);
         }
-        .header-button:hover {
-            color: #ddd;
+
+        .app-header__menu-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
-        .sidebar {
+
+        /* Sidebar */
+        .app-sidebar {
             height: 100%;
             width: 0;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
             top: 0;
             right: 0;
-            background-color: #111;
+            background-color: var(--surface);
             overflow-x: hidden;
-            transition: 0.5s;
-            padding-top: 60px;
-        }
-        .sidebar a {
-            padding: 8px 8px 8px 32px;
-            text-decoration: none;
-            font-size: 20px;
-            color: #818181;
-            display: block;
-            transition: 0.3s;
-        }
-        .sidebar a:hover {
-            color: #f1f1f1;
-        }
-        .sidebar .closebtn {
-            position: absolute;
-            top: 0;
-            right: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-        }
-        .container {
-            padding: 20px;
-            margin: 20px auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 1200px;
-        }
-        .form-section {
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .form-section h4 {
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-        .form-section div {
-            margin-bottom: 10px;
-        }
-        .form-section label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-section input, .form-section select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .form-section button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        .form-section button:hover {
-            background-color: #45a049;
-        }
-        .table-section {
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-        .table-section table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            table-layout: fixed;
-        }
-        .table-section th, .table-section td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            word-wrap: break-word;
-        }
-        .table-section th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .table-section input {
-            width: calc(100% - 16px);
-            box-sizing: border-box;
+            transition: var(--transition);
+            box-shadow: var(--shadow-lg);
         }
 
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
+        .app-sidebar--open {
+            width: 320px;
         }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 600px;
-            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-        }
-        .modal-header {
+
+        .app-sidebar__header {
+            padding: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .modal-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: black;
-        }
-        .modal-body {
-            margin-bottom: 20px;
-        }
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
-        }
-        .btn {
-            padding: 8px 16px;
-            margin-left: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-        .btn-primary {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #45a049;
-        }
-        .btn-secondary {
-            background-color: #f1f1f1;
-            color: #333;
-        }
-        .btn-secondary:hover {
-            background-color: #ddd;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            border-bottom: 1px solid var(--border);
         }
 
-        /* Improved buttons */
+        .app-sidebar__close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .app-sidebar__nav {
+            padding: 1rem 0;
+        }
+
+        .app-sidebar__nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .app-sidebar__nav-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .app-sidebar__nav-item i {
+            margin-right: 1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Main container */
+        .app-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Form styles */
+        .form-card {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .form-title i {
+            color: var(--primary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            background-color: var(--surface);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23757575' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 16px 12px;
+        }
+
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            border: none;
+            gap: 0.5rem;
+        }
+
+        .btn--primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn--primary:hover {
+            background-color: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn--secondary {
+            background-color: var(--surface);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn--secondary:hover {
+            background-color: rgba(46, 125, 50, 0.05);
+        }
+
+        .btn--danger {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .btn--danger:hover {
+            background-color: #c62828;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Section styles */
+        .section {
+            margin-top: 2rem;
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .section-content {
+            margin-top: 1rem;
+        }
+
+        /* Table styles */
+        .editable-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+            box-shadow: var(--shadow-sm);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .editable-table thead tr {
+            background-color: var(--primary);
+            color: white;
+            text-align: left;
+        }
+
+        .editable-table th,
+        .editable-table td {
+            padding: 0.75rem 1rem;
+        }
+
+        .editable-table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .editable-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            background-color: var(--surface);
+            transition: var(--transition);
+        }
+
+        .editable-table tbody tr:last-of-type {
+            border-bottom: none;
+        }
+
+        .editable-table tbody tr:hover {
+            background-color: rgba(76, 175, 80, 0.05);
+        }
+
+        .editable-table input,
+        .editable-table select,
+        .editable-table textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+        }
+
+        .editable-table textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .editable-table .form-checkbox {
+            width: auto;
+            height: auto;
+        }
+
+        /* Action buttons */
         .action-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
         }
-        .btn-add {
-            background-color: #2196F3;
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--border);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+        }
+
+        .badge--primary {
+            background-color: var(--primary-light);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
         }
-        .btn-add:hover {
-            background-color: #0b7dda;
+
+        .badge--secondary {
+            background-color: var(--border);
+            color: var(--text-primary);
         }
-        .btn-save {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        .btn-save:hover {
-            background-color: #45a049;
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .app-container {
+                padding: 0 1rem;
+            }
+
+            .editable-table {
+                display: block;
+                overflow-x: auto;
+            }
         }
     </style>
 </head>
 <body>
-<header>
-    <div class="header-title">ЗАО Муром</div>
-    <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+    <div class="app-header__title">Редактировать клиента</div>
+    <button class="app-header__menu-btn" onclick="openNav()">
+        <i class="fas fa-bars"></i>
+    </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-    <a th:href="@{/admin/dashboard}">Панель администратора</a>
-    <a th:href="@{/admin/products}">Товары</a>
-    <a th:href="@{/admin/clients}">Клиенты</a>
-    <a th:href="@{/admin/orders}">Заказы</a>
-    <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-    <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-    <a th:href="@{/admin/document}">Документация</a>
-    <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-    <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+    <div class="app-sidebar__header">
+        <h3>Меню администратора</h3>
+        <button class="app-sidebar__close-btn" onclick="closeNav()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <nav class="app-sidebar__nav">
+        <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+            <i class="fas fa-box-open"></i>
+            Номенклатура
+        </a>
+        <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+            <i class="fas fa-users"></i>
+            Клиенты и пользователи
+        </a>
+        <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+            <i class="fas fa-clipboard-list"></i>
+            Заказы
+        </a>
+        <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+            <i class="fas fa-history"></i>
+            История статусов заказов
+        </a>
+        <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            Типы документов и прайсы
+        </a>
+        <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+            <i class="fas fa-file-alt"></i>
+            Документация
+        </a>
+        <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+            <i class="fas fa-comments"></i>
+            Обращения клиентов
+        </a>
+        <a th:href="@{/login}" class="app-sidebar__nav-item">
+            <i class="fas fa-sign-out-alt"></i>
+            Выйти
+        </a>
+    </nav>
+</aside>
 
-<div class="container">
+<main class="app-container">
     <form th:action="@{/admin/editClient/{id}(id=${client.id})}" method="post">
-        <div class="form-section">
-            <div>
-                <label>Имя:</label>
-                <input type="text" name="name" th:value="${client.name}" required/>
-            </div>
-            <div>
-                <label>ИНН:</label>
-                <input type="text" name="inn" th:value="${client.inn}" required/>
-            </div>
-            <div>
-                <label>КПП:</label>
-                <input type="text" name="kpp" th:value="${client.kpp}" required/>
-            </div>
-            <div>
-                <label>Юридический адрес:</label>
-                <input type="text" name="uraddress" th:value="${client.uraddress}" required/>
-            </div>
-            <div>
-                <label>Фактический адрес:</label>
-                <input type="text" name="factaddress" th:value="${client.factaddress}" required/>
-            </div>
-            <div>
-                <label>Выбранная цена:</label>
-                <select name="selectedPriceId">
-                    <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}" th:selected="${client.selectedPrice.id == price.id}"></option>
-                </select>
+        <div class="form-card">
+            <h2 class="form-title"><i class="fas fa-building"></i> Основная информация</h2>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Имя компании</label>
+                    <input type="text" name="name" class="form-control" th:value="${client.name}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ИНН</label>
+                    <input type="text" name="inn" class="form-control" th:value="${client.inn}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">КПП</label>
+                    <input type="text" name="kpp" class="form-control" th:value="${client.kpp}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Юридический адрес</label>
+                    <input type="text" name="uraddress" class="form-control" th:value="${client.uraddress}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Фактический адрес</label>
+                    <input type="text" name="factaddress" class="form-control" th:value="${client.factaddress}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Денег на счету</label>
+                    <input type="number" step="0.01" name="sum1" class="form-control" th:value="${client.sum1}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">В том числе свободные</label>
+                    <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Выбранная цена</label>
+                    <select name="selectedPriceId" class="form-control form-select" required>
+                        <option th:each="price : ${prices}"
+                                th:value="${price.id}"
+                                th:text="${price.name}"
+                                th:selected="${client.selectedPrice.id == price.id}"></option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div class="table-section">
-            <h4>Адреса</h4>
-            <table id="addresses">
-                <thead>
-                <tr>
-                    <th>Почтовый индекс</th>
-                    <th>Страна</th>
-                    <th>Регион</th>
-                    <th>Район</th>
-                    <th>Город</th>
-                    <th>Улица</th>
-                    <th>Дом</th>
-                    <th>Номер комнаты</th>
-                    <th>Контакт</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="address : ${client.addresses}">
-                    <td><input type="text" name="postalcodes" th:value="${address.postalcode}" required/></td>
-                    <td><input type="text" name="countries" th:value="${address.country}" required/></td>
-                    <td><input type="text" name="regions" th:value="${address.region}" required/></td>
-                    <td><input type="text" name="rayons" th:value="${address.rayon}" required/></td>
-                    <td><input type="text" name="cities" th:value="${address.city}" required/></td>
-                    <td><input type="text" name="streets" th:value="${address.street}" required/></td>
-                    <td><input type="text" name="homes" th:value="${address.home}" required/></td>
-                    <td><input type="text" name="roomnumbers" th:value="${address.roomnumber}" required/></td>
-                    <td>
-                        <select name="contactIds">
-                            <option value="">Нет контакта</option>
-                            <option th:each="contact : ${client.contacts}"
-                                    th:value="${contact.id}"
-                                    th:text="${contact.name}"
-                                    th:selected="${address.contact != null && address.contact.id == contact.id}">
-                            </option>
-                        </select>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <button type="button" class="btn-add" onclick="openAddressModal()">Добавить адрес</button>
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Адреса</h3>
+                <button type="button" class="btn btn--secondary" onclick="addTableRow('addresses')">
+                    <i class="fas fa-plus"></i> Добавить адрес
+                </button>
+            </div>
+
+            <div class="section-content">
+                <table class="editable-table" id="addresses">
+                    <thead>
+                    <tr>
+                        <th>Почтовый индекс</th>
+                        <th>Страна</th>
+                        <th>Регион</th>
+                        <th>Район</th>
+                        <th>Город</th>
+                        <th>Улица</th>
+                        <th>Дом</th>
+                        <th>Строение</th>
+                        <th>График работы адреса доставки</th>
+                        <th>Контакт</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="address : ${client.addresses}">
+                        <td><input type="text" name="postalcodes" th:value="${address.postalcode}" required></td>
+                        <td><input type="text" name="countries" th:value="${address.country}" required></td>
+                        <td><input type="text" name="regions" th:value="${address.region}" required></td>
+                        <td><input type="text" name="rayons" th:value="${address.rayon}"></td>
+                        <td><input type="text" name="cities" th:value="${address.city}" required></td>
+                        <td><input type="text" name="streets" th:value="${address.street}" required></td>
+                        <td><input type="text" name="homes" th:value="${address.home}" required></td>
+                        <td><input type="text" name="roomnumbers" th:value="${address.roomnumber}" required></td>
+                        <td><textarea name="schedules" th:text="${address.schedule}"></textarea></td>
+                        <td>
+                            <select name="contactIds">
+                                <option value="">Нет контакта</option>
+                                <option th:each="contact : ${client.contacts}"
+                                        th:value="${contact.id}"
+                                        th:text="${contact.name}"
+                                        th:selected="${address.contact != null && address.contact.id == contact.id}">
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(client.addresses)}">
+                        <td colspan="10" class="empty-state">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <p>Адреса не добавлены</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="table-section">
-            <h4>Контакты</h4>
-            <table id="contacts">
-                <thead>
-                <tr>
-                    <th>Тип контакта</th>
-                    <th>Имя</th>
-                    <th>Номер телефона</th>
-                    <th>Email</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="contact : ${client.contacts}">
-                    <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required/></td>
-                    <td><input type="text" name="contactNames" th:value="${contact.name}" th:attr="data-id=${contact.id}" required/></td>
-                    <td><input type="text" name="phonenumbers" th:value="${contact.phonenumber}" required/></td>
-                    <td><input type="text" name="emails" th:value="${contact.email}" required/></td>
-                </tr>
-                </tbody>
-            </table>
-            <button type="button" class="btn-add" onclick="openContactModal()">Добавить контакт</button>
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-address-book"></i> Контакты</h3>
+                <button type="button" class="btn btn--secondary" onclick="addTableRow('contacts')">
+                    <i class="fas fa-plus"></i> Добавить контакт
+                </button>
+            </div>
+
+            <div class="section-content">
+                <table class="editable-table" id="contacts">
+                    <thead>
+                    <tr>
+                        <th>Тип контакта</th>
+                        <th>Имя</th>
+                        <th>Телефон</th>
+                        <th>Email</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="contact : ${client.contacts}">
+                        <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required></td>
+                        <td><input type="text" name="contactNames" th:value="${contact.name}" required></td>
+                        <td><input type="text" name="phonenumbers" th:value="${contact.phonenumber}" required></td>
+                        <td><input type="email" name="emails" th:value="${contact.email}" required></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(client.contacts)}">
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-user-tie"></i>
+                            <p>Контакты не добавлены</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="table-section">
-            <h4>Пользователи</h4>
-            <table id="users">
-                <thead>
-                <tr>
-                    <th>Имя пользователя</th>
-                    <th>Имя</th>
-                    <th>Пароль</th>
-                    <th>Роль</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="user : ${client.users}">
-                    <td><input type="text" name="usernames" th:value="${user.username}" required/></td>
-                    <td><input type="text" name="nameuser" th:value="${user.name}" required/></td>
-                    <td><input type="password" name="passwords" th:value="${user.password}" required/></td>
-                    <td>
-                        <input type="checkbox" name="isAdmins" th:checked="${user.admin}" value="true"/>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <button type="button" class="btn-add" onclick="openUserModal()">Добавить пользователя</button>
-        </div>
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-user-shield"></i> Пользователи</h3>
+                <button type="button" class="btn btn--secondary" onclick="addTableRow('users')">
+                    <i class="fas fa-plus"></i> Добавить пользователя
+                </button>
+            </div>
 
+            <div class="section-content">
+                <table class="editable-table" id="users">
+                    <thead>
+                    <tr>
+                        <th>Логин</th>
+                        <th>Имя</th>
+                        <th>Пароль</th>
+                        <th>Администратор</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="user, stat : ${client.users}">
+                        <td>
+                            <input type="text" name="usernames" th:value="${user.username}" required>
+                            <input type="hidden" name="userIds" th:value="${user.id}">
+                        </td>
+                        <td><input type="text" name="nameuser" th:value="${user.name}" required></td>
+                        <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+                        <td style="text-align: center;">
+                            <input type="hidden" name="_isAdmins" value="on">
+                            <input type="checkbox" name="isAdmins" th:checked="${user.admin}" value="true">
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(client.users)}">
+                        <td colspan="5" class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>Пользователи не добавлены</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <div class="action-buttons">
-            <button type="submit" class="btn-save">Сохранить изменения</button>
+            <a th:href="@{/admin/client/{id}(id=${client.id})}" class="btn btn--secondary">
+                <i class="fas fa-times"></i> Отменить
+            </a>
+            <button type="submit" class="btn btn--primary">
+                <i class="fas fa-save"></i> Сохранить изменения
+            </button>
         </div>
     </form>
-</div>
-
-<!-- Address Modal -->
-<div id="addressModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title">Добавить новый адрес</span>
-            <span class="close" onclick="closeAddressModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Почтовый индекс:</label>
-                <input type="text" id="modalPostalcode" required>
-            </div>
-            <div class="form-group">
-                <label>Страна:</label>
-                <input type="text" id="modalCountry" required>
-            </div>
-            <div class="form-group">
-                <label>Регион:</label>
-                <input type="text" id="modalRegion" required>
-            </div>
-            <div class="form-group">
-                <label>Район:</label>
-                <input type="text" id="modalRayon" required>
-            </div>
-            <div class="form-group">
-                <label>Город:</label>
-                <input type="text" id="modalCity" required>
-            </div>
-            <div class="form-group">
-                <label>Улица:</label>
-                <input type="text" id="modalStreet" required>
-            </div>
-            <div class="form-group">
-                <label>Дом:</label>
-                <input type="text" id="modalHome" required>
-            </div>
-            <div class="form-group">
-                <label>Номер комнаты:</label>
-                <input type="text" id="modalRoomnumber" required>
-            </div>
-            <div class="form-group">
-                <label>Контакт:</label>
-                <select id="modalContactId">
-                    <option value="">Нет контакта</option>
-                    <option th:each="contact : ${client.contacts}"
-                            th:value="${contact.id}"
-                            th:text="${contact.name}">
-                    </option>
-                </select>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeAddressModal()">Отмена</button>
-            <button class="btn btn-primary" onclick="addAddressFromModal()">Добавить</button>
-        </div>
-    </div>
-</div>
-
-<!-- Contact Modal -->
-<div id="contactModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title">Добавить новый контакт</span>
-            <span class="close" onclick="closeContactModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Тип контакта:</label>
-                <input type="text" id="modalContactType" required>
-            </div>
-            <div class="form-group">
-                <label>Имя:</label>
-                <input type="text" id="modalContactName" required>
-            </div>
-            <div class="form-group">
-                <label>Номер телефона:</label>
-                <input type="text" id="modalPhonenumber" required>
-            </div>
-            <div class="form-group">
-                <label>Email:</label>
-                <input type="text" id="modalEmail" required>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeContactModal()">Отмена</button>
-            <button class="btn btn-primary" onclick="addContactFromModal()">Добавить</button>
-        </div>
-    </div>
-</div>
-
-<!-- User Modal -->
-<div id="userModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title">Добавить нового пользователя</span>
-            <span class="close" onclick="closeUserModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Имя пользователя:</label>
-                <input type="text" id="modalUsername" required>
-            </div>
-            <div class="form-group">
-                <label>Имя:</label>
-                <input type="text" id="modalNameuser" required>
-            </div>
-            <div class="form-group">
-                <label>Пароль:</label>
-                <input type="password" id="modalPassword" required>
-            </div>
-            <div class="form-group">
-                <label>Администратор:</label>
-                <input type="checkbox" id="modalIsAdmin" value="true">
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeUserModal()">Отмена</button>
-            <button class="btn btn-primary" onclick="addUserFromModal()">Добавить</button>
-        </div>
-    </div>
-</div>
+</main>
 
 <script>
     function openNav() {
-        document.getElementById("mySidebar").style.width = "250px";
+        document.getElementById("sidebar").classList.add("app-sidebar--open");
     }
 
     function closeNav() {
-        document.getElementById("mySidebar").style.width = "0";
+        document.getElementById("sidebar").classList.remove("app-sidebar--open");
     }
 
-    // Address modal functions
-    function openAddressModal() {
-        document.getElementById('addressModal').style.display = 'block';
-    }
+    function addTableRow(tableId) {
+        const table = document.getElementById(tableId);
+        const tbody = table.querySelector('tbody');
+        const emptyRow = tbody.querySelector('tr.empty-state');
 
-    function closeAddressModal() {
-        document.getElementById('addressModal').style.display = 'none';
-    }
-
-    function addAddressFromModal() {
-        const table = document.getElementById('addresses').getElementsByTagName('tbody')[0];
-        const newRow = table.insertRow();
-        newRow.innerHTML = `
-            <td><input type="text" name="postalcodes" value="${document.getElementById('modalPostalcode').value}" required/></td>
-            <td><input type="text" name="countries" value="${document.getElementById('modalCountry').value}" required/></td>
-            <td><input type="text" name="regions" value="${document.getElementById('modalRegion').value}" required/></td>
-            <td><input type="text" name="rayons" value="${document.getElementById('modalRayon').value}" required/></td>
-            <td><input type="text" name="cities" value="${document.getElementById('modalCity').value}" required/></td>
-            <td><input type="text" name="streets" value="${document.getElementById('modalStreet').value}" required/></td>
-            <td><input type="text" name="homes" value="${document.getElementById('modalHome').value}" required/></td>
-            <td><input type="text" name="roomnumbers" value="${document.getElementById('modalRoomnumber').value}" required/></td>
-            <td>
-                <select name="contactIds">
-                    <option value="">Нет контакта</option>
-                </select>
-            </td>
-        `;
-
-        const contactSelect = newRow.querySelector('select[name="contactIds"]');
-        const selectedContactId = document.getElementById('modalContactId').value;
-
-        document.querySelectorAll('#contacts tbody tr').forEach(contactRow => {
-            const contactId = contactRow.querySelector('input[name="contactNames"]').getAttribute('data-id');
-            const contactName = contactRow.querySelector('input[name="contactNames"]').value;
-            const option = document.createElement('option');
-            option.value = contactId;
-            option.text = contactName;
-            if (contactId === selectedContactId) {
-                option.selected = true;
-            }
-            contactSelect.appendChild(option);
-        });
-
-        // Clear modal fields
-        document.getElementById('modalPostalcode').value = '';
-        document.getElementById('modalCountry').value = '';
-        document.getElementById('modalRegion').value = '';
-        document.getElementById('modalRayon').value = '';
-        document.getElementById('modalCity').value = '';
-        document.getElementById('modalStreet').value = '';
-        document.getElementById('modalHome').value = '';
-        document.getElementById('modalRoomnumber').value = '';
-        document.getElementById('modalContactId').value = '';
-
-        closeAddressModal();
-    }
-
-    // Contact modal functions
-    function openContactModal() {
-        document.getElementById('contactModal').style.display = 'block';
-    }
-
-    function closeContactModal() {
-        document.getElementById('contactModal').style.display = 'none';
-    }
-
-    function addContactFromModal() {
-        const table = document.getElementById('contacts').getElementsByTagName('tbody')[0];
-        const newRow = table.insertRow();
-        const newContactId = Date.now(); // Generate a temporary ID
-
-        newRow.innerHTML = `
-            <td><input type="text" name="typeContacts" value="${document.getElementById('modalContactType').value}" required/></td>
-            <td><input type="text" name="contactNames" value="${document.getElementById('modalContactName').value}" data-id="${newContactId}" required/></td>
-            <td><input type="text" name="phonenumbers" value="${document.getElementById('modalPhonenumber').value}" required/></td>
-            <td><input type="text" name="emails" value="${document.getElementById('modalEmail').value}" required/></td>
-        `;
-
-        // Clear modal fields
-        document.getElementById('modalContactType').value = '';
-        document.getElementById('modalContactName').value = '';
-        document.getElementById('modalPhonenumber').value = '';
-        document.getElementById('modalEmail').value = '';
-
-        closeContactModal();
-    }
-
-    // User modal functions
-    function openUserModal() {
-        document.getElementById('userModal').style.display = 'block';
-    }
-
-    function closeUserModal() {
-        document.getElementById('userModal').style.display = 'none';
-    }
-
-    function addUserFromModal() {
-        // Получаем значения из формы
-        const username = document.getElementById('modalUsername').value;
-        const name = document.getElementById('modalNameuser').value;
-        const password = document.getElementById('modalPassword').value;
-        const isAdmin = document.getElementById('modalIsAdmin').checked;
-
-        // Проверяем, что все обязательные поля заполнены
-        if (!username || !name || !password) {
-            alert('Пожалуйста, заполните все обязательные поля');
-            return;
+        // Удаляем пустую строку, если она есть
+        if (emptyRow) {
+            emptyRow.remove();
         }
 
-        // Получаем таблицу пользователей
-        const table = document.getElementById('users').getElementsByTagName('tbody')[0];
+        const newRow = document.createElement('tr');
 
-        // Создаем новую строку
-        const newRow = table.insertRow();
-
-        // Заполняем строку данными
-        newRow.innerHTML = `
-        <td><input type="text" name="usernames" value="${username}" required/></td>
-        <td><input type="text" name="nameuser" value="${name}" required/></td>
-        <td><input type="password" name="passwords" value="${password}" required/></td>
+        if (tableId === 'addresses') {
+            newRow.innerHTML = `
+        <td><input type="text" name="postalcodes" required></td>
+        <td><input type="text" name="countries" required></td>
+        <td><input type="text" name="regions"></td> <!-- Убрано required -->
+        <td><input type="text" name="rayons"></td>
+        <td><input type="text" name="cities" required></td>
+        <td><input type="text" name="streets" required></td>
+        <td><input type="text" name="homes" required></td>
+        <td><input type="text" name="roomnumbers" required></td>
+        <td><textarea name="schedules"></textarea></td>
         <td>
-            <input type="checkbox" name="isAdmins" ${isAdmin ? 'checked' : ''} value="true"/>
-            <input type="hidden" name="isAdmins" value="false"/> <!-- Для unchecked состояния -->
+            <select name="contactIds">
+                <option value="">Нет контакта</option>
+                ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
+                const name = tr.querySelector('input[name="contactNames"]').value;
+                return `<option value="${tr.querySelector('input[name="contactNames"]').getAttribute('data-id') || ''}">${name}</option>`;
+            }).join('')}
+            </select>
+        </td>
+        <td style="text-align: center;">
+            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                <i class="fas fa-trash-alt"></i>
+            </button>
         </td>
     `;
+        } else if (tableId === 'contacts') {
+            newRow.innerHTML = `
+            <td><input type="text" name="typeContacts" required></td>
+            <td><input type="text" name="contactNames" required></td>
+            <td><input type="text" name="phonenumbers" required></td>
+            <td><input type="email" name="emails" required></td>
+            <td style="text-align: center;">
+                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        } else if (tableId === 'users') {
+            newRow.innerHTML = `
+            <td>
+                <input type="text" name="usernames" required>
+                <input type="hidden" name="userIds" value="">
+            </td>
+            <td><input type="text" name="nameuser" required></td>
+            <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+            <td style="text-align: center;">
+                <input type="hidden" name="_isAdmins" value="on">
+                <input type="checkbox" name="isAdmins" value="true">
+            </td>
+            <td style="text-align: center;">
+                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        }
 
-        document.getElementById('modalUsername').value = '';
-        document.getElementById('modalNameuser').value = '';
-        document.getElementById('modalPassword').value = '';
-        document.getElementById('modalIsAdmin').checked = false;
-        closeUserModal();
+        tbody.appendChild(newRow);
     }
-    window.onclick = function(event) {
-        if (event.target.className === 'modal') {
-            event.target.style.display = 'none';
+
+    function removeTableRow(button) {
+        const row = button.closest('tr');
+        const tbody = row.parentElement;
+        const table = tbody.closest('table');
+
+        row.remove();
+
+        // Если больше нет строк, добавляем пустое состояние
+        if (tbody.querySelectorAll('tr:not(.empty-state)').length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.className = 'empty-state';
+
+            if (table.id === 'addresses') {
+                emptyRow.innerHTML = `
+                <td colspan="10">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <p>Адреса не добавлены</p>
+                </td>
+            `;
+            } else if (table.id === 'contacts') {
+                emptyRow.innerHTML = `
+                <td colspan="5">
+                    <i class="fas fa-user-tie"></i>
+                    <p>Контакты не добавлены</p>
+                </td>
+            `;
+            } else if (table.id === 'users') {
+                emptyRow.innerHTML = `
+                <td colspan="5">
+                    <i class="fas fa-users"></i>
+                    <p>Пользователи не добавлены</p>
+                </td>
+            `;
+            }
+
+            tbody.appendChild(emptyRow);
         }
     }
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.querySelector('.app-header__menu-btn');
+
+        if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+            closeNav();
+        }
+    });
 </script>
 </body>
 </html>

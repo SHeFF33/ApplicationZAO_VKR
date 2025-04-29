@@ -16,4 +16,6 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     List<Conversation> findAdminConversations(@Param("admin") User admin);
 
     List<Conversation> findByClient(Client client);
+
+    List<Conversation> findByAdmin(User admin);
 }

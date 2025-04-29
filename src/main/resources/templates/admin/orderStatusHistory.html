@@ -1,209 +1,495 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>История статусов заказов</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>История статусов заказов | ЗАО Муром</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --primary-dark: #1B5E20;
+      --secondary: #FF5722;
+      --background: #f5f5f5;
+      --surface: #ffffff;
+      --error: #d32f2f;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --border: #e0e0e0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
-    header {
-      background-color: #4CAF50;
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .app-header {
+      background-color: var(--primary);
       color: white;
-      padding: 10px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .header-title {
-      font-size: 24px;
+
+    .app-header__title {
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-    .header-button {
+
+    .app-header__menu-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 1.5rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      transition: var(--transition);
     }
-    .header-button:hover {
-      color: #ddd;
+
+    .app-header__menu-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
-    .sidebar {
+
+    /* Sidebar */
+    .app-sidebar {
       height: 100%;
       width: 0;
       position: fixed;
-      z-index: 1;
+      z-index: 1000;
       top: 0;
       right: 0;
-      background-color: #111;
+      background-color: var(--surface);
       overflow-x: hidden;
-      transition: 0.5s;
-      padding-top: 60px;
+      transition: var(--transition);
+      box-shadow: var(--shadow-lg);
     }
-    .sidebar a {
-      padding: 8px 8px 8px 32px;
-      text-decoration: none;
-      font-size: 20px;
-      color: #818181;
-      display: block;
-      transition: 0.3s;
+
+    .app-sidebar--open {
+      width: 320px;
     }
-    .sidebar a:hover {
-      color: #f1f1f1;
-    }
-    .sidebar .closebtn {
-      position: absolute;
-      top: 0;
-      right: 25px;
-      font-size: 36px;
-      margin-left: 50px;
-    }
-    .container {
-      padding: 20px;
-      margin: 20px auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      width: 90%;
-      max-width: 1200px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #4CAF50;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    tr:hover {
-      background-color: #ddd;
-    }
-    .filter-form {
+
+    .app-sidebar__header {
+      padding: 1.5rem;
       display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      justify-content: center;
-      margin-bottom: 20px;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
     }
-    .filter-form div {
+
+    .app-sidebar__close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .app-sidebar__nav {
+      padding: 1rem 0;
+    }
+
+    .app-sidebar__nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .app-sidebar__nav-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: var(--primary);
+    }
+
+    .app-sidebar__nav-item i {
+      margin-right: 1rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Main container */
+    .app-container {
+      max-width: 1440px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* Page header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* Filter form */
+    .filter-card {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .form-group {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      padding: 15px;
     }
-    .filter-form label {
-      font-weight: bold;
-      margin-bottom: 5px;
+
+    .form-label {
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
     }
-    .filter-form input, .filter-form select {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 100%;
+
+    .form-control {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      transition: var(--transition);
     }
-    .filter-form button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      align-self: center;
-      margin-top: 20px;
-      margin: 22px;
+      transition: var(--transition);
+      text-decoration: none;
+      border: none;
     }
-    .filter-form button:hover {
-      background-color: #45a049;
+
+    .btn--primary {
+      background-color: var(--primary);
+      color: white;
     }
-    .error-message {
-      color: red;
-      margin-bottom: 20px;
+
+    .btn--primary:hover {
+      background-color: var(--primary-dark);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn i {
+      margin-right: 0.5rem;
+    }
+
+    /* Table */
+    .table-container {
+      background-color: var(--surface);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th {
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .order-link {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .order-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge--processing {
+      background-color: #FFF3E0;
+      color: #E65100;
+    }
+
+    .status-badge--accepted {
+      background-color: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .status-badge--paid-working {
+      background-color: #E3F2FD;
+      color: #1565C0;
+    }
+
+    .status-badge--paid-waiting {
+      background-color: #E0F7FA;
+      color: #00838F;
+    }
+
+    .status-badge--loading {
+      background-color: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .status-badge--transit {
+      background-color: #E8EAF6;
+      color: #303F9F;
+    }
+
+    .status-badge--closed {
+      background-color: #F5F5F5;
+      color: #424242;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 0;
+    }
+
+    .empty-state__icon {
+      font-size: 3rem;
+      color: var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .empty-state__title {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .filter-form {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-<header>
-  <div class="header-title">ЗАО Муром</div>
-  <button class="header-button" onclick="openNav()">&#9776;</button>
+<header class="app-header">
+  <div class="app-header__title">ЗАО Муром</div>
+  <button class="app-header__menu-btn" onclick="openNav()">
+    <i class="fas fa-bars"></i>
+  </button>
 </header>
 
-<div id="mySidebar" class="sidebar">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <a th:href="@{/admin/dashboard}">Панель администратора</a>
-  <a th:href="@{/admin/products}">Товары</a>
-  <a th:href="@{/admin/clients}">Клиенты</a>
-  <a th:href="@{/admin/orders}">Заказы</a>
-  <a th:href="@{/admin/orderStatusHistory}">История статусов заказов</a>
-  <a th:href="@{/admin/documentTypes}">Типы документов и прайсы</a>
-  <a th:href="@{/admin/document}">Документация</a>
-  <a th:href="@{/admin/messenger}">Обращения клиентов</a>
-  <a th:href="@{/login}">Выйти</a>
-</div>
+<aside id="sidebar" class="app-sidebar">
+  <div class="app-sidebar__header">
+    <h3>Меню администратора</h3>
+    <button class="app-sidebar__close-btn" onclick="closeNav()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <nav class="app-sidebar__nav">
+    <a th:href="@{/admin/dashboard}" class="app-sidebar__nav-item">
+      <i class="fas fa-box-open"></i>
+      Номенклатура
+    </a>
+    <a th:href="@{/admin/clients}" class="app-sidebar__nav-item">
+      <i class="fas fa-users"></i>
+      Клиенты и пользователи
+    </a>
+    <a th:href="@{/admin/orders}" class="app-sidebar__nav-item">
+      <i class="fas fa-clipboard-list"></i>
+      Заказы
+    </a>
+    <a th:href="@{/admin/orderStatusHistory}" class="app-sidebar__nav-item">
+      <i class="fas fa-history"></i>
+      История статусов заказов
+    </a>
+    <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Типы документов и прайсы
+    </a>
+    <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
+      <i class="fas fa-file-alt"></i>
+      Документация
+    </a>
+    <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
+      <i class="fas fa-comments"></i>
+      Обращения клиентов
+    </a>
+    <a th:href="@{/login}" class="app-sidebar__nav-item">
+      <i class="fas fa-sign-out-alt"></i>
+      Выйти
+    </a>
+  </nav>
+</aside>
 
-<div class="container">
-  <form th:action="@{/admin/orderStatusHistory}" method="get" class="filter-form">
-    <div>
-      <label for="status">Статус:</label>
-      <select id="status" name="status">
-        <option value="">Все статусы</option>
-        <option value="В обработке" th:selected="${status != null && status == 'В обработке'}">В обработке</option>
-        <option value="Подтвержден" th:selected="${status != null && status == 'Подтвержден'}">Подтвержден</option>
-        <option value="Назначена погрузка" th:selected="${status != null && status == 'Назначена погрузка'}">Назначена погрузка</option>
-        <option value="В пути" th:selected="${status != null && status == 'В пути'}">В пути</option>
-        <option value="Закрыт" th:selected="${status != null && status == 'Закрыт'}">Закрыт</option>
-      </select>
-    </div>
-    <div>
-      <label for="startDate">Дата и время начала:</label>
-      <input type="datetime-local" id="startDate" name="startDate" th:value="${startDate}" />
-    </div>
-    <div>
-      <label for="endDate">Дата и время конца:</label>
-      <input type="datetime-local" id="endDate" name="endDate" th:value="${endDate}" />
-    </div>
-    <div>
-      <button type="submit">Найти</button>
-    </div>
-  </form>
-  <table>
-    <tr>
-      <th>Заказ</th>
-      <th>Статус</th>
-      <th>Дата изменения</th>
-      <th>Пользователь</th>
-    </tr>
-    <tr th:each="entry : ${history}">
-      <td>
-        <a th:href="@{/admin/orders/{id}(id=${entry.order.id})}" th:text="'Заказ от ' + ${entry.order.deliveryDate}"></a>
-      </td>
-      <td th:text="${entry.status}"></td>
-      <td th:text="${entry.formattedChangeDate}"></td>
-      <td>
-        <span th:if="${entry.user != null}" th:text="${entry.user.username}"></span>
-        <span th:if="${entry.user == null}">Пользователь не заполнен</span>
-      </td>
-    </tr>
-  </table>
-</div>
+<main class="app-container">
+  <div class="page-header">
+    <h1 class="page-title">История статусов заказов</h1>
+  </div>
+
+  <div class="filter-card">
+    <form th:action="@{/admin/orderStatusHistory}" method="get" class="filter-form">
+      <div class="form-group">
+        <label for="status" class="form-label">Статус</label>
+        <select id="status" name="status" class="form-control">
+          <option value="">Все статусы</option>
+          <option value="В обработке" th:selected="${status != null && status == 'В обработке'}">В обработке</option>
+          <option value="Принят" th:selected="${status != null && status == 'Принят'}">Принят</option>
+          <option value="Оплачен. В работе" th:selected="${status != null && status == 'Оплачен. В работе'}">Оплачен. В работе</option>
+          <option value="Оплачен. В ожидании" th:selected="${status != null && status == 'Оплачен. В ожидании'}">Оплачен. В ожидании</option>
+          <option value="Назначена погрузка" th:selected="${status != null && status == 'Назначена погрузка'}">Назначена погрузка</option>
+          <option value="В пути" th:selected="${status != null && status == 'В пути'}">В пути</option>
+          <option value="Закрыт" th:selected="${status != null && status == 'Закрыт'}">Закрыт</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="startDate" class="form-label">Дата начала</label>
+        <input type="datetime-local" id="startDate" name="startDate" class="form-control" th:value="${startDate}" />
+      </div>
+      <div class="form-group">
+        <label for="endDate" class="form-label">Дата окончания</label>
+        <input type="datetime-local" id="endDate" name="endDate" class="form-control" th:value="${endDate}" />
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1; text-align: center;">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-search"></i> Найти
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <table class="table">
+      <thead>
+      <tr>
+        <th>Заказ</th>
+        <th>Статус</th>
+        <th>Дата изменения</th>
+        <th>Пользователь</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="entry : ${history}">
+        <td>
+          <a th:href="@{/admin/orders/{id}(id=${entry.order.id})}" class="order-link" th:text="'Заказ от ' + ${entry.order.formattedDeliveryDate}"></a>
+        </td>
+        <td>
+                        <span th:switch="${entry.status}" class="status-badge">
+                            <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
+                            <span th:case="'Принят'" class="status-badge--accepted">Принят</span>
+                            <span th:case="'Оплачен. В работе'" class="status-badge--paid-working">Оплачен. В работе</span>
+                            <span th:case="'Оплачен. В ожидании'" class="status-badge--paid-waiting">Оплачен. В ожидании</span>
+                            <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
+                            <span th:case="'В пути'" class="status-badge--transit">В пути</span>
+                            <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
+                        </span>
+        </td>
+        <td th:text="${entry.formattedChangeDate}"></td>
+        <td>
+          <span th:if="${entry.user != null}" th:text="${entry.user.username}"></span>
+          <span th:if="${entry.user == null}" class="text-muted">Пользователь не заполнен</span>
+        </td>
+      </tr>
+      <tr th:if="${history == null or history.empty}">
+        <td colspan="4" class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-history"></i>
+          </div>
+          <h3 class="empty-state__title">История не найдена</h3>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
 
 <script>
   function openNav() {
-    document.getElementById("mySidebar").style.width = "250px";
+    document.getElementById("sidebar").classList.add("app-sidebar--open");
   }
 
   function closeNav() {
-    document.getElementById("mySidebar").style.width = "0";
+    document.getElementById("sidebar").classList.remove("app-sidebar--open");
   }
+
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.querySelector('.app-header__menu-btn');
+
+    if (sidebar.classList.contains('app-sidebar--open') &&
+            !sidebar.contains(event.target) &&
+            event.target !== menuBtn &&
+            !menuBtn.contains(event.target)) {
+      closeNav();
+    }
+  });
 </script>
 </body>
 </html>

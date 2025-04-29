@@ -23,21 +23,24 @@ public class MessengerService {
         return conversationRepository.findOpenConversations();
     }
 
-    public List<Conversation> getAdminConversations(User admin) {
-        return conversationRepository.findAdminConversations(admin);
+    public List<Conversation> getAllAdminConversations(User admin) {
+        return conversationRepository.findByAdmin(admin);
     }
 
-    // Поиск обращения по ID
+    public void reopenConversation(Long conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+        conversation.setClosed(false);
+        conversationRepository.save(conversation);
+    }
     public Optional<Conversation> findById(Long id) {
         return conversationRepository.findById(id);
     }
 
-    // Добавление сообщения в обращение
     public void addMessageToConversation(Long conversationId, User sender, String text, List<MultipartFile> files) throws IOException {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
-        // Если это первый ответ администратора, назначаем его ответственным
         if (conversation.getAdmin() == null && sender.isAdmin()) {
             conversation.setAdmin(sender);
         }
@@ -63,7 +66,6 @@ public class MessengerService {
         conversationRepository.save(conversation);
     }
 
-    // Закрытие обращения
     public void closeConversation(Long conversationId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
@@ -74,12 +76,10 @@ public class MessengerService {
         @Autowired
         private AttachmentRepository attachmentRepository;
 
-        // Получение всех обращений клиента
         public List<Conversation> getClientConversations(Client client) {
             return conversationRepository.findByClient(client);
         }
 
-        // Получение обращения по ID
         public Conversation getConversationById(Long id) {
             return conversationRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
@@ -116,9 +116,6 @@ public class MessengerService {
         return conversationRepository.save(conversation);
     }
 
-
-
-        // Получение вложения по ID
         public Attachment getAttachmentById(Long id) {
             return attachmentRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Attachment not found"));
