@@ -143,4 +143,7 @@ public class OrderService {
                         tchOrder.getPrice())
                 .sum();
     }
+    public List<Order> findByClientId(Long clientId) {
+        return orderRepository.findByClientId(clientId);
+    }
 }
