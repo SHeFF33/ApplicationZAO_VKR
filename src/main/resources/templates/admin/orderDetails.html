@@ -295,18 +295,18 @@
       color: var(--primary);
     }
 
-    .discount-form {
-      display: flex;
-      align-items: center;
-    }
-
-    .discount-input {
-      width: 60px;
+    .price-input {
+      width: 100px;
       padding: 0.5rem;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      margin-right: 0.5rem;
-      text-align: center;
+      text-align: right;
+      margin-left: 0.5rem;
+    }
+
+    .price-display {
+      text-align: right;
+      padding-right: 0.5rem;
     }
 
     /* Table */
@@ -568,11 +568,10 @@
     <div class="info-item">
       <span class="info-item__label">Адрес доставки</span>
       <span class="info-item__value">
-            <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
-        </span>
+        <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+      </span>
     </div>
   </div>
-
 
   <div class="card">
     <div class="card__header">
@@ -597,14 +596,14 @@
     <div>
       <span class="status-form__label">Текущий статус:</span>
       <span th:switch="${order.status}" class="status-badge">
-                <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
-                <span th:case="'Принят'" class="status-badge--accepted">Принят</span>
-                <span th:case="'Оплачен. В работе'" class="status-badge--paid-working">Оплачен. В работе</span>
-                <span th:case="'Оплачен. В ожидании'" class="status-badge--paid-waiting">Оплачен. В ожидании</span>
-                <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
-                <span th:case="'В пути'" class="status-badge--transit">В пути</span>
-                <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
-            </span>
+        <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
+        <span th:case="'Принят'" class="status-badge--accepted">Принят</span>
+        <span th:case="'Оплачен. В работе'" class="status-badge--paid-working">Оплачен. В работе</span>
+        <span th:case="'Оплачен. В ожидании'" class="status-badge--paid-waiting">Оплачен. В ожидании</span>
+        <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
+        <span th:case="'В пути'" class="status-badge--transit">В пути</span>
+        <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
+      </span>
     </div>
   </div>
 
@@ -616,39 +615,51 @@
     <div th:each="truck, stat : ${order.trucks}" class="truck-block">
       <div class="truck-header">
         <h3 class="truck-title">Машина <span th:text="${stat.count}"></span></h3>
-        <form th:action="@{/admin/applyDiscountToTruck/{orderId}/{truckId}(orderId=${order.id}, truckId=${truck.id})}"
-              method="post" class="discount-form">
-          <input type="number" class="discount-input" name="discount" min="0" max="100" placeholder="%">
-          <button type="submit" class="btn btn--secondary">
-            <i class="fas fa-percentage"></i> Скидка
+      </div>
+
+      <form th:action="@{/admin/updateOrderPrice/{id}(id=${order.id})}" method="post">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>Товар</th>
+            <th>Количество</th>
+            <th>Объем (м³)</th>
+            <th>Цена за м³</th>
+            <th>Сумма</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="tchOrder : ${truck.tchOrders}">
+            <td th:text="${tchOrder.product.name}"></td>
+            <td th:text="${tchOrder.quantity} + ' шт.'"></td>
+            <td th:text="${tchOrder.volume}"></td>
+            <td>
+              <input type="hidden" name="tchOrderIds" th:value="${tchOrder.id}"/>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="flex: 1;" th:text="${#numbers.formatDecimal(tchOrder.price, 1, 2)} + ' руб.'"></span>
+                <input type="number" step="0.01" class="price-input" name="prices"
+                       th:value="${#numbers.formatDecimal(tchOrder.price, 1, 2)}"
+                       style="flex: 1; min-width: 80px;"/>
+              </div>
+            </td>
+            <td class="item-total"
+                th:text="${#numbers.formatDecimal(tchOrder.volume * tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'">
+            </td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div class="truck-total">
+          Итого по машине: <span class="truck-total-sum"
+                                 th:text="${#numbers.formatDecimal(truck.total, 1, 2)} + ' руб.'"></span>
+        </div>
+
+        <div style="text-align: right; margin-top: 1rem;">
+          <button type="submit" class="btn btn--primary">
+            <i class="fas fa-save"></i> Сохранить изменения
           </button>
-        </form>
-      </div>
-
-      <table class="table">
-        <thead>
-        <tr>
-          <th>Товар</th>
-          <th>Количество</th>
-          <th>Объем (м³)</th>
-          <th>Цена за единицу</th>
-          <th>Сумма</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="tchOrder : ${truck.tchOrders}">
-          <td th:text="${tchOrder.product.name}"></td>
-          <td th:text="${tchOrder.quantity} + ' шт.'"></td>
-          <td th:text="${tchOrder.volume}"></td>
-          <td th:text="${#numbers.formatDecimal(tchOrder.price, 1, 2)} + ' руб.'"></td>
-          <td th:text="${#numbers.formatDecimal(tchOrder.volume * tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'"></td>
-        </tr>
-        </tbody>
-      </table>
-
-      <div class="truck-total">
-        Итого по машине: <span th:text="${#numbers.formatDecimal(truck.total, 1, 2)} + ' руб.'"></span>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -724,6 +735,40 @@
             event.target !== menuBtn &&
             !menuBtn.contains(event.target)) {
       closeNav();
+    }
+  });
+
+  // Обновление итоговых сумм при изменении цен
+  document.addEventListener('input', function(e) {
+    if (e.target.name === 'prices') {
+      const row = e.target.closest('tr');
+      const priceInput = e.target;
+      const priceDisplay = priceInput.previousElementSibling;
+
+      // Обновляем отображаемую цену
+      const newPrice = parseFloat(priceInput.value) || 0;
+      priceDisplay.textContent = newPrice.toFixed(2) + ' руб.';
+
+      // Пересчет суммы
+      const quantity = parseInt(row.querySelector('td:nth-child(2)').textContent) || 0;
+      const volume = parseFloat(row.querySelector('td:nth-child(3)').textContent) || 0;
+      const total = newPrice * quantity * volume;
+
+      const totalCell = row.querySelector('.item-total');
+      totalCell.textContent = total.toFixed(2) + ' руб.';
+
+      // Обновляем общую сумму по машине
+      const truckBlock = e.target.closest('.truck-block');
+      let truckTotal = 0;
+      truckBlock.querySelectorAll('tr').forEach(row => {
+        const itemTotalText = row.querySelector('.item-total')?.textContent;
+        if (itemTotalText) {
+          truckTotal += parseFloat(itemTotalText) || 0;
+        }
+      });
+
+      const truckTotalElement = truckBlock.querySelector('.truck-total-sum');
+      truckTotalElement.textContent = truckTotal.toFixed(2) + ' руб.';
     }
   });
 </script>

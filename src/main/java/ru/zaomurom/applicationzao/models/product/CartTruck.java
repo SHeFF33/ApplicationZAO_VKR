@@ -30,7 +30,7 @@ public class CartTruck {
                 .filter(p -> p.getLength() == 2.8)
                 .count();
 
-        int maxItems = (product.getLength() == 2.8 || longProductsCount >= 6) ?
+        int maxItems = longProductsCount >= 7 ?
                 Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
 
         return totalItems < maxItems;
@@ -42,18 +42,8 @@ public class CartTruck {
                 .filter(p -> p.getLength() == 2.8)
                 .count();
 
-        // Определяем максимальное количество товаров для текущей машины
-        int maxItems;
-        if (product.getLength() == 2.8) {
-            // Если добавляем товар длиной 2.8, то максимум 13
-            maxItems = Product.MAX_ITEMS_LONG;
-        } else if (longProductsCount >= Product.THRESHOLD_LONG) {
-            // Если уже есть 6+ товаров длиной 2.8, то максимум 13
-            maxItems = Product.MAX_ITEMS_LONG;
-        } else {
-            // Иначе максимум 16
-            maxItems = Product.MAX_ITEMS_SHORT;
-        }
+        int maxItems = longProductsCount >= 7 ?
+                Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
 
         return maxItems - totalItems;
     }

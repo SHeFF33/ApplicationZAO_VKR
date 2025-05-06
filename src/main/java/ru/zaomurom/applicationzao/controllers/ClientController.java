@@ -338,26 +338,30 @@ public class ClientController {
             cart.addProduct(product, quantity, sum);
             cartService.save(cart);
 
-            int filledTrucksCount = 1;
-            for (CartTruck truck : cart.getTrucks()) {
-                int totalItems = truck.getItems().stream()
-                        .mapToInt(CartTruckItem::getQuantity)
-                        .sum();
+            int filledTrucksCount = 0;
+            int remainingItems = quantity;
 
-                int maxCapacity = truck.getItems().stream()
-                        .anyMatch(item -> item.getProduct().getLength() == 2.8) ?
-                        Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
+            // Подсчитываем общее количество товаров
+            int totalItems = cart.getTrucks().stream()
+                    .flatMap(truck -> truck.getItems().stream())
+                    .mapToInt(CartTruckItem::getQuantity)
+                    .sum();
 
-                if (totalItems >= maxCapacity) {
-                    filledTrucksCount++;
-                }
-            }
+            // Определяем вместимость первой машины
+            boolean firstTruckHasLongProducts = cart.getTrucks().stream()
+                    .flatMap(truck -> truck.getItems().stream())
+                    .anyMatch(item -> item.getProduct().getLength() == 2.8);
+
+            int firstTruckCapacity = firstTruckHasLongProducts ? Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
+
+            // Вычисляем количество заполненных машин
+            filledTrucksCount = (int) Math.ceil((double) totalItems / firstTruckCapacity);
 
             Map<String, Object> response = new HashMap<>();
             response.put("redirect", "/products");
 
-            if (filledTrucksCount > 1) {
-                String message = filledTrucksCount == 2 ?
+            if (filledTrucksCount > 0) {
+                String message = filledTrucksCount == 1 ?
                         "Первая грузовая машина заполнена" :
                         "Количество заполненных грузовых машин: " + filledTrucksCount;
                 response.put("message", message);
@@ -368,7 +372,6 @@ public class ClientController {
 
         return ResponseEntity.badRequest().build();
     }
-
     @GetMapping("/orders")
     public String orders(Model model, Principal principal, @RequestParam(required = false) String status) {
         if (principal == null) {

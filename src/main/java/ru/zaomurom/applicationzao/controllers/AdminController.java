@@ -688,6 +688,8 @@ public class AdminController {
 
         return "admin/orderStatusHistory";
     }
+
+
     @GetMapping("/admin/orderStatusHistory/{id}")
     public String orderStatusHistory(@PathVariable Long id, Model model) {
         Order order = orderService.findById(id).orElse(null);
@@ -758,23 +760,33 @@ public class AdminController {
             return "application/octet-stream";
         }
     }
+
     @PostMapping("/admin/updateOrderPrice/{id}")
     public String updateOrderPrice(
             @PathVariable Long id,
             @RequestParam List<Double> prices,
             @RequestParam List<Long> tchOrderIds,
-            @RequestParam List<Double> discounts,
             RedirectAttributes redirectAttributes) {
 
-        for (int i = 0; i < prices.size(); i++) {
+        if (prices == null || tchOrderIds == null || prices.size() != tchOrderIds.size()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Неверные данные для обновления цен");
+            return "redirect:/admin/orders/" + id;
+        }
+
+        for (int i = 0; i < tchOrderIds.size(); i++) {
+            Double price = prices.get(i);
+            if (price == null) {
+                continue;
+            }
+
             TCHOrder tchOrder = orderService.findTchOrderById(tchOrderIds.get(i));
             if (tchOrder != null) {
-                tchOrder.setPrice(prices.get(i));
-                tchOrder.setDiscount(discounts.get(i));
+                tchOrder.setPrice(price);
                 orderService.saveTchOrder(tchOrder);
             }
         }
-        redirectAttributes.addFlashAttribute("successMessage", "Цены и скидки успешно обновлены.");
+
+        redirectAttributes.addFlashAttribute("successMessage", "Цены успешно обновлены");
         return "redirect:/admin/orders/" + id;
     }
 

@@ -9,7 +9,7 @@ import java.util.List;
 public class Product {
     public static final int MAX_ITEMS_SHORT = 16;
     public static final int MAX_ITEMS_LONG = 13;
-    public static final int THRESHOLD_LONG = 6;
+    public static final int THRESHOLD_LONG = 7;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -153,11 +153,12 @@ public class Product {
                 .filter(p -> p.length == 2.8)
                 .count();
 
-        if (this.length == 2.8 || longProductsCount >= 6) {
+        if (longProductsCount >= THRESHOLD_LONG) {
             return MAX_ITEMS_LONG;
         }
         return MAX_ITEMS_SHORT;
     }
+
     public Double getVolume() {
         return volume;
     }
@@ -178,6 +179,6 @@ public class Product {
         long longProductsCount = productsInTruck.stream()
                 .filter(p -> p.length == 2.8)
                 .count();
-        return this.length == 2.8 || longProductsCount >= 6;
+        return this.length == 2.8 || longProductsCount >= 7;
     }
 }
