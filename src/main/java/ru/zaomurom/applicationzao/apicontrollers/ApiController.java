@@ -1,17 +1,32 @@
 package ru.zaomurom.applicationzao.apicontrollers;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.zaomurom.applicationzao.models.client.*;
 import ru.zaomurom.applicationzao.models.order.*;
+import ru.zaomurom.applicationzao.models.prices.ClientsRegion;
+import ru.zaomurom.applicationzao.models.prices.Region;
 import ru.zaomurom.applicationzao.models.product.*;
 import ru.zaomurom.applicationzao.repositories.OrderTruckRepository;
 import ru.zaomurom.applicationzao.services.*;
 import ru.zaomurom.applicationzao.dto.*;
 
+import java.io.IOException;
+import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -30,6 +45,9 @@ public class ApiController {
     private final ContactsService contactsService;
     private final AddressesService addressesService;
     private final UserService userService;
+    private final DocumentTypeService documentTypeService;
+    private final EmailService emailService;
+    private final RegionService regionService;
 
     @Autowired
     public ApiController(ProductService productService,
@@ -42,7 +60,10 @@ public class ApiController {
                          ClientService clientService,
                          ContactsService contactsService,
                          AddressesService addressesService,
-                         UserService userService) {
+                         UserService userService,
+                         DocumentTypeService documentTypeService,
+                         EmailService emailService,
+                         RegionService regionService) {
         this.productService = productService;
         this.productImageService = productImageService;
         this.documentationService = documentationService;
@@ -54,6 +75,39 @@ public class ApiController {
         this.contactsService = contactsService;
         this.addressesService = addressesService;
         this.userService = userService;
+        this.documentTypeService = documentTypeService;
+        this.emailService = emailService;
+        this.regionService = regionService;
+    }
+    @PostMapping("/login")
+    public ResponseEntity<?> loginApi(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        try {
+            // Попытка аутентификации
+            request.login(loginRequest.getUsername(), loginRequest.getPassword());
+
+            // Получаем аутентифицированного пользователя
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                User user = userService.findByUsername(auth.getName());
+                if (user != null) {
+                    UserDTO userDTO = convertToUserDTO(user);
+                    return ResponseEntity.ok(userDTO);
+                }
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed");
+        } catch (ServletException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+        }
+    }
+
+    @GetMapping("/current-user")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserDTO> getCurrentUser(Principal principal) {
+        User user = userService.findByUsername(principal.getName());
+        if (user != null) {
+            return ResponseEntity.ok(convertToUserDTO(user));
+        }
+        return ResponseEntity.notFound().build();
     }
 
     // Методы для товаров
@@ -250,7 +304,136 @@ public class ApiController {
         return ResponseEntity.notFound().build();
     }
 
-    // Методы преобразования в DTO
+    // Новые методы для DocumentType
+    @GetMapping("/documentTypes")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<DocumentTypeDTO>> getAllDocumentTypes() {
+        List<DocumentType> documentTypes = documentTypeService.findAll();
+        List<DocumentTypeDTO> documentTypeDTOs = documentTypes.stream()
+                .map(this::convertToDocumentTypeDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(documentTypeDTOs);
+    }
+
+    @GetMapping("/documentTypes/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<DocumentTypeDTO> getDocumentTypeById(@PathVariable Long id) {
+        Optional<DocumentType> documentType = documentTypeService.findById(id);
+        return documentType.map(dt -> ResponseEntity.ok(convertToDocumentTypeDTO(dt)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/documentTypes")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<DocumentTypeDTO> createDocumentType(@RequestBody DocumentTypeDTO documentTypeDTO) {
+        DocumentType documentType = new DocumentType(documentTypeDTO.getName());
+        DocumentType savedDocumentType = documentTypeService.save(documentType);
+        return ResponseEntity.ok(convertToDocumentTypeDTO(savedDocumentType));
+    }
+
+    // Методы для обновления цен в заказах
+    @PutMapping("/orders/{orderId}/updatePrices")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderDTO> updateOrderPrices(
+            @PathVariable Long orderId,
+            @RequestBody List<TCHOrderPriceUpdateDTO> priceUpdates) {
+
+        Optional<Order> orderOptional = orderService.findById(orderId);
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Order order = orderOptional.get();
+
+        for (TCHOrderPriceUpdateDTO update : priceUpdates) {
+            TCHOrder tchOrder = orderService.findTchOrderById(update.getTchOrderId());
+            if (tchOrder != null) {
+                tchOrder.setPrice(update.getNewPrice());
+                orderService.saveTchOrder(tchOrder);
+            }
+        }
+
+        // Пересчет итоговой суммы для всех машин в заказе
+        for (OrderTruck truck : order.getTrucks()) {
+            double total = truck.getTchOrders().stream()
+                    .mapToDouble(t -> t.getPrice() * t.getQuantity() * t.getVolume())
+                    .sum();
+            truck.setTotal(total);
+            orderTruckRepository.save(truck);
+        }
+
+        return ResponseEntity.ok(convertToOrderDTO(order));
+    }
+
+    // Методы для обновления статуса заказа
+    @PutMapping("/orders/{orderId}/updateStatus")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderDTO> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestParam String newStatus,
+            Principal principal) {
+
+        Optional<Order> orderOptional = orderService.findById(orderId);
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Order order = orderOptional.get();
+        order.setStatus(newStatus);
+        Order updatedOrder = orderService.save(order);
+
+        // Добавление записи в историю статусов
+        User user = userService.findByUsername(principal.getName());
+        orderService.addStatusHistory(order, newStatus, user);
+
+        // Отправка уведомления на email
+        emailService.sendOrderStatusUpdateEmailAsync(order, newStatus);
+
+        return ResponseEntity.ok(convertToOrderDTO(updatedOrder));
+    }
+
+    @PostMapping(value = "/orders/{orderId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderDocumentationDTO> addOrderDocumentation(
+            @PathVariable Long orderId,
+            @RequestParam("documentTypeId") Long documentTypeId,
+            @RequestParam("name") String name,
+            @RequestParam("docnumber") String docnumber,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        System.out.println("Order ID: " + orderId);
+        System.out.println("Document Type ID: " + documentTypeId);
+        System.out.println("Name: " + name);
+        System.out.println("File: " + (file != null ? file.getOriginalFilename() : "null"));
+        System.out.println("File size: " + (file != null ? file.getSize() : "null"));
+
+        Optional<Order> orderOptional = orderService.findById(orderId);
+        Optional<DocumentType> documentTypeOptional = documentTypeService.findById(documentTypeId);
+
+        if (!orderOptional.isPresent() || !documentTypeOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        OrderDocumentation documentation = new OrderDocumentation();
+        documentation.setName(name);
+        documentation.setDocnumber(docnumber);
+        documentation.setBytes(file.getBytes());
+        documentation.setDocumentType(documentTypeOptional.get());
+        documentation.setOrder(orderOptional.get());
+
+        OrderDocumentation savedDoc = orderDocumentationService.save(documentation);
+        return ResponseEntity.ok(convertToOrderDocumentationDTO(savedDoc));
+    }
+
+    @DeleteMapping("/orders/{orderId}/documents/{docId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteOrderDocumentation(
+            @PathVariable Long orderId,
+            @PathVariable Long docId) {
+
+        orderDocumentationService.deleteById(docId);
+        return ResponseEntity.noContent().build();
+    }
+
     private ProductDTO convertToProductDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
@@ -268,7 +451,7 @@ public class ApiController {
     private ProductImageDTO convertToProductImageDTO(ProductImage image) {
         ProductImageDTO dto = new ProductImageDTO();
         dto.setId(image.getId());
-        // Не включаем байты изображения в DTO, чтобы не перегружать ответ
+        dto.setBytes(image.getBytes()); // Добавлен массив байт изображения
         return dto;
     }
 
@@ -277,7 +460,7 @@ public class ApiController {
         dto.setId(doc.getId());
         dto.setName(doc.getName());
         dto.setDescription(doc.getDescription());
-        // Не включаем байты документа в DTO
+        dto.setBytes(doc.getBytes()); // Добавлен массив байт документа
         return dto;
     }
 
@@ -339,12 +522,15 @@ public class ApiController {
         OrderDocumentationDTO dto = new OrderDocumentationDTO();
         dto.setId(doc.getId());
         dto.setName(doc.getName());
+        dto.setDocnumber(doc.getDocnumber());
+        dto.setBytes(doc.getBytes());
         if (doc.getDocumentType() != null) {
             dto.setDocumentTypeId(doc.getDocumentType().getId());
             dto.setDocumentTypeName(doc.getDocumentType().getName());
         }
         return dto;
     }
+
 
     private ClientDTO convertToClientDTO(Client client) {
         ClientDTO dto = new ClientDTO();
@@ -356,10 +542,36 @@ public class ApiController {
         dto.setFactaddress(client.getFactaddress());
         dto.setSum1(client.getSum1());
         dto.setSum2(client.getSum2());
-        if (client.getSelectedPrice() != null) {
-            dto.setSelectedPriceId(client.getSelectedPrice().getId());
-            dto.setSelectedPriceName(client.getSelectedPrice().getName());
+        
+        // Convert addresses
+        if (client.getAddresses() != null) {
+            dto.setAddresses(client.getAddresses().stream()
+                    .map(this::convertToAddressesDTO)
+                    .collect(Collectors.toList()));
         }
+        
+        // Convert contacts
+        if (client.getContacts() != null) {
+            dto.setContacts(client.getContacts().stream()
+                    .map(this::convertToContactsDTO)
+                    .collect(Collectors.toList()));
+        }
+        
+        // Convert users
+        if (client.getUsers() != null) {
+            dto.setUsers(client.getUsers().stream()
+                    .map(this::convertToUserDTO)
+                    .collect(Collectors.toList()));
+        }
+        // Convert selected price
+        if (client.getSelectedPrice() != null) {
+            PriceDTO priceDTO = new PriceDTO();
+            priceDTO.setId(client.getSelectedPrice().getId());
+            priceDTO.setName(client.getSelectedPrice().getName());
+            priceDTO.setVid(client.getSelectedPrice().getVid());
+            dto.setSelectedPrice(priceDTO);
+        }
+        
         return dto;
     }
 
@@ -368,13 +580,18 @@ public class ApiController {
         dto.setId(address.getId());
         dto.setPostalcode(address.getPostalcode());
         dto.setCountry(address.getCountry());
-        dto.setRegion(address.getRegion());
+        if (address.getClientsRegion() != null && address.getClientsRegion().getRegion() != null) {
+            dto.setRegionName(address.getClientsRegion().getRegion().getName());
+        }
         dto.setRayon(address.getRayon());
         dto.setCity(address.getCity());
         dto.setStreet(address.getStreet());
         dto.setHome(address.getHome());
         dto.setRoomnumber(address.getRoomnumber());
         dto.setSchedule(address.getSchedule());
+        if (address.getContact() != null) {
+            dto.setContactDTO(convertToContactsDTO(address.getContact()));
+        }
         return dto;
     }
 
@@ -395,6 +612,20 @@ public class ApiController {
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setAdmin(user.isAdmin());
+        return dto;
+    }
+
+    private DocumentTypeDTO convertToDocumentTypeDTO(DocumentType documentType) {
+        DocumentTypeDTO dto = new DocumentTypeDTO();
+        dto.setId(documentType.getId());
+        dto.setName(documentType.getName());
+        return dto;
+    }
+
+    private RegionDTO convertToRegionDTO(Region region) {
+        RegionDTO dto = new RegionDTO();
+        dto.setId(region.getId());
+        dto.setName(region.getName());
         return dto;
     }
 }

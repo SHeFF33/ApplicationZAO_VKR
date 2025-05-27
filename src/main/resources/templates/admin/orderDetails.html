@@ -244,6 +244,7 @@
       transition: var(--transition);
       text-decoration: none;
       border: none;
+      min-width: 180px;
     }
 
     .btn--primary {
@@ -458,6 +459,16 @@
       background-color: #F5F5F5;
       color: #424242;
     }
+    .status-badge--nulled {
+      background-color: #F5F5F5;
+      color: #c81212;
+    }
+
+    /* Unified button styles for action buttons */
+    .actions-form .btn {
+      min-width: 180px;
+      flex-shrink: 0;
+    }
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -475,7 +486,12 @@
         flex-direction: column;
         align-items: flex-start;
       }
+
+      .actions-form .btn {
+        width: 100%;
+      }
     }
+
   </style>
 </head>
 <body>
@@ -564,12 +580,18 @@
         <span class="info-item__label">Комментарий к заказу</span>
         <span class="info-item__value" th:text="${order.comment}"></span>
       </div>
-    </div>
-    <div class="info-item">
-      <span class="info-item__label">Адрес доставки</span>
-      <span class="info-item__value">
-        <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
+      <div class="info-item">
+        <span class="info-item__label">Адрес доставки</span>
+        <span class="info-item__value">
+        <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' + (${order.deliveryAddress.clientsRegion != null} ? ${order.deliveryAddress.clientsRegion.region.name} : '') + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} + ', ' + ${order.deliveryAddress.roomnumber}"></span>
       </span>
+      </div>
+      <div class="info-item">
+        <span class="info-item__label">График работы адреса доставки</span>
+        <span class="info-item__value">
+        <span th:text="${order.deliveryAddress.schedule}"></span>
+      </span>
+      </div>
     </div>
   </div>
 
@@ -588,23 +610,15 @@
         <option th:selected="${order.status == 'Назначена погрузка'}" value="Назначена погрузка">Назначена погрузка</option>
         <option th:selected="${order.status == 'В пути'}" value="В пути">В пути</option>
         <option th:selected="${order.status == 'Закрыт'}" value="Закрыт">Закрыт</option>
+        <option th:selected="${order.status == 'Аннулирован'}" value="Аннулирован">Аннулирован</option>
       </select>
-      <button type="submit" class="btn btn--primary">
+      <button type="submit" class="btn btn--primary" style="min-width: 220px;">
         <i class="fas fa-sync-alt"></i> Обновить статус
       </button>
+      <a th:href="@{/admin/orderStatusHistory/{id}(id=${order.id})}" class="btn btn--primary" style="min-width: 220px;">
+        <i class="fas fa-history"></i> История статусов
+      </a>
     </form>
-    <div>
-      <span class="status-form__label">Текущий статус:</span>
-      <span th:switch="${order.status}" class="status-badge">
-        <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
-        <span th:case="'Принят'" class="status-badge--accepted">Принят</span>
-        <span th:case="'Оплачен. В работе'" class="status-badge--paid-working">Оплачен. В работе</span>
-        <span th:case="'Оплачен. В ожидании'" class="status-badge--paid-waiting">Оплачен. В ожидании</span>
-        <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
-        <span th:case="'В пути'" class="status-badge--transit">В пути</span>
-        <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
-      </span>
-    </div>
   </div>
 
   <div class="card">
@@ -673,6 +687,7 @@
       <tr>
         <th>Название</th>
         <th>Тип документа</th>
+        <th>Номер документа</th>
         <th>Действия</th>
       </tr>
       </thead>
@@ -683,6 +698,7 @@
              class="document-link" th:text="${doc.name}"></a>
         </td>
         <td th:text="${doc.documentType.name}"></td>
+          <td th:text="${doc.docnumber}"></td>
         <td>
           <form th:action="@{/admin/deleteOrderDocumentation}" method="post" style="display: inline;">
             <input type="hidden" name="orderId" th:value="${order.id}" />
@@ -705,14 +721,15 @@
         <select name="documentTypeId" class="form-control">
           <option th:each="type : ${documentTypes}" th:value="${type.id}" th:text="${type.name}"></option>
         </select>
+        <input type="text" name="docnumber" class="form-control" placeholder="Номер документа" />
         <input type="file" name="documentation" required class="form-control file-input" />
         <button type="submit" class="btn btn--primary">
           <i class="fas fa-upload"></i> Загрузить
         </button>
       </form>
-      <a th:href="@{/admin/orderStatusHistory/{id}(id=${order.id})}" class="btn btn--secondary">
-        <i class="fas fa-history"></i> История статусов
-      </a>
+        <button type="button" class="btn btn--primary" onclick="saveAndClose()">
+          <i class="fas fa-save"></i> Сохранить и закрыть
+        </button>
     </div>
   </div>
 </main>
@@ -771,6 +788,32 @@
       truckTotalElement.textContent = truckTotal.toFixed(2) + ' руб.';
     }
   });
+
+  async function saveAndClose() {
+    // Сохранение статуса заказа
+    const statusForm = document.querySelector('form[action*="/admin/updateOrderStatus"]');
+    if (statusForm) {
+      await fetch(statusForm.action, {
+        method: 'POST',
+        body: new FormData(statusForm)
+      });
+    }
+
+    // Сохранение цен товаров
+    const priceForms = document.querySelectorAll('form[action*="/admin/updateOrderPrice"]');
+    const savePromises = Array.from(priceForms).map(form => {
+      return fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+      });
+    });
+
+    await Promise.all(savePromises);
+
+    // Перенаправление на страницу всех заказов
+    window.location.href = '/admin/orders';
+  }
 </script>
+
 </body>
 </html>

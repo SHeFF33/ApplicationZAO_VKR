@@ -523,7 +523,7 @@
           <tr th:each="address : ${client.addresses}">
             <td th:text="${address.postalcode}"></td>
             <td th:text="${address.country}"></td>
-            <td th:text="${address.region}"></td>
+            <td th:text="${address.clientsRegion != null ? address.clientsRegion.region.name : ''}"></td>
             <td th:text="${address.rayon}"></td>
             <td th:text="${address.city}"></td>
             <td th:text="${address.street}"></td>

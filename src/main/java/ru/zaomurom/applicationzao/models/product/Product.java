@@ -154,9 +154,9 @@ public class Product {
                 .count();
 
         if (longProductsCount >= THRESHOLD_LONG) {
-            return MAX_ITEMS_LONG;
+            return MAX_ITEMS_LONG; // 13
         }
-        return MAX_ITEMS_SHORT;
+        return MAX_ITEMS_SHORT; // 16
     }
 
     public Double getVolume() {

@@ -311,6 +311,10 @@
       background-color: #F5F5F5;
       color: #424242;
     }
+    .status-badge--nulled {
+      background-color: #F5F5F5;
+      color: #c81212;
+    }
 
     /* Empty state */
     .empty-state {
@@ -407,6 +411,7 @@
           <option value="Назначена погрузка" th:selected="${status != null && status == 'Назначена погрузка'}">Назначена погрузка</option>
           <option value="В пути" th:selected="${status != null && status == 'В пути'}">В пути</option>
           <option value="Закрыт" th:selected="${status != null && status == 'Закрыт'}">Закрыт</option>
+          <option value="Аннулирован" th:selected="${status != null && status == 'Аннулирован'}">Аннулирован</option>
         </select>
       </div>
       <div class="form-group">
@@ -432,6 +437,7 @@
         <th>Заказ</th>
         <th>Статус</th>
         <th>Дата изменения</th>
+        <th>Номер документа</th>
         <th>Пользователь</th>
       </tr>
       </thead>
@@ -449,9 +455,14 @@
                             <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
                             <span th:case="'В пути'" class="status-badge--transit">В пути</span>
                             <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
+                            <span th:case="'Аннулирован'" class="status-badge--nulled">Аннулирован</span>
                         </span>
         </td>
         <td th:text="${entry.formattedChangeDate}"></td>
+        <td>
+            <span th:if="${entry.order.documentations.?[documentType.name == 'Счет'].size() > 0}"
+                  th:text="${entry.order.documentations.?[documentType.name == 'Счет'][0].docnumber}"></span>
+        </td>
         <td>
           <span th:if="${entry.user != null}" th:text="${entry.user.username}"></span>
           <span th:if="${entry.user == null}" class="text-muted">Пользователь не заполнен</span>

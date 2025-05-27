@@ -201,6 +201,23 @@
             color: var(--text-secondary);
         }
 
+        /* Стили для тегов регионов */
+        .regions-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .region-tag {
+            background-color: var(--primary-light);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
         /* Expand section */
         .expand-section {
             display: flex;
@@ -451,6 +468,11 @@
                 width: 100%;
             }
         }
+
+        /* Таблица */
+        .table-responsive {
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -540,6 +562,18 @@
                         <div class="client-info__label">В том числе свободные:</div>
                         <div class="client-info__value" th:text="${client.sum2} ?: 'Не указана'"></div>
                     </div>
+                    <div class="client-info__item">
+                        <div class="client-info__label">Доступные регионы:</div>
+                        <div class="client-info__value">
+                            <div class="regions-list">
+                                <span th:each="region : ${clientRegions}" 
+                                      th:text="${region.name}"
+                                      class="region-tag"
+                                      th:attr="data-id=${region.id}">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -571,7 +605,7 @@
                         <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}, data-schedule=${address.schedule}">
                             <td th:text="${address.postalcode}"></td>
                             <td th:text="${address.country}"></td>
-                            <td th:text="${address.region}"></td>
+                            <td th:text="${address.clientsRegion != null ? address.clientsRegion.region.name : ''}"></td>
                             <td th:text="${address.rayon}"></td>
                             <td th:text="${address.city}"></td>
                             <td th:text="${address.street}"></td>
@@ -656,8 +690,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="region" class="form-label">Регион:</label>
-                    <input type="text" id="region" name="region" class="form-control" required>
+                    <label for="regionId" class="form-label">Регион:</label>
+                    <select id="regionId" name="regionId" class="form-control" required>
+                        <option value="">Выберите регион</option>
+                        <option th:each="region : ${clientRegions}"
+                                th:value="${region.id}"
+                                th:text="${region.name}">
+                        </option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -774,8 +814,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="editRegion" class="form-label">Регион:</label>
-                    <input type="text" id="editRegion" name="region" class="form-control" required>
+                    <label for="editRegionId" class="form-label">Регион:</label>
+                    <select id="editRegionId" name="regionId" class="form-control" required>
+                        <option value="">Выберите регион</option>
+                        <option th:each="region : ${clientRegions}"
+                                th:value="${region.id}"
+                                th:text="${region.name}">
+                        </option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -901,7 +947,7 @@
     }
 
     function openEditAddressModal(event) {
-        event.stopPropagation(); // Предотвращаем всплытие события
+        event.stopPropagation();
         const button = event.currentTarget;
         const addressId = button.getAttribute('data-id');
         const row = button.closest('tr');
@@ -910,7 +956,19 @@
         document.getElementById('editAddressId').value = addressId;
         document.getElementById('editPostalcode').value = row.cells[0].textContent;
         document.getElementById('editCountry').value = row.cells[1].textContent;
-        document.getElementById('editRegion').value = row.cells[2].textContent;
+
+        // Находим и устанавливаем выбранный регион
+        const regionSelect = document.getElementById('editRegionId');
+        const regionCell = row.cells[2];
+        const regionName = regionCell.textContent.trim();
+        
+        for (let option of regionSelect.options) {
+            if (option.text === regionName) {
+                option.selected = true;
+                break;
+            }
+        }
+
         document.getElementById('editRayon').value = row.cells[3].textContent || '';
         document.getElementById('editCity').value = row.cells[4].textContent;
         document.getElementById('editStreet').value = row.cells[5].textContent;
@@ -921,7 +979,7 @@
         document.getElementById('editSchedule').value = schedule || '';
 
         // Устанавливаем выбранный контакт
-        const contactName = row.cells[8].textContent; // Изменено с 9 на 8, так как столбец действий теперь последний
+        const contactName = row.cells[8].textContent;
         const contactSelect = document.getElementById('editContactSelect');
         let found = false;
         for (let i = 0; i < contactSelect.options.length; i++) {
@@ -959,7 +1017,7 @@
             id: formData.get('id'),
             postalcode: formData.get('postalcode'),
             country: formData.get('country'),
-            region: formData.get('region'),
+            regionId: formData.get('regionId'),
             rayon: formData.get('rayon'),
             city: formData.get('city'),
             street: formData.get('street'),
@@ -1063,6 +1121,48 @@
             }
         });
     });
+
+    function addTableRow(tableId) {
+        const tbody = document.getElementById(tableId);
+        const newRow = document.createElement('tr');
+        
+        if (tableId === 'addresses') {
+            const regions = Array.from(document.querySelectorAll('.region-tag')).map(tag => ({
+                id: tag.getAttribute('data-id'),
+                name: tag.textContent.trim()
+            }));
+            
+            newRow.innerHTML = `
+                <td><input type="text" name="postalcodes" required></td>
+                <td><input type="text" name="countries" required></td>
+                <td>
+                    <select name="addressRegionIds" class="form-control" required>
+                        <option value="">Выберите регион</option>
+                        ${regions.map(region => 
+                            `<option value="${region.id}">${region.name}</option>`
+                        ).join('')}
+                    </select>
+                </td>
+                <td><input type="text" name="rayons"></td>
+                <td><input type="text" name="cities" required></td>
+                <td><input type="text" name="streets" required></td>
+                <td><input type="text" name="homes" required></td>
+                <td><input type="text" name="roomnumbers" required></td>
+                <td><textarea name="schedules"></textarea></td>
+                <td>
+                    <select name="contactIds">
+                        <option value="">Нет контакта</option>
+                        ${Array.from(document.querySelectorAll('select[name="contactIds"] option')).map(option => 
+                            option.value ? `<option value="${option.value}">${option.textContent}</option>` : ''
+                        ).join('')}
+                    </select>
+                </td>
+            `;
+        }
+        // ... existing code for other tables ...
+        
+        tbody.appendChild(newRow);
+    }
 </script>
 </body>
 </html>

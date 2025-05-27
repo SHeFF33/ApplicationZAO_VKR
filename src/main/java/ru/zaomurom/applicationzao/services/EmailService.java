@@ -2,6 +2,7 @@ package ru.zaomurom.applicationzao.services;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -44,14 +45,22 @@ public class EmailService {
     @Async
     public void sendOrderStatusUpdateEmailAsync(Order order, String newStatus) {
         Client client = order.getClient();
-        for (Contacts contact : client.getContacts()) {
+        if (client != null) {
             try {
-                sendOrderStatusUpdateEmail(contact.getEmail(), order, newStatus);
-            } catch (MessagingException e) {
-                System.err.println("Ошибка при отправке email на " + contact.getEmail() + ": " + e.getMessage());
+
+                Hibernate.initialize(client.getContacts());
+
+                for (Contacts contact : client.getContacts()) {
+                    if (contact.getEmail() != null && !contact.getEmail().isEmpty()) {
+                        sendOrderStatusUpdateEmail(contact.getEmail(), order, newStatus);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Ошибка при отправке email: " + e.getMessage());
             }
         }
     }
+
 
     @Async
     public void sendNewOrderNotification(Order order, String clientName) {

@@ -307,7 +307,7 @@
       <div class="order-info">
         <h3 class="order-info__title">Адрес доставки:</h3>
         <div class="order-info__content">
-          <p th:text="${selectedAddress.postalcode + ', ' + selectedAddress.country + ', ' + selectedAddress.region + ', '  + selectedAddress.rayon + ', '  + selectedAddress.city + ', ' + selectedAddress.street + ', ' + selectedAddress.home + (selectedAddress.roomnumber != null ? ', ' + selectedAddress.roomnumber : '')}"></p>
+          <p th:text="${selectedAddress.postalcode + ', ' + selectedAddress.country + ', ' + (selectedAddress.clientsRegion != null ? selectedAddress.clientsRegion.region.name : '') + ', '  + selectedAddress.rayon + ', '  + selectedAddress.city + ', ' + selectedAddress.street + ', ' + selectedAddress.home + (selectedAddress.roomnumber != null ? ', ' + selectedAddress.roomnumber : '')}"></p>
         </div>
       </div>
 

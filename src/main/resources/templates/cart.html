@@ -865,10 +865,17 @@
                 <select id="addressId" name="addressId" class="form-control">
                     <option th:each="address : ${client.addresses}"
                             th:value="${address.id}"
-                            th:text="${address.postalcode + ', ' + address.country + ', ' + address.region + ', ' + address.city + ', ' + address.street + ', ' + address.home + (address.roomnumber != null ? ', ' + address.roomnumber : '')}">
+                            th:text="${address.postalcode + ', ' + address.country + ', ' + (address.clientsRegion != null ? address.clientsRegion.region.name : '') + ', ' + address.city + ', ' + address.street + ', ' + address.home + (address.roomnumber != null ? ', ' + address.roomnumber : '')}"
+                            th:data-schedule="${address.schedule}">
                     </option>
                 </select>
             </div>
+
+            <div class="form-group">
+                <label for="schedule" class="form-label">График работы адреса доставки</label>
+                <input type="text" id="schedule" name="schedule" class="form-control" readonly>
+            </div>
+
 
             <div class="form-group">
                 <label for="deliveryDateTime" class="form-label">Дата доставки</label>
@@ -954,6 +961,35 @@
             closeNav();
         }
     });
+    document.addEventListener('DOMContentLoaded', function() {
+        var addressSelect = document.getElementById('addressId');
+        var scheduleInput = document.getElementById('schedule');
+
+        if (addressSelect && scheduleInput) {
+            // Установите значение графика доставки при загрузке страницы
+            var selectedOption = addressSelect.options[addressSelect.selectedIndex];
+            var schedule = selectedOption.getAttribute('data-schedule');
+            scheduleInput.value = schedule;
+        }
+    });
+
+    document.getElementById('addressId').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var schedule = selectedOption.getAttribute('data-schedule');
+        console.log('Selected schedule:', schedule); // Отладочное сообщение
+
+        var scheduleInput = document.getElementById('schedule');
+        console.log('Schedule input element:', scheduleInput); // Проверка, что элемент найден
+
+        if (scheduleInput) {
+            scheduleInput.value = schedule;
+            console.log('Schedule input value set to:', scheduleInput.value); // Проверка установленного значения
+        } else {
+            console.error('Schedule input element not found');
+        }
+    });
+
+
     document.getElementById('clearCartBtn').addEventListener('click', function() {
         if (confirm('Вы уверены, что хотите полностью очистить корзину? Это действие нельзя отменить.')) {
             fetch('/cart/clear', {
@@ -1298,28 +1334,34 @@
 
     function validateTruckCapacity(dropzone, draggedItem) {
         const truckProducts = dropzone.querySelectorAll('.distribution-item');
-        const totalItems = Array.from(truckProducts).reduce((sum, item) => {
-            return sum + parseInt(item.querySelector('.quantity-input').value);
-        }, 0);
+
+        // Подсчитываем общее количество товаров и количество длинных
+        let totalItems = 0;
+        let longProductsCount = 0;
+
+        truckProducts.forEach(item => {
+            const quantity = parseInt(item.querySelector('.quantity-input').value);
+            totalItems += quantity;
+
+            if (parseFloat(item.dataset.length) === 2.8) {
+                longProductsCount += quantity;
+            }
+        });
 
         const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
         const productLength = parseFloat(draggedItem.dataset.length);
 
-        // Определяем максимальное количество для этой машины
-        const longProductsCount = Array.from(truckProducts).filter(item => {
-            return parseFloat(item.dataset.length) === 2.8;
-        }).length;
-
-        let maxItems;
-        if (productLength === 2.8 || longProductsCount >= 6) {
-            maxItems = 13; // MAX_ITEMS_LONG
+        // Если добавляем длинный товар или уже есть 7+ длинных
+        if (productLength === 2.8 || longProductsCount >= 7) {
+            if (totalItems + draggedQuantity > 13) {
+                alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
+                return false;
+            }
         } else {
-            maxItems = 16; // MAX_ITEMS_SHORT
-        }
-
-        if (totalItems + draggedQuantity > maxItems) {
-            alert(`В машину можно добавить не более ${maxItems} пачек.`);
-            return false;
+            if (totalItems + draggedQuantity > 16) {
+                alert('В машину можно добавить не более 16 пачек');
+                return false;
+            }
         }
         return true;
     }
@@ -1365,30 +1407,56 @@
         }
     });
 
-    // Сохранение распределения
     document.getElementById('saveDistributionBtn').addEventListener('click', async function() {
         const trucks = [];
         const truckElements = document.querySelectorAll('.truck');
+        let isValid = true;
 
+        // Проверяем каждую машину
         truckElements.forEach(truckElement => {
             const truck = {
                 id: truckElement.dataset.truckId,
                 items: []
             };
 
+            let totalItems = 0;
+            let longProductsCount = 0;
+
             truckElement.querySelectorAll('.distribution-item').forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                const length = parseFloat(item.dataset.length);
+
+                totalItems += quantity;
+                if (length === 2.8) {
+                    longProductsCount += quantity;
+                }
+
                 truck.items.push({
                     productId: item.dataset.productId,
                     sumId: item.dataset.sumId,
-                    quantity: parseInt(item.querySelector('.quantity-input').value),
+                    quantity: quantity,
                     productName: item.querySelector('.distribution-item__name').textContent,
-                    length: parseFloat(item.dataset.length)
+                    length: length
                 });
             });
+
+            // Проверка ограничений
+            if (longProductsCount >= 7 && totalItems > 13) {
+                alert(`Машина ${truckElement.querySelector('.truck-header span').textContent} содержит ${totalItems} пачек при ${longProductsCount} длинных товарах. Максимум 13 пачек разрешено.`);
+                isValid = false;
+            } else if (totalItems > 16) {
+                alert(`Машина ${truckElement.querySelector('.truck-header span').textContent} содержит ${totalItems} пачек. Максимум 16 пачек разрешено.`);
+                isValid = false;
+            }
 
             trucks.push(truck);
         });
 
+        if (!isValid) {
+            return;
+        }
+
+        // Если проверка пройдена, сохраняем
         try {
             const token = document.querySelector('meta[name="_csrf"]').content;
             const header = document.querySelector('meta[name="_csrf_header"]').content;
@@ -1413,6 +1481,47 @@
             alert('Ошибка сохранения: ' + error.message);
         }
     });
+    function setupQuantityInputListeners() {
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const item = this.closest('.distribution-item');
+                const dropzone = this.closest('.dropzone');
+
+                if (dropzone.classList.contains('truck-products')) {
+                    validateTruckQuantity(this);
+                }
+            });
+        });
+    }
+
+    function validateTruckQuantity(input) {
+        const truckProducts = input.closest('.truck-products');
+        const items = truckProducts.querySelectorAll('.distribution-item');
+
+        let totalItems = 0;
+        let longProductsCount = 0;
+
+        items.forEach(item => {
+            const quantity = parseInt(item.querySelector('.quantity-input').value);
+            totalItems += quantity;
+
+            if (parseFloat(item.dataset.length) === 2.8) {
+                longProductsCount += quantity;
+            }
+        });
+
+        if (longProductsCount >= 7 && totalItems > 13) {
+            alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
+            input.value = 1;
+            validateTruckQuantity(input); // Повторная проверка
+        } else if (totalItems > 16) {
+            alert('В машину можно добавить не более 16 пачек');
+            input.value = 1;
+            validateTruckQuantity(input); // Повторная проверка
+        }
+    }
+
+
 
 </script>
 </body>

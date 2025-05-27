@@ -421,6 +421,182 @@
                 overflow-x: auto;
             }
         }
+
+        /* Стили для модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal--open {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-title i {
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Стили для карточек регионов */
+        .item-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .item-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            transition: var(--transition);
+        }
+
+        .item-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .item-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-card__title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--border);
+        }
+
+        /* Стили для чекбоксов */
+        input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin: 0;
+            cursor: pointer;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+            background-color: var(--surface);
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: var(--primary-light);
+        }
     </style>
 </head>
 <body>
@@ -554,9 +730,25 @@
                     </thead>
                     <tbody>
                     <tr th:each="address : ${client.addresses}">
-                        <td><input type="text" name="postalcodes" th:value="${address.postalcode}" required></td>
+                        <td><input type="text" 
+                                 name="postalcodes" 
+                                 th:value="${address.postalcode}" 
+                                 pattern="[0-9]{6}" 
+                                 maxlength="6"
+                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                 title="Почтовый индекс должен содержать 6 цифр"
+                                 required></td>
                         <td><input type="text" name="countries" th:value="${address.country}" required></td>
-                        <td><input type="text" name="regions" th:value="${address.region}" required></td>
+                        <td>
+                            <select name="addressRegionIds" class="form-control" required>
+                                <option value="">Выберите регион</option>
+                                <option th:each="region : ${clientRegions}"
+                                        th:value="${region.id}"
+                                        th:text="${region.name}"
+                                        th:selected="${address.clientsRegion != null && address.clientsRegion.region.id == region.id}">
+                                </option>
+                            </select>
+                        </td>
                         <td><input type="text" name="rayons" th:value="${address.rayon}"></td>
                         <td><input type="text" name="cities" th:value="${address.city}" required></td>
                         <td><input type="text" name="streets" th:value="${address.street}" required></td>
@@ -584,7 +776,6 @@
                 </table>
             </div>
         </div>
-
         <div class="section">
             <div class="section-header">
                 <h3 class="section-title"><i class="fas fa-address-book"></i> Контакты</h3>
@@ -677,6 +868,32 @@
             </div>
         </div>
 
+        <!-- Секция регионов -->
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-map-marked-alt"></i> Доступные регионы</h3>
+                <button type="button" class="btn btn--secondary" onclick="openModal('regionsModal')">
+                    <i class="fas fa-edit"></i> Управление регионами
+                </button>
+            </div>
+
+            <div class="section-content">
+                <div id="selected-regions-container">
+                    <div th:if="${#lists.isEmpty(clientRegions)}" class="empty-state">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <p>Регионы не выбраны</p>
+                    </div>
+                    <div th:if="${not #lists.isEmpty(clientRegions)}" class="item-list">
+                        <div th:each="region : ${clientRegions}" class="item-card">
+                            <div class="item-card__header">
+                                <h4 class="item-card__title" th:text="${region.name}" th:data-region-id="${region.id}"></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="action-buttons">
             <a th:href="@{/admin/client/{id}(id=${client.id})}" class="btn btn--secondary">
                 <i class="fas fa-times"></i> Отменить
@@ -696,6 +913,96 @@
     function closeNav() {
         document.getElementById("sidebar").classList.remove("app-sidebar--open");
     }
+
+    let selectedRegions = [];
+
+    // Функция для открытия модального окна
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add("modal--open");
+        if (modalId === 'regionsModal') {
+            // Инициализируем выбранные регионы при открытии модального окна
+            selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
+        }
+    }
+
+    // Функция для закрытия модального окна
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove("modal--open");
+    }
+
+    // Функция для фильтрации регионов
+    function filterRegions() {
+        const searchTerm = document.getElementById('regionSearch').value.toLowerCase();
+        const regionCards = document.querySelectorAll('#regions-list .item-card');
+
+        regionCards.forEach(card => {
+            const regionName = card.querySelector('.item-card__title').textContent.toLowerCase();
+            card.style.display = regionName.includes(searchTerm) ? 'block' : 'none';
+        });
+    }
+
+    // Функция обновления списка выбранных регионов
+    function updateSelectedRegions() {
+        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+
+    // Функция сохранения выбранных регионов
+    function saveSelectedRegions() {
+        // Удаляем старые скрытые поля с ID регионов
+        document.querySelectorAll('input[name="regionIds"]').forEach(input => input.remove());
+
+        // Создаем новые скрытые поля для каждого выбранного региона
+        const form = document.querySelector('form');
+        selectedRegions.forEach(regionId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'regionIds';
+            input.value = regionId;
+            form.appendChild(input);
+        });
+
+        // Обновляем отображение выбранных регионов
+        updateSelectedRegionsDisplay();
+
+        // Закрываем модальное окно
+        closeModal('regionsModal');
+    }
+
+    // Функция обновления отображения выбранных регионов
+    function updateSelectedRegionsDisplay() {
+        const container = document.getElementById('selected-regions-container');
+        if (!container) return;
+
+        if (selectedRegions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>Регионы не выбраны</p>
+                </div>
+            `;
+        } else {
+            let html = '<div class="item-list">';
+            document.querySelectorAll('.region-checkbox:checked').forEach(checkbox => {
+                const regionCard = checkbox.closest('.item-card');
+                const regionName = regionCard.querySelector('.item-card__title').textContent;
+                html += `
+                    <div class="item-card">
+                        <div class="item-card__header">
+                            <h4 class="item-card__title">${regionName}</h4>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализируем список выбранных регионов
+        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
+    });
 
     function toggleEmailRequired(checkbox, index) {
         const row = checkbox.closest('tr');
@@ -802,10 +1109,44 @@
         const newRow = document.createElement('tr');
 
         if (tableId === 'addresses') {
+            // Получаем список регионов из первого существующего select или из любого select с регионами на странице
+            let regionSelect = document.querySelector('select[name="addressRegionIds"]');
+            if (!regionSelect) {
+                // Если нет существующих select, ищем в модальном окне
+                regionSelect = document.querySelector('#regionsModal select');
+            }
+            
+            let regionOptions = '';
+            if (regionSelect) {
+                regionOptions = Array.from(regionSelect.options)
+                    .map(option => `<option value="${option.value}">${option.textContent}</option>`)
+                    .join('');
+            } else {
+                // Если не нашли select, берем из списка доступных регионов
+                regionOptions = Array.from(document.querySelectorAll('#selected-regions-container .item-card'))
+                    .map(card => {
+                        const regionName = card.querySelector('.item-card__title').textContent;
+                        const regionId = card.querySelector('.item-card__title').getAttribute('data-region-id');
+                        return `<option value="${regionId}">${regionName}</option>`;
+                    })
+                    .join('');
+            }
+
             newRow.innerHTML = `
-                <td><input type="text" name="postalcodes" required></td>
+                <td><input type="text" 
+                           name="postalcodes" 
+                           pattern="[0-9]{6}" 
+                           maxlength="6"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                           title="Почтовый индекс должен содержать 6 цифр"
+                           required></td>
                 <td><input type="text" name="countries" required></td>
-                <td><input type="text" name="regions" required></td>
+                <td>
+                    <select name="addressRegionIds" class="form-control" required>
+                        <option value="">Выберите регион</option>
+                        ${regionOptions}
+                    </select>
+                </td>
                 <td><input type="text" name="rayons"></td>
                 <td><input type="text" name="cities" required></td>
                 <td><input type="text" name="streets" required></td>
@@ -816,9 +1157,12 @@
                     <select name="contactIds">
                         <option value="">Нет контакта</option>
                         ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
-                const name = tr.querySelector('input[name="contactNames"]').value;
-                return `<option value="${tr.querySelector('input[name="contactNames"]').getAttribute('data-id') || ''}">${name}</option>`;
-            }).join('')}
+                            const nameInput = tr.querySelector('input[name="contactNames"]');
+                            if (nameInput) {
+                                return `<option value="${tr.dataset.id || ''}">${nameInput.value}</option>`;
+                            }
+                            return '';
+                        }).join('')}
                     </select>
                 </td>
                 <td style="text-align: center;">
@@ -925,5 +1269,48 @@
         });
     });
 </script>
+
+<!-- Модальное окно для управления регионами -->
+<div id="regionsModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-map-marked-alt"></i> Управление регионами
+            </h3>
+            <button class="modal-close" onclick="closeModal('regionsModal')">×</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <input type="text" id="regionSearch" class="form-control" placeholder="Поиск регионов..." oninput="filterRegions()">
+            </div>
+
+            <div class="item-list" id="regions-list" style="max-height: 400px; overflow-y: auto;">
+                <div th:each="region : ${regions}" class="item-card">
+                    <div class="item-card__header">
+                        <h4 class="item-card__title" th:text="${region.name}"></h4>
+                        <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" 
+                                   class="region-checkbox" 
+                                   th:value="${region.id}" 
+                                   th:checked="${clientRegions.contains(region)}"
+                                   onchange="updateSelectedRegions()">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn--secondary" onclick="closeModal('regionsModal')">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+            <button type="button" class="btn btn--primary" onclick="saveSelectedRegions()">
+                <i class="fas fa-save"></i> Сохранить
+            </button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

@@ -30,10 +30,11 @@ public class CartTruck {
                 .filter(p -> p.getLength() == 2.8)
                 .count();
 
-        int maxItems = longProductsCount >= 7 ?
-                Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
-
-        return totalItems < maxItems;
+        // Если добавляем длинный товар или уже есть 7+ длинных
+        if (product.getLength() == 2.8 || longProductsCount >= 7) {
+            return totalItems < Product.MAX_ITEMS_LONG;
+        }
+        return totalItems < Product.MAX_ITEMS_SHORT;
     }
 
     public int getAvailableSpace(Product product, List<Product> productsInTruck) {
@@ -42,10 +43,11 @@ public class CartTruck {
                 .filter(p -> p.getLength() == 2.8)
                 .count();
 
-        int maxItems = longProductsCount >= 7 ?
-                Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
-
-        return maxItems - totalItems;
+        // Если добавляем длинный товар или уже есть 7+ длинных
+        if (product.getLength() == 2.8 || longProductsCount >= 7) {
+            return Product.MAX_ITEMS_LONG - totalItems;
+        }
+        return Product.MAX_ITEMS_SHORT - totalItems;
     }
 
     private int getTotalItems() {

@@ -181,11 +181,11 @@
             color: var(--text-secondary);
         }
 
-        /* Products grid */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
+            align-items: stretch; /* Добавляем выравнивание по высоте */
         }
 
         .product-card {
@@ -196,6 +196,7 @@
             transition: var(--transition);
             display: flex;
             flex-direction: column;
+            height: 100%; /* Добавляем фиксированную высоту */
         }
 
         .product-card:hover {
@@ -241,6 +242,13 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
             color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Ограничиваем количество строк */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-height: 3em; /* Минимальная высота для двух строк */
+            line-height: 1.5em; /* Межстрочный интервал */
         }
 
         .product-card__spec {

@@ -10,6 +10,8 @@ public class OrderDocumentation {
 
     private String name;
 
+    private String docnumber;
+
     @Lob
     @Column(name = "bytes", columnDefinition = "LONGBLOB")
     private byte[] bytes;
@@ -22,7 +24,6 @@ public class OrderDocumentation {
     @JoinColumn(name = "document_type_id")
     private DocumentType documentType;
 
-    // Конструкторы, геттеры и сеттеры
     public Long getId() {
         return id;
     }
@@ -41,6 +42,13 @@ public class OrderDocumentation {
 
     public byte[] getBytes() {
         return bytes;
+    }
+    public String getDocnumber() {
+        return docnumber;
+    }
+
+    public void setDocnumber(String docnumber) {
+        this.docnumber = docnumber;
     }
 
     public void setBytes(byte[] bytes) {

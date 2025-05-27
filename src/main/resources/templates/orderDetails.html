@@ -102,6 +102,10 @@
       background-color: #F1F8E9;
       color: #558B2F;
     }
+    .status-nulled {
+      background-color: #F1F8E9;
+      color: #880c1a;
+    }
 
     .order-details__section {
       background-color: var(--surface);
@@ -290,7 +294,8 @@
                    #strings.equals(order.status, 'Оплачен. В ожидании') ? 'status-paid-waiting' :
                    #strings.equals(order.status, 'Назначена погрузка') ? 'status-loading' :
                    #strings.equals(order.status, 'В пути') ? 'status-shipping' :
-                   #strings.equals(order.status, 'Закрыт') ? 'status-completed' : ''}"
+                   #strings.equals(order.status, 'Закрыт') ? 'status-completed' :
+                   #strings.equals(order.status, 'Аннулирован') ? 'status-nulled' : ''}"
           th:classappend="${statusClass}"
           th:text="${order.status}"></span>
   </div>
@@ -330,9 +335,13 @@
         <div class="order-details__label">Адрес</div>
         <div class="order-details__value">
           <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.country} + ', ' +
-                         ${order.deliveryAddress.region} + ', ' + ${order.deliveryAddress.city} + ', ' +
+                         (${order.deliveryAddress.clientsRegion != null} ? ${order.deliveryAddress.clientsRegion.region.name} : '') + ', ' + ${order.deliveryAddress.city} + ', ' +
                          ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home} +
                          (${order.deliveryAddress.roomnumber} != null ? ', ' + ${order.deliveryAddress.roomnumber} : '')"></span>
+        </div>
+        <div class="order-details__label">График работы</div>
+        <div class="order-details__value">
+          <span th:text="${order.deliveryAddress.schedule}"></span>
         </div>
       </div>
     </div>
@@ -404,12 +413,16 @@
         <thead>
         <tr>
           <th>Тип документа</th>
+          <th>Номер документа</th>
           <th>Действия</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="doc : ${order.documentations}">
           <td th:text="${doc.documentType.name}"></td>
+          <td>
+            <span th:text="${doc.docnumber}"></span>
+          </td>
           <td>
             <a th:href="@{/orders/{orderId}/document/{docId}(orderId=${order.id}, docId=${doc.id})}"
                class="btn" style="padding: 0.5rem 1rem;">

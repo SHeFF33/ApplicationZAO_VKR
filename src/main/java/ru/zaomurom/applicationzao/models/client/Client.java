@@ -3,6 +3,7 @@ package ru.zaomurom.applicationzao.models.client;
 import jakarta.persistence.*;
 import ru.zaomurom.applicationzao.models.product.Cart;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -21,7 +22,7 @@ public class Client {
     private Double sum2;
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Addresses> addresses;
+    private List<Addresses> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Contacts> contacts;
@@ -100,7 +101,13 @@ public class Client {
     }
 
     public void setAddresses(List<Addresses> addresses) {
-        this.addresses = addresses;
+        this.addresses.clear();
+        if (addresses != null) {
+            for (Addresses address : addresses) {
+                address.setClient(this);
+                this.addresses.add(address);
+            }
+        }
     }
 
     public List<Contacts> getContacts() {

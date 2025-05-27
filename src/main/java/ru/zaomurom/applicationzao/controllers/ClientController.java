@@ -18,6 +18,7 @@ import ru.zaomurom.applicationzao.models.order.TCHOrder;
 import ru.zaomurom.applicationzao.models.product.*;
 import ru.zaomurom.applicationzao.repositories.TchOrderRepository;
 import ru.zaomurom.applicationzao.services.*;
+import ru.zaomurom.applicationzao.models.prices.ClientsRegion;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -70,6 +71,9 @@ public class ClientController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private ClientsRegionService clientsRegionService;
+
     @GetMapping("/profile")
     public String profile(Model model, Principal principal) {
         String username = principal.getName();
@@ -79,6 +83,7 @@ public class ClientController {
         model.addAttribute("client", client);
         model.addAttribute("addresses", client.getAddresses());
         model.addAttribute("contacts", client.getContacts());
+        model.addAttribute("clientRegions", clientsRegionService.findRegionsByClient(client));
 
         return "profile";
     }
@@ -87,22 +92,30 @@ public class ClientController {
     public String addAddress(
             @RequestParam int postalcode,
             @RequestParam String country,
-            @RequestParam String region,
+            @RequestParam Long regionId,
             @RequestParam(required = false) String rayon,
             @RequestParam String city,
             @RequestParam String street,
             @RequestParam String home,
             @RequestParam(required = false) String roomnumber,
             @RequestParam(required = false) String schedule,
+            @RequestParam(required = false) Long contactId,
             Principal principal
     ) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
+
+        // Проверяем, что выбранный регион доступен клиенту
+        ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
+        if (clientsRegion == null) {
+            return "redirect:/profile?error=region_not_available";
+        }
+
         Addresses address = new Addresses();
         address.setPostalcode(postalcode);
         address.setCountry(country);
-        address.setRegion(region);
+        address.setClientsRegion(clientsRegion);
         address.setRayon(rayon);
         address.setCity(city);
         address.setStreet(street);
@@ -110,6 +123,12 @@ public class ClientController {
         address.setRoomnumber(roomnumber);
         address.setSchedule(schedule);
         address.setClient(client);
+
+        if (contactId != null) {
+            Optional<Contacts> contact = contactsService.findById(contactId);
+            contact.ifPresent(address::setContact);
+        }
+
         addressesService.save(address);
         return "redirect:/profile";
     }
@@ -120,18 +139,26 @@ public class ClientController {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
+
         for (Map<String, String> addressData : addresses) {
             try {
                 Long id = Long.parseLong(addressData.get("id"));
                 Addresses address = addressesService.findById(id).orElseThrow(() -> new RuntimeException("Адрес не найден"));
+
                 if (addressData.containsKey("postalcode")) {
                     address.setPostalcode(Integer.parseInt(addressData.get("postalcode")));
                 }
                 if (addressData.containsKey("country")) {
                     address.setCountry(addressData.get("country"));
                 }
-                if (addressData.containsKey("region")) {
-                    address.setRegion(addressData.get("region"));
+                if (addressData.containsKey("regionId")) {
+                    Long regionId = Long.parseLong(addressData.get("regionId"));
+                    ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
+                    if (clientsRegion == null) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body("Выбранный регион не доступен для данного клиента");
+                    }
+                    address.setClientsRegion(clientsRegion);
                 }
                 if (addressData.containsKey("rayon")) {
                     address.setRayon(addressData.get("rayon"));
@@ -153,20 +180,22 @@ public class ClientController {
                 }
                 if (addressData.containsKey("contactId")) {
                     String contactIdStr = addressData.get("contactId");
-                    if (contactIdStr != null && !contactIdStr.isEmpty()) {
+                    if (!contactIdStr.isEmpty()) {
                         Long contactId = Long.parseLong(contactIdStr);
-                        Contacts contact = contactsService.findById(contactId).orElseThrow(() -> new RuntimeException("Контакт не найден"));
-                        address.setContact(contact);
+                        Optional<Contacts> contact = contactsService.findById(contactId);
+                        contact.ifPresent(address::setContact);
                     } else {
                         address.setContact(null);
                     }
                 }
+
                 addressesService.save(address);
             } catch (Exception e) {
-                System.err.println("Ошибка при обработке адреса: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Ошибка при обновлении адреса: " + e.getMessage());
             }
         }
+
         return ResponseEntity.ok("Адреса обновлены");
     }
 
@@ -373,6 +402,7 @@ public class ClientController {
         return ResponseEntity.badRequest().build();
     }
     @GetMapping("/orders")
+    @Transactional
     public String orders(Model model, Principal principal, @RequestParam(required = false) String status) {
         if (principal == null) {
             return "redirect:/login";
@@ -383,14 +413,22 @@ public class ClientController {
             model.addAttribute("error", "Пользователь не найден.");
             return "error";
         }
+
         Client client = user.getClient();
         List<Order> orders = orderService.findByClientAndStatus(client, status);
+
+        // Инициализация коллекций
+        for (Order order : orders) {
+            Hibernate.initialize(order.getDocumentations());
+        }
+
         model.addAttribute("orders", orders);
         model.addAttribute("username", username);
         model.addAttribute("status", status);
 
         return "orders";
     }
+
 
     @GetMapping("/orderDetails")
     public String orderDetails(Model model, @RequestParam Long id) {
@@ -527,22 +565,26 @@ public class ClientController {
         try {
             String username = principal.getName();
             User user = userService.findByUsername(username);
-            if (user == null) {
-                throw new IllegalArgumentException("User not found");
-            }
             Client client = user.getClient();
             Cart cart = cartService.findByClient(client);
+
             if (cart == null) {
                 cart = new Cart();
                 cart.setClient(client);
             }
+
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
             String minDateTime = now.format(formatter);
+
             model.addAttribute("minDateTime", minDateTime);
             model.addAttribute("cart", cart);
             model.addAttribute("username", username);
             model.addAttribute("client", client);
+
+            // Передача графика доставки
+            List<Addresses> addresses = addressesService.findByClientId(client.getId());
+            model.addAttribute("addresses", addresses);
 
             return "cart";
         } catch (Exception e) {

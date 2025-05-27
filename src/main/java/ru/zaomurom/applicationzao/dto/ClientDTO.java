@@ -1,5 +1,11 @@
 package ru.zaomurom.applicationzao.dto;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
 public class ClientDTO {
     private Long id;
     private String name;
@@ -9,8 +15,11 @@ public class ClientDTO {
     private String factaddress;
     private Double sum1;
     private Double sum2;
-    private Long selectedPriceId;
-    private String selectedPriceName;
+    private List<AddressesDTO> addresses;
+    private List<ContactsDTO> contacts;
+    private List<UserDTO> users;
+    private List<ClientsRegionDTO> clientsRegions;
+    private PriceDTO selectedPrice;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -28,8 +37,14 @@ public class ClientDTO {
     public void setSum1(Double sum1) { this.sum1 = sum1; }
     public Double getSum2() { return sum2; }
     public void setSum2(Double sum2) { this.sum2 = sum2; }
-    public Long getSelectedPriceId() { return selectedPriceId; }
-    public void setSelectedPriceId(Long selectedPriceId) { this.selectedPriceId = selectedPriceId; }
-    public String getSelectedPriceName() { return selectedPriceName; }
-    public void setSelectedPriceName(String selectedPriceName) { this.selectedPriceName = selectedPriceName; }
+    public List<AddressesDTO> getAddresses() { return addresses; }
+    public void setAddresses(List<AddressesDTO> addresses) { this.addresses = addresses; }
+    public List<ContactsDTO> getContacts() { return contacts; }
+    public void setContacts(List<ContactsDTO> contacts) { this.contacts = contacts; }
+    public List<UserDTO> getUsers() { return users; }
+    public void setUsers(List<UserDTO> users) { this.users = users; }
+    public List<ClientsRegionDTO> getClientsRegions() { return clientsRegions; }
+    public void setClientsRegions(List<ClientsRegionDTO> clientsRegions) { this.clientsRegions = clientsRegions; }
+    public PriceDTO getSelectedPrice() { return selectedPrice; }
+    public void setSelectedPrice(PriceDTO selectedPrice) { this.selectedPrice = selectedPrice; }
 }

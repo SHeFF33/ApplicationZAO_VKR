@@ -585,42 +585,6 @@
 
     <div class="section">
       <div class="section-header">
-        <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Адреса</h3>
-        <button type="button" class="btn btn--secondary" onclick="openModal('addressModal')">
-          <i class="fas fa-plus"></i> Добавить адрес
-        </button>
-      </div>
-
-      <div class="section-content">
-        <div id="addresses-list" class="item-list">
-          <div class="empty-state">
-            <i class="fas fa-map-marked-alt"></i>
-            <p>Адреса не добавлены</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h3 class="section-title"><i class="fas fa-address-book"></i> Контакты</h3>
-        <button type="button" class="btn btn--secondary" onclick="openModal('contactModal')">
-          <i class="fas fa-plus"></i> Добавить контакт
-        </button>
-      </div>
-
-      <div class="section-content">
-        <div id="contacts-list" class="item-list">
-          <div class="empty-state">
-            <i class="fas fa-user-tie"></i>
-            <p>Контакты не добавлены</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
         <h3 class="section-title"><i class="fas fa-user-shield"></i> Пользователи</h3>
         <button type="button" class="btn btn--secondary" onclick="openModal('userModal')">
           <i class="fas fa-plus"></i> Добавить пользователя
@@ -645,121 +609,42 @@
   </form>
 </main>
 
-<!-- Address Modal -->
-<div id="addressModal" class="modal">
-  <div class="modal-content">
+<div id="regionsModal" class="modal">
+  <div class="modal-content" style="max-width: 800px;">
     <div class="modal-header">
-      <h3 class="modal-title">Добавить адрес</h3>
-      <button class="modal-close" onclick="closeModal('addressModal')">
+      <h3 class="modal-title">Выбор регионов для клиента</h3>
+      <button class="modal-close" onclick="closeModal('regionsModal')">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
     <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Почтовый индекс <span class="required">*</span></label>
-          <input type="text" id="postalcode" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Страна <span class="required">*</span></label>
-          <input type="text" id="country" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Регион <span class="required">*</span></label>
-          <input type="text" id="region" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Район</label>
-          <input type="text" id="rayon" class="form-control">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Город <span class="required">*</span></label>
-          <input type="text" id="city" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Улица <span class="required">*</span></label>
-          <input type="text" id="street" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Дом <span class="required">*</span></label>
-          <input type="text" id="home" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Строение <span class="required">*</span></label>
-          <input type="text" id="roomnumber" class="form-control" required>
-        </div>
-      </div>
-
       <div class="form-group">
-        <label class="form-label">График работы адреса доставки</label>
-        <textarea id="schedule" class="form-control" rows="3"></textarea>
+        <input type="text" id="regionSearch" class="form-control" placeholder="Поиск регионов..." oninput="filterRegions()">
       </div>
-    </div>
 
-    <div class="modal-footer">
-      <button type="button" class="btn btn--secondary" onclick="closeModal('addressModal')">
-        Отмена
-      </button>
-      <button type="button" class="btn btn--primary" onclick="addAddress()">
-        <i class="fas fa-plus"></i> Добавить адрес
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Contact Modal -->
-<div id="contactModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 class="modal-title">Добавить контакт</h3>
-      <button class="modal-close" onclick="closeModal('contactModal')">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Тип контакта <span class="required">*</span></label>
-          <input type="text" id="contactType" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Имя <span class="required">*</span></label>
-          <input type="text" id="contactName" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Номер телефона <span class="required">*</span></label>
-          <input type="text" id="phoneNumber" class="form-control" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Email <span class="required">*</span></label>
-          <input type="email" id="email" class="form-control" required>
+      <div class="item-list" id="regions-list" style="max-height: 400px; overflow-y: auto;">
+        <div th:each="region : ${regions}" class="item-card">
+          <div class="item-card__header">
+            <h4 class="item-card__title" th:text="${region.name}"></h4>
+            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" class="region-checkbox" th:value="${region.id}" onchange="updateSelectedRegions()">
+            </label>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn btn--secondary" onclick="closeModal('contactModal')">
+      <button type="button" class="btn btn--secondary" onclick="closeModal('regionsModal')">
         Отмена
       </button>
-      <button type="button" class="btn btn--primary" onclick="addContact()">
-        <i class="fas fa-plus"></i> Добавить контакт
+      <button type="button" class="btn btn--primary" onclick="saveSelectedRegions()">
+        <i class="fas fa-save"></i> Сохранить регионы
       </button>
     </div>
   </div>
 </div>
-
 <!-- User Modal -->
 <div id="userModal" class="modal">
   <div class="modal-content">
@@ -815,9 +700,127 @@
   </div>
 </div>
 
+
 <script>
-  let addressCounter = 0;
-  let contactCounter = 0;
+  let selectedRegions = [];
+  let allRegions = [];
+
+  // Функция для фильтрации регионов в модальном окне
+  function filterRegions() {
+    const searchTerm = document.getElementById('regionSearch').value.toLowerCase();
+    const regionCards = document.querySelectorAll('#regions-list .item-card');
+
+    regionCards.forEach(card => {
+      const regionName = card.querySelector('.item-card__title').textContent.toLowerCase();
+      if (regionName.includes(searchTerm)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  // Функция обновления списка выбранных регионов
+  function updateSelectedRegions() {
+    selectedRegions = [];
+    document.querySelectorAll('.region-checkbox:checked').forEach(checkbox => {
+      selectedRegions.push(parseInt(checkbox.value));
+    });
+  }
+
+  // Функция сохранения выбранных регионов
+  function saveSelectedRegions() {
+    // Создаем скрытые input для выбранных регионов
+    const regionsContainer = document.createElement('div');
+    selectedRegions.forEach(regionId => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'regionIds';
+      input.value = regionId;
+      regionsContainer.appendChild(input);
+    });
+
+    // Удаляем старые input регионов
+    const oldRegionsInputs = document.querySelectorAll('input[name="regionIds"]');
+    oldRegionsInputs.forEach(input => input.remove());
+
+    // Добавляем новые input в форму
+    document.querySelector('form').appendChild(regionsContainer);
+
+    // Обновляем отображение выбранных регионов
+    updateSelectedRegionsDisplay();
+
+    closeModal('regionsModal');
+  }
+
+  // Функция обновления отображения выбранных регионов
+  function updateSelectedRegionsDisplay() {
+    const selectedRegionsContainer = document.getElementById('selected-regions-container');
+    if (!selectedRegionsContainer) return;
+
+    if (selectedRegions.length === 0) {
+      selectedRegionsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-map-marker-alt"></i><p>Регионы не выбраны</p></div>';
+    } else {
+      let html = '<div class="item-list">';
+      selectedRegions.forEach(regionId => {
+        const region = allRegions.find(r => r.id === regionId);
+        if (region) {
+          html += `
+            <div class="item-card">
+              <div class="item-card__header">
+                <h4 class="item-card__title">${region.name}</h4>
+              </div>
+            </div>
+          `;
+        }
+      });
+      html += '</div>';
+      selectedRegionsContainer.innerHTML = html;
+    }
+  }
+
+  // Инициализация при загрузке страницы
+  document.addEventListener('DOMContentLoaded', function() {
+    // Получаем список всех регионов с сервера
+    fetch('/admin/regions/data')
+            .then(response => response.json())
+            .then(data => {
+              allRegions = data;
+              // Если есть выбранные регионы, отмечаем их
+              const initialRegionIds = Array.from(document.querySelectorAll('input[name="regionIds"]')).map(input => parseInt(input.value));
+              if (initialRegionIds.length > 0) {
+                selectedRegions = initialRegionIds;
+                initialRegionIds.forEach(id => {
+                  const checkbox = document.querySelector(`.region-checkbox[value="${id}"]`);
+                  if (checkbox) checkbox.checked = true;
+                });
+              }
+            });
+
+    // Добавляем контейнер для отображения выбранных регионов
+    const formCard = document.querySelector('.form-card');
+    if (formCard) {
+      const regionsSection = document.createElement('div');
+      regionsSection.className = 'form-group';
+      regionsSection.innerHTML = `
+        <label class="form-label">Доступные регионы <span class="required">*</span></label>
+        <button type="button" class="btn btn--secondary" onclick="openModal('regionsModal')" style="margin-bottom: 1rem;">
+          <i class="fas fa-edit"></i> Выбрать регионы
+        </button>
+        <div id="selected-regions-container">
+          <div class="empty-state">
+            <i class="fas fa-map-marker-alt"></i>
+            <p>Регионы не выбраны</p>
+          </div>
+        </div>
+      `;
+      formCard.appendChild(regionsSection);
+
+      // Инициализируем отображение выбранных регионов
+      updateSelectedRegionsDisplay();
+    }
+  });
+
   let userCounter = 0;
 
   function openNav() {
@@ -903,150 +906,12 @@
             .catch(() => callback(false, 'Ошибка проверки email'));
   }
 
-  function addAddress() {
-    const postalcode = document.getElementById('postalcode').value;
-    const country = document.getElementById('country').value;
-    const region = document.getElementById('region').value;
-    const rayon = document.getElementById('rayon').value;
-    const city = document.getElementById('city').value;
-    const street = document.getElementById('street').value;
-    const home = document.getElementById('home').value;
-    const roomnumber = document.getElementById('roomnumber').value;
-    const schedule = document.getElementById('schedule').value;
-
-    if (!postalcode || !country || !region || !city || !street || !home || !roomnumber) {
-      alert('Пожалуйста, заполните все обязательные поля');
-      return;
-    }
-
-    const addressId = 'address-' + addressCounter++;
-    const addressesList = document.getElementById('addresses-list');
-
-    const emptyState = addressesList.querySelector('.empty-state');
-    if (emptyState) {
-      emptyState.remove();
-    }
-
-    const addressItem = document.createElement('div');
-    addressItem.className = 'item-card';
-    addressItem.id = addressId;
-    addressItem.innerHTML = `
-      <div class="item-card__header">
-        <h4 class="item-card__title">Адрес ${addressCounter}</h4>
-        <button class="item-card__remove" onclick="removeItem('${addressId}')">
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      </div>
-      <div class="item-card__details">
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Почтовый индекс</div>
-          <div>${postalcode}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Страна</div>
-          <div>${country}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Регион</div>
-          <div>${region}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Город</div>
-          <div>${city}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Улица</div>
-          <div>${street}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Дом</div>
-          <div>${home}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Комната</div>
-          <div>${roomnumber}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">График работы</div>
-          <div>${schedule || 'Не указано'}</div>
-        </div>
-      </div>
-      <input type="hidden" name="postalcodes" value="${postalcode}">
-      <input type="hidden" name="countries" value="${country}">
-      <input type="hidden" name="regions" value="${region}">
-      <input type="hidden" name="rayons" value="${rayon}">
-      <input type="hidden" name="cities" value="${city}">
-      <input type="hidden" name="streets" value="${street}">
-      <input type="hidden" name="homes" value="${home}">
-      <input type="hidden" name="roomnumbers" value="${roomnumber}">
-      <input type="hidden" name="schedules" value="${schedule}">
-    `;
-
-    addressesList.appendChild(addressItem);
-    closeModal('addressModal');
-    clearModal('addressModal');
-  }
-
-  function addContact() {
-    const contactType = document.getElementById('contactType').value;
-    const contactName = document.getElementById('contactName').value;
-    const phoneNumber = document.getElementById('phoneNumber').value;
-    const email = document.getElementById('email').value;
-
-    if (!contactType || !contactName || !phoneNumber || !email) {
-      alert('Пожалуйста, заполните все обязательные поля');
-      return;
-    }
-
-    const contactId = 'contact-' + contactCounter++;
-    const contactsList = document.getElementById('contacts-list');
-
-    const emptyState = contactsList.querySelector('.empty-state');
-    if (emptyState) {
-      emptyState.remove();
-    }
-
-    const contactItem = document.createElement('div');
-    contactItem.className = 'item-card';
-    contactItem.id = contactId;
-    contactItem.innerHTML = `
-      <div class="item-card__header">
-        <h4 class="item-card__title">${contactName}</h4>
-        <button class="item-card__remove" onclick="removeItem('${contactId}')">
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      </div>
-      <div class="item-card__details">
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Тип контакта</div>
-          <div>${contactType}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Телефон</div>
-          <div>${phoneNumber}</div>
-        </div>
-        <div class="item-card__detail">
-          <div class="item-card__detail-label">Email</div>
-          <div>${email}</div>
-        </div>
-      </div>
-      <input type="hidden" name="typeContacts" value="${contactType}">
-      <input type="hidden" name="contactNames" value="${contactName}">
-      <input type="hidden" name="phonenumbers" value="${phoneNumber}">
-      <input type="hidden" name="emails" value="${email}">
-    `;
-
-    contactsList.appendChild(contactItem);
-    closeModal('contactModal');
-    clearModal('contactModal');
-  }
-
   function addUser() {
     const username = document.getElementById('username').value;
     const nameuser = document.getElementById('nameuser').value;
     const password = document.getElementById('password').value;
     const isAdmin = document.getElementById('isAdmin').checked;
-    const email = document.getElementById('userEmail').value; // Изменили на userEmail
+    const email = document.getElementById('userEmail').value;
 
     // Валидация имени пользователя
     validateUsername(username, (valid, message) => {
@@ -1065,8 +930,8 @@
       // Если администратор, валидируем email
       if (isAdmin) {
         validateEmail(email, (emailValid, emailMessage) => {
-          const emailInput = document.getElementById('userEmail'); // Изменили на userEmail
-          const emailFeedback = document.getElementById('userEmail-feedback'); // Изменили на userEmail-feedback
+          const emailInput = document.getElementById('userEmail');
+          const emailFeedback = document.getElementById('userEmail-feedback');
 
           if (!emailValid) {
             emailInput.classList.add('is-invalid');
@@ -1140,17 +1005,7 @@
         const emptyState = document.createElement('div');
         emptyState.className = 'empty-state';
 
-        if (parentList.id === 'addresses-list') {
-          emptyState.innerHTML = `
-            <i class="fas fa-map-marked-alt"></i>
-            <p>Адреса не добавлены</p>
-          `;
-        } else if (parentList.id === 'contacts-list') {
-          emptyState.innerHTML = `
-            <i class="fas fa-user-tie"></i>
-            <p>Контакты не добавлены</p>
-          `;
-        } else if (parentList.id === 'users-list') {
+        if (parentList.id === 'users-list') {
           emptyState.innerHTML = `
             <i class="fas fa-users"></i>
             <p>Пользователи не добавлены</p>

@@ -274,6 +274,10 @@
             background-color: #F1F8E9;
             color: #558B2F;
         }
+        .status-nulled {
+            background-color: #F1F8E9;
+            color: #880c1a;
+        }
 
         .order-card__details {
             display: grid;
@@ -594,6 +598,7 @@
                     <option value="Назначена погрузка" th:selected="${#strings.equals(status, 'Назначена погрузка')}">Назначена погрузка</option>
                     <option value="В пути" th:selected="${#strings.equals(status, 'В пути')}">В пути</option>
                     <option value="Закрыт" th:selected="${#strings.equals(status, 'Закрыт')}">Закрыт</option>
+                    <option value="Аннулирован" th:selected="${#strings.equals(status, 'Аннулирован')}">Аннулирован</option>
                 </select>
             </form>
 
@@ -615,7 +620,9 @@
                    #strings.equals(order.status, 'Оплачен. В ожидании') ? 'status-paid-waiting' :
                    #strings.equals(order.status, 'Назначена погрузка') ? 'status-loading' :
                    #strings.equals(order.status, 'В пути') ? 'status-shipping' :
-                   #strings.equals(order.status, 'Закрыт') ? 'status-completed' : ''}"
+                   #strings.equals(order.status, 'Закрыт') ? 'status-completed' :
+                   #strings.equals(order.status, 'Аннулирован') ? 'status-nulled' : ''}"
+
                               th:classappend="${statusClass}"
                               th:text="${order.status}"></span>
                     </div>
@@ -632,6 +639,16 @@
                         <div class="order-card__detail">
                             <div class="order-card__detail-label">Адрес доставки</div>
                             <div class="order-card__detail-value" th:text="${order.deliveryAddress.city + ', ' + order.deliveryAddress.street + ', ' + order.deliveryAddress.home}"></div>
+                        </div>
+                        <div class="order-card__detail">
+                            <div th:if="${order.documentations}">
+                                <div th:each="doc : ${order.documentations}">
+                                    <div th:if="${doc.documentType.name == 'Счет'}" class="order-card__detail">
+                                        <div class="order-card__detail-label">Номер счета</div>
+                                        <div class="order-card__detail-value" th:text="${doc.docnumber}"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -295,6 +295,10 @@
             background-color: #F5F5F5;
             color: #424242;
         }
+        .status-badge--nulled {
+            background-color: #F5F5F5;
+            color: #c81212;
+        }
 
         .product-list {
             list-style: none;
@@ -414,6 +418,7 @@
                     <option value="Назначена погрузка" th:selected="${status != null && status == 'Назначена погрузка'}">Назначена погрузка</option>
                     <option value="В пути" th:selected="${status != null && status == 'В пути'}">В пути</option>
                     <option value="Закрыт" th:selected="${status != null && status == 'Закрыт'}">Закрыт</option>
+                    <option value="Аннулирован" th:selected="${status != null && status == 'Аннулирован'}">Аннулирован</option>
                 </select>
             </div>
             <div class="form-group">
@@ -440,6 +445,7 @@
                 <th>Дата заказа</th>
                 <th>Дата доставки</th>
                 <th>Адрес доставки</th>
+                <th>Номер счета</th>
                 <th>Статус</th>
             </tr>
             </thead>
@@ -452,6 +458,10 @@
                     <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home}"></span>
                 </td>
                 <td>
+            <span th:if="${order.documentations.?[documentType.name == 'Счет'].size() > 0}"
+                  th:text="${order.documentations.?[documentType.name == 'Счет'][0].docnumber}"></span>
+                </td>
+                <td>
                         <span th:switch="${order.status}" class="status-badge">
                             <span th:case="'В обработке'" class="status-badge--processing">В обработке</span>
                             <span th:case="'Принят'" class="status-badge--confirmed">Принят</span>
@@ -460,6 +470,7 @@
                             <span th:case="'Назначена погрузка'" class="status-badge--loading">Назначена погрузка</span>
                             <span th:case="'В пути'" class="status-badge--transit">В пути</span>
                             <span th:case="'Закрыт'" class="status-badge--closed">Закрыт</span>
+                            <span th:case="'Аннулирован'" class="status-badge--nulled">Аннулирован</span>
                         </span>
                 </td>
             </tr>
