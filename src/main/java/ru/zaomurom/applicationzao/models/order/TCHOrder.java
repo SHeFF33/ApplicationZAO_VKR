@@ -129,8 +129,8 @@ public class TCHOrder {
         this.volume = volume;
     }
 
-    // Метод для расчета суммы с учетом объема
     public double getTotalSum() {
-        return volume * quantity * price;
+        double total = quantity * price;
+        return Math.round(total * 100.0) / 100.0;
     }
 }

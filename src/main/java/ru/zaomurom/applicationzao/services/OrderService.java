@@ -137,11 +137,11 @@ public class OrderService {
         return Optional.empty();
     }
     public double calculateOrderTotal(Order order) {
-        return order.getTchOrders().stream()
-                .mapToDouble(tchOrder -> tchOrder.getVolume() *
-                        tchOrder.getQuantity() *
+        double total = order.getTchOrders().stream()
+                .mapToDouble(tchOrder -> tchOrder.getQuantity() *
                         tchOrder.getPrice())
                 .sum();
+        return Math.round(total * 100.0) / 100.0;
     }
     public List<Order> findByClientId(Long clientId) {
         return orderRepository.findByClientId(clientId);

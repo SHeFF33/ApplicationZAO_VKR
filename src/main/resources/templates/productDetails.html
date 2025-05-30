@@ -308,6 +308,40 @@
       margin: 1.5rem 0;
     }
 
+    .price-notice {
+      background-color: #FFF3E0;
+      border-left: 4px solid #FF9800;
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      margin: 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .price-notice i {
+      color: #FF9800;
+      font-size: 1.5rem;
+    }
+
+    .price-notice__text {
+      color: #E65100;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Documents */
     .product-documents {
       margin-top: 2rem;
@@ -573,7 +607,7 @@
           </div>
           <div class="product-details__spec">
             <span class="product-details__spec-label">Толщина:</span>
-            <span class="product-details__spec-value" th:text="${product.tolsh}"></span>
+            <span class="product-details__spec-value" th:text="${#numbers.formatDecimal(product.tolsh, 1, 2)}"></span>
           </div>
           <div class="product-details__spec">
             <span class="product-details__spec-label">Объем:</span>
@@ -584,17 +618,9 @@
             <span class="product-details__spec-value" th:text="${product.quantity}"></span>
           </div>
         </div>
-
-        <div class="product-details__price">
-                    <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} != null"
-                          th:text="${@clientController.getProductPrice(product, selectedPriceId)} + ' руб.'"></span>
-          <span th:if="${@clientController.getProductPrice(product, selectedPriceId)} == null">Цена не найдена</span>
-        </div>
-
         <form th:action="@{/product/addToCart}" method="post" class="add-to-cart-form" id="addToCartForm">
           <input type="hidden" name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <input type="hidden" name="productId" th:value="${product.id}" />
-          <input type="hidden" name="sumId" th:value="${@clientController.getProductPriceId(product, selectedPriceId)}" />
           <input type="hidden" name="username" th:value="${username}" />
 
           <div class="quantity-control">
@@ -611,6 +637,13 @@
             <i class="fas fa-cart-plus"></i> Добавить в корзину
           </button>
         </form>
+
+        <div class="product-details__price">
+          <div class="price-notice">
+            <i class="fas fa-info-circle"></i>
+            <span class="price-notice__text">Цена будет отображена после выбора адреса доставки в корзине</span>
+          </div>
+        </div>
       </div>
     </div>
 

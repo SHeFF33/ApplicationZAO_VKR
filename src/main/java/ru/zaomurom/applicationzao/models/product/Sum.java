@@ -1,7 +1,7 @@
 package ru.zaomurom.applicationzao.models.product;
 
 import jakarta.persistence.*;
-import ru.zaomurom.applicationzao.models.client.Price;
+import ru.zaomurom.applicationzao.models.prices.PricesOnRegions;
 
 import java.util.Date;
 
@@ -13,21 +13,23 @@ public class Sum {
     private Long id;
     private Double summa; // Это и будет цена
     private Date period; // Период цены
+    private String regionName; // Название региона
 
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
 
     @ManyToOne
-    @JoinColumn(name = "price_id")
-    private Price price;
+    @JoinColumn(name = "prices_on_regions_id")
+    private PricesOnRegions pricesOnRegions;
 
     // Конструкторы, геттеры и сеттеры
     public Sum() {}
 
-    public Sum(Double summa, Date period) {
+    public Sum(Double summa, Date period, String regionName) {
         this.summa = summa;
         this.period = period;
+        this.regionName = regionName;
     }
 
     public Long getId() {
@@ -62,11 +64,19 @@ public class Sum {
         this.product = product;
     }
 
-    public Price getPrice() {
-        return price;
+    public PricesOnRegions getPricesOnRegions() {
+        return pricesOnRegions;
     }
 
-    public void setPrice(Price price) {
-        this.price = price;
+    public void setPricesOnRegions(PricesOnRegions pricesOnRegions) {
+        this.pricesOnRegions = pricesOnRegions;
+    }
+
+    public String getRegionName() {
+        return regionName;
+    }
+
+    public void setRegionName(String regionName) {
+        this.regionName = regionName;
     }
 }

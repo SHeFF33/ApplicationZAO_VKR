@@ -1,9 +1,6 @@
 package ru.zaomurom.applicationzao.models.client;
 
 import jakarta.persistence.*;
-import ru.zaomurom.applicationzao.models.product.Sum;
-
-import java.util.List;
 
 @Entity
 @Table(name = "price")
@@ -13,12 +10,6 @@ public class Price {
     private Long id;
     private String vid;
     private String name;
-
-    @OneToMany(mappedBy = "selectedPrice")
-    private List<Client> clients;
-
-    @OneToMany(mappedBy = "price")
-    private List<Sum> sums;
 
     public Price() {}
 
@@ -49,21 +40,5 @@ public class Price {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public List<Client> getClients() {
-        return clients;
-    }
-
-    public void setClients(List<Client> clients) {
-        this.clients = clients;
-    }
-
-    public List<Sum> getSums() {
-        return sums;
-    }
-
-    public void setSums(List<Sum> sums) {
-        this.sums = sums;
     }
 }

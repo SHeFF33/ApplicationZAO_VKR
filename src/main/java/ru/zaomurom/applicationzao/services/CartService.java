@@ -5,6 +5,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.zaomurom.applicationzao.dto.*;
+import ru.zaomurom.applicationzao.models.client.Addresses;
 import ru.zaomurom.applicationzao.models.client.Client;
 import ru.zaomurom.applicationzao.models.product.*;
 import ru.zaomurom.applicationzao.repositories.*;
@@ -25,12 +26,14 @@ public class CartService {
     @Autowired
     private SumRepository sumRepository;
 
-
     @Autowired
     private ProductRepository productRepository;
 
     @Autowired
     private CartTruckItemRepository cartTruckItemRepository;
+
+    @Autowired
+    private AddressesRepository addressesRepository;
 
     public Cart findByClient(Client client) {
         return cartRepository.findByClient(client);
@@ -83,7 +86,7 @@ public class CartService {
                 .map(item -> new CartItemDTO(
                         item.getId(),
                         item.getProduct().getId(),
-                        item.getSum().getId(),
+                        item.getSum() != null ? item.getSum().getId() : null,
                         item.getQuantity(),
                         item.getProduct().getName(),
                         item.getProduct().getLength()
@@ -99,7 +102,7 @@ public class CartService {
                                 .map(item -> new CartTruckItemDTO(
                                         item.getId(),
                                         item.getProduct().getId(),
-                                        item.getSum().getId(),
+                                        item.getSum() != null ? item.getSum().getId() : null,
                                         item.getQuantity(),
                                         item.getProduct().getName(),
                                         item.getProduct().getLength()
@@ -272,10 +275,98 @@ public class CartService {
         }
     }
     public double calculateCartTotal(Cart cart) {
-        return cart.getCartItems().stream()
-                .mapToDouble(item -> item.getProduct().getVolume() *
-                        item.getQuantity() *
-                        item.getSum().getSumma())
+        double total = cart.getCartItems().stream()
+                .filter(item -> item.getSum() != null)
+                .mapToDouble(item -> item.getQuantity() * item.getSum().getSumma())
                 .sum();
+        return Math.round(total * 100.0) / 100.0;
+    }
+    @Transactional
+    public void updateQuantity(Long productId, Client client, int delta, Long addressId) {
+        Cart cart = findByClient(client);
+        if (cart == null) {
+            throw new RuntimeException("Cart not found");
+        }
+
+        // Находим товар в корзине
+        CartItem item = cart.getCartItems().stream()
+                .filter(i -> i.getProduct().getId().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Item not found in cart"));
+
+        // Обновляем количество
+        int newQuantity = item.getQuantity() + delta;
+        if (newQuantity > 0) {
+            item.setQuantity(newQuantity);
+            cartItemRepository.save(item);
+        } else {
+            cart.getCartItems().remove(item);
+            cartItemRepository.delete(item);
+        }
+
+        // Если указан адрес, обновляем цены
+        if (addressId != null) {
+            updateCartItemPrices(cart, addressId);
+        }
+
+        // Перераспределяем товары по машинам
+        cart.distributeItemsToTrucks();
+        save(cart);
+    }
+
+    public Map<String, PriceInfo> updateCartItemPrices(Cart cart, Long addressId) {
+        Map<String, PriceInfo> priceInfoMap = new HashMap<>();
+
+        if (addressId == null) {
+            return priceInfoMap;
+        }
+
+        Optional<Addresses> address = addressesRepository.findById(addressId);
+        if (address.isEmpty() || address.get().getClientsRegion() == null) {
+            return priceInfoMap;
+        }
+
+        String regionName = address.get().getClientsRegion().getRegion().getName();
+
+        // Обновляем цены для каждого товара в корзине
+        for (CartItem item : cart.getCartItems()) {
+            // Находим цену для этого товара в регионе доставки
+            Optional<Sum> regionPrice = sumRepository.findByProductAndRegionName(item.getProduct(), regionName);
+            if (regionPrice.isPresent()) {
+                Sum sum = regionPrice.get();
+                cart.updateItemPrice(item, sum);
+
+                // Сохраняем информацию о цене для ответа
+                PriceInfo priceInfo = new PriceInfo();
+                priceInfo.setPrice(sum.getSumma());
+                priceInfo.setSumId(sum.getId());
+                priceInfoMap.put(item.getProduct().getId().toString(), priceInfo);
+            }
+        }
+
+        save(cart);
+        return priceInfoMap;
+    }
+
+    public static class PriceInfo {
+        private double price;
+        private Long sumId;
+
+        // Геттеры и сеттеры
+        public double getPrice() {
+            return price;
+        }
+
+        public void setPrice(double price) {
+            this.price = price;
+        }
+
+        public Long getSumId() {
+            return sumId;
+        }
+
+        public void setSumId(Long sumId) {
+            this.sumId = sumId;
+        }
     }
 }

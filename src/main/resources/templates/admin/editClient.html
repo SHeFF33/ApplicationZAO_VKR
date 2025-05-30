@@ -331,23 +331,36 @@
         }
 
         .editable-table input,
-        .editable-table select,
+        .editable-table select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            min-width: 150px; /* Increased minimum width for input and select fields */
+        }
+
         .editable-table textarea {
             width: 100%;
             padding: 0.5rem;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             font-size: 0.875rem;
-        }
-
-        .editable-table textarea {
-            min-height: 80px;
+            min-height: 120px; /* Increased height for textarea */
+            min-width: 200px; /* Increased minimum width for textarea */
             resize: vertical;
         }
 
         .editable-table .form-checkbox {
             width: auto;
             height: auto;
+        }
+
+        /* Ensure horizontal scrolling for addresses table */
+        #addresses {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap; /* Prevents text wrapping in table cells */
         }
 
         /* Action buttons */
@@ -419,6 +432,7 @@
             .editable-table {
                 display: block;
                 overflow-x: auto;
+                white-space: nowrap; /* Ensures no wrapping on mobile */
             }
         }
 
@@ -633,11 +647,14 @@
         </a>
         <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
             <i class="fas fa-file-invoice-dollar"></i>
-            Типы документов и прайсы
+            Типы документов
         </a>
         <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
             <i class="fas fa-file-alt"></i>
             Документация
+        </a>
+        <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+            <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
@@ -690,15 +707,30 @@
                     <label class="form-label">В том числе свободные</label>
                     <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}">
                 </div>
+            </div>
+        </div>
 
-                <div class="form-group">
-                    <label class="form-label">Выбранная цена <span class="required">*</span></label>
-                    <select name="selectedPriceId" class="form-control form-select" required>
-                        <option th:each="price : ${prices}"
-                                th:value="${price.id}"
-                                th:text="${price.name}"
-                                th:selected="${client.selectedPrice.id == price.id}"></option>
-                    </select>
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-map-marked-alt"></i> Доступные регионы</h3>
+                <button type="button" class="btn btn--secondary" onclick="openModal('regionsModal')">
+                    <i class="fas fa-edit"></i> Управление регионами
+                </button>
+            </div>
+
+            <div class="section-content">
+                <div id="selected-regions-container">
+                    <div th:if="${#lists.isEmpty(clientRegions)}" class="empty-state">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <p>Регионы не выбраны</p>
+                    </div>
+                    <div th:if="${not #lists.isEmpty(clientRegions)}" class="item-list">
+                        <div th:each="region : ${clientRegions}" class="item-card">
+                            <div class="item-card__header">
+                                <h4 class="item-card__title" th:text="${region.name}" th:data-region-id="${region.id}"></h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -730,14 +762,14 @@
                     </thead>
                     <tbody>
                     <tr th:each="address : ${client.addresses}">
-                        <td><input type="text" 
-                                 name="postalcodes" 
-                                 th:value="${address.postalcode}" 
-                                 pattern="[0-9]{6}" 
-                                 maxlength="6"
-                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                 title="Почтовый индекс должен содержать 6 цифр"
-                                 required></td>
+                        <td><input type="text"
+                                   name="postalcodes"
+                                   th:value="${address.postalcode}"
+                                   pattern="[0-9]{6}"
+                                   maxlength="6"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                   title="Почтовый индекс должен содержать 6 цифр"
+                                   required></td>
                         <td><input type="text" name="countries" th:value="${address.country}" required></td>
                         <td>
                             <select name="addressRegionIds" class="form-control" required>
@@ -764,6 +796,11 @@
                                         th:selected="${address.contact != null && address.contact.id == contact.id}">
                                 </option>
                             </select>
+                        </td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(client.addresses)}">
@@ -801,6 +838,11 @@
                         <td><input type="text" name="contactNames" th:value="${contact.name}" required></td>
                         <td><input type="text" name="phonenumbers" th:value="${contact.phonenumber}" required></td>
                         <td><input type="email" name="emails" th:value="${contact.email}" required></td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(client.contacts)}">
                         <td colspan="5" class="empty-state">
@@ -856,6 +898,11 @@
                             <input type="checkbox" name="isAdmins" th:checked="${user.admin}"
                                    value="true" onchange="toggleEmailRequired(this, ${stat.index})">
                         </td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(client.users)}">
                         <td colspan="6" class="empty-state">
@@ -868,36 +915,7 @@
             </div>
         </div>
 
-        <!-- Секция регионов -->
-        <div class="section">
-            <div class="section-header">
-                <h3 class="section-title"><i class="fas fa-map-marked-alt"></i> Доступные регионы</h3>
-                <button type="button" class="btn btn--secondary" onclick="openModal('regionsModal')">
-                    <i class="fas fa-edit"></i> Управление регионами
-                </button>
-            </div>
-
-            <div class="section-content">
-                <div id="selected-regions-container">
-                    <div th:if="${#lists.isEmpty(clientRegions)}" class="empty-state">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <p>Регионы не выбраны</p>
-                    </div>
-                    <div th:if="${not #lists.isEmpty(clientRegions)}" class="item-list">
-                        <div th:each="region : ${clientRegions}" class="item-card">
-                            <div class="item-card__header">
-                                <h4 class="item-card__title" th:text="${region.name}" th:data-region-id="${region.id}"></h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="action-buttons">
-            <a th:href="@{/admin/client/{id}(id=${client.id})}" class="btn btn--secondary">
-                <i class="fas fa-times"></i> Отменить
-            </a>
             <button type="submit" class="btn btn--primary">
                 <i class="fas fa-save"></i> Сохранить изменения
             </button>
@@ -1115,7 +1133,7 @@
                 // Если нет существующих select, ищем в модальном окне
                 regionSelect = document.querySelector('#regionsModal select');
             }
-            
+
             let regionOptions = '';
             if (regionSelect) {
                 regionOptions = Array.from(regionSelect.options)
@@ -1133,9 +1151,9 @@
             }
 
             newRow.innerHTML = `
-                <td><input type="text" 
-                           name="postalcodes" 
-                           pattern="[0-9]{6}" 
+                <td><input type="text"
+                           name="postalcodes"
+                           pattern="[0-9]{6}"
                            maxlength="6"
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                            title="Почтовый индекс должен содержать 6 цифр"
@@ -1157,12 +1175,12 @@
                     <select name="contactIds">
                         <option value="">Нет контакта</option>
                         ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
-                            const nameInput = tr.querySelector('input[name="contactNames"]');
-                            if (nameInput) {
-                                return `<option value="${tr.dataset.id || ''}">${nameInput.value}</option>`;
-                            }
-                            return '';
-                        }).join('')}
+                const nameInput = tr.querySelector('input[name="contactNames"]');
+                if (nameInput) {
+                    return `<option value="${tr.dataset.id || ''}">${nameInput.value}</option>`;
+                }
+                return '';
+            }).join('')}
                     </select>
                 </td>
                 <td style="text-align: center;">
@@ -1290,9 +1308,9 @@
                     <div class="item-card__header">
                         <h4 class="item-card__title" th:text="${region.name}"></h4>
                         <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" 
-                                   class="region-checkbox" 
-                                   th:value="${region.id}" 
+                            <input type="checkbox"
+                                   class="region-checkbox"
+                                   th:value="${region.id}"
                                    th:checked="${clientRegions.contains(region)}"
                                    onchange="updateSelectedRegions()">
                         </label>
@@ -1302,9 +1320,6 @@
         </div>
 
         <div class="modal-footer">
-            <button type="button" class="btn btn--secondary" onclick="closeModal('regionsModal')">
-                <i class="fas fa-times"></i> Отмена
-            </button>
             <button type="button" class="btn btn--primary" onclick="saveSelectedRegions()">
                 <i class="fas fa-save"></i> Сохранить
             </button>

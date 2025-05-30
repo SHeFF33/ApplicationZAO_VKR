@@ -346,8 +346,8 @@
               <td th:text="${item.product.name}"></td>
               <td th:text="${item.quantity}"></td>
               <td th:text="${item.product.volume}"></td>
-              <td th:text="${item.sum.summa} + ' руб.'"></td>
-              <td th:text="${item.product.volume * item.quantity * item.sum.summa} + ' руб.'"></td>
+              <td th:text="${#numbers.formatDecimal(item.sum.summa, 1, 2)} + ' руб.'"></td>
+              <td th:text="${#numbers.formatDecimal(item.quantity * item.sum.summa, 1, 2)} + ' руб.'"></td>
             </tr>
             </tbody>
           </table>
@@ -355,7 +355,7 @@
 
       <div class="total-sum">
         <h3 class="total-sum__title">Итоговая сумма:</h3>
-        <p class="total-sum__amount" th:text="${totalSum} + ' руб.'"></p>
+        <p class="total-sum__amount" th:text="${#numbers.formatDecimal(totalSum, 1, 2)} + ' руб.'"></p>
       </div>
 
       <div class="button-group">

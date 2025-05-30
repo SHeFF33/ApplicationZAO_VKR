@@ -528,11 +528,14 @@
     </a>
     <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
       <i class="fas fa-file-invoice-dollar"></i>
-      Типы документов и прайсы
+      Типы документов
     </a>
     <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
       <i class="fas fa-file-alt"></i>
       Документация
+    </a>
+    <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+      <i class="fas fa-map-marked-alt"></i> Регионы
     </a>
     <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
       <i class="fas fa-comments"></i>
@@ -657,7 +660,7 @@
               </div>
             </td>
             <td class="item-total"
-                th:text="${#numbers.formatDecimal(tchOrder.volume * tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'">
+                th:text="${#numbers.formatDecimal(tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'">
             </td>
           </tr>
           </tbody>
@@ -769,7 +772,7 @@
       // Пересчет суммы
       const quantity = parseInt(row.querySelector('td:nth-child(2)').textContent) || 0;
       const volume = parseFloat(row.querySelector('td:nth-child(3)').textContent) || 0;
-      const total = newPrice * quantity * volume;
+      const total = newPrice * quantity;
 
       const totalCell = row.querySelector('.item-total');
       totalCell.textContent = total.toFixed(2) + ' руб.';

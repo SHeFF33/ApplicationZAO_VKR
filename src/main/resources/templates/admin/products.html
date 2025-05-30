@@ -611,11 +611,14 @@
         </a>
         <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
             <i class="fas fa-file-invoice-dollar"></i>
-            Типы документов и прайсы
+            Типы документов
         </a>
         <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
             <i class="fas fa-file-alt"></i>
             Документация
+        </a>
+        <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+            <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
@@ -648,7 +651,7 @@
 
         <div class="form-group">
             <label for="tolsh" class="form-label">Толщина</label>
-            <input type="text" id="tolsh" name="tolsh" class="form-control" required>
+            <input type="number" step="0.01" id="tolsh" name="tolsh" class="form-control" required>
         </div>
 
         <div class="form-group">
@@ -795,31 +798,63 @@
             <button class="modal__close" onclick="closeModal('priceModal')">&times;</button>
         </div>
         <div class="modal__body">
-            <form id="priceForm" th:action="@{/admin/addSum}" method="post">
+            <div class="tabs">
+                <div class="tab tab--active" onclick="switchPriceTab('auto')" id="autoTab">
+                    Автоматический расчет
+                </div>
+                <div class="tab" onclick="switchPriceTab('manual')" id="manualTab">
+                    Ручной ввод
+                </div>
+            </div>
+
+            <!-- Форма автоматического расчета -->
+            <form id="autoPriceForm" th:action="@{/admin/addSum}" method="post" class="tab-content tab-content--active">
                 <div class="form-group">
-                    <label for="priceProductId" class="form-label">Выберите товар</label>
-                    <select id="priceProductId" name="productId" class="form-control" required>
+                    <label for="autoProductId" class="form-label">Выберите товар</label>
+                    <select id="autoProductId" name="productId" class="form-control" required>
                         <option value="">Выберите товар</option>
                         <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="summas" class="form-label">Цена (руб.)</label>
-                    <input type="number" id="summas" name="summas" step="0.01" min="0" class="form-control" required>
+                    <label for="autoPeriod" class="form-label">Период действия</label>
+                    <input type="date" id="autoPeriod" name="period" class="form-control" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="periods" class="form-label">Период действия</label>
-                    <input type="date" id="periods" name="periods" class="form-control" required>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn--outline" onclick="closeModal('priceModal')">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                    <button type="submit" class="btn btn--primary">
+                        <i class="fas fa-calculator"></i> Рассчитать и сохранить
+                    </button>
                 </div>
+            </form>
 
+            <!-- Форма ручного ввода -->
+            <form id="manualPriceForm" th:action="@{/admin/addSum}" method="post" class="tab-content" style="display: none;">
                 <div class="form-group">
-                    <label for="priceIds" class="form-label">Тип прайса</label>
-                    <select id="priceIds" name="priceIds" class="form-control" required>
-                        <option value="">Выберите прайс</option>
-                        <option th:each="price : ${prices}" th:value="${price.id}" th:text="${price.name}"></option>
+                    <label for="manualProductId" class="form-label">Выберите товар</label>
+                    <select id="manualProductId" name="productId" class="form-control" required>
+                        <option value="">Выберите товар</option>
+                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="summa" class="form-label">Цена (руб.)</label>
+                    <input type="number" id="summa" name="summa" step="0.01" min="0" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="manualPeriod" class="form-label">Период действия</label>
+                    <input type="date" id="manualPeriod" name="period" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="regionName" class="form-label">Регион</label>
+                    <input type="text" id="regionName" name="regionName" class="form-control" required>
                 </div>
 
                 <div class="action-buttons">
@@ -834,48 +869,45 @@
         </div>
     </div>
 </div>
-
 <script>
     // Глобальные переменные
     let selectedImages = [];
     let selectedDocument = null;
     const maxImages = 5;
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedDocumentTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
 
     // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Установка минимальной даты для периода действия цены (сегодня)
-        document.getElementById('periods').min = new Date().toISOString().split('T')[0];
-
-        // Инициализация обработчиков событий
+    document.addEventListener('DOMContentLoaded', () => {
         initEventListeners();
+        setupDragAndDrop();
+        setMinDateForPriceForms();
     });
 
-    // Инициализация всех обработчиков событий
-    function initEventListeners() {
-        // Обработчики для загрузки изображений
-        const imageInput = document.getElementById('imageInput');
-        imageInput.addEventListener('change', handleImageUpload);
-
-        // Обработчики для загрузки документа
-        const documentInput = document.getElementById('documentInput');
-        documentInput.addEventListener('change', handleDocumentUpload);
-
-        // Обработчики для форм
-        document.getElementById('imageForm').addEventListener('submit', handleImageFormSubmit);
-        document.getElementById('documentationForm').addEventListener('submit', handleDocumentFormSubmit);
-        document.getElementById('priceForm').addEventListener('submit', handlePriceFormSubmit);
-        document.getElementById('productForm').addEventListener('submit', handleProductFormSubmit);
-
-        // Обработчик перетаскивания файлов
-        setupDragAndDrop();
+    // Установка минимальной даты для полей периода действия цены
+    function setMinDateForPriceForms() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('autoPeriod').min = today;
+        document.getElementById('manualPeriod').min = today;
     }
 
-    // Настройка drag and drop для загрузки файлов
+    // Настройка drag-and-drop для загрузки файлов
     function setupDragAndDrop() {
-        const dropAreas = document.querySelectorAll('.file-upload__label');
+        const imageDropArea = document.querySelector('label[for="imageInput"]');
+        const documentDropArea = document.querySelector('label[for="documentInput"]');
 
-        dropAreas.forEach(area => {
-            area.addEventListener('dragover', (e) => {
+        [imageDropArea, documentDropArea].forEach(area => {
+            if (!area) return;
+
+            area.addEventListener('dragover', e => {
                 e.preventDefault();
                 area.style.borderColor = 'var(--primary-light)';
                 area.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
@@ -886,99 +918,47 @@
                 area.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
             });
 
-            area.addEventListener('drop', (e) => {
+            area.addEventListener('drop', e => {
                 e.preventDefault();
                 area.style.borderColor = 'var(--border)';
                 area.style.backgroundColor = 'rgba(0, 0, 0, 0.02)';
-
-                if (area.htmlFor === 'imageInput') {
-                    handleDroppedFiles(e.dataTransfer.files, 'image');
-                } else if (area.htmlFor === 'documentInput') {
-                    handleDroppedFiles(e.dataTransfer.files, 'document');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    if (area.htmlFor === 'imageInput') {
+                        handleImageUpload(files);
+                    } else if (area.htmlFor === 'documentInput') {
+                        handleDocumentUpload(files);
+                    }
                 }
             });
         });
     }
 
-    // Обработка перетаскиваемых файлов
-    function handleDroppedFiles(files, type) {
-        if (type === 'image') {
-            const imageInput = document.getElementById('imageInput');
-            const dataTransfer = new DataTransfer();
-
-            for (let i = 0; i < Math.min(files.length, maxImages); i++) {
-                if (files[i].type.startsWith('image/')) {
-                    dataTransfer.items.add(files[i]);
-                }
-            }
-
-            imageInput.files = dataTransfer.files;
-            handleImageUpload({ target: imageInput });
-        } else if (type === 'document') {
-            const docInput = document.getElementById('documentInput');
-            const validFiles = Array.from(files).filter(file =>
-                file.type.match(/(pdf|msword|vnd.openxmlformats-officedocument|vnd.ms-excel|vnd.ms-powerpoint)/)
-            );
-
-            if (validFiles.length > 0) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(validFiles[0]);
-                docInput.files = dataTransfer.files;
-                handleDocumentUpload({ target: docInput });
-            } else {
-                showAlert('error', 'Пожалуйста, выберите файл одного из разрешенных типов: PDF, Word, Excel или PowerPoint');
-            }
-        }
-    }
-
     // Обработка загрузки изображений
-    function handleImageUpload(e) {
-        const files = e.target.files;
+    function handleImageUpload(files) {
         const preview = document.getElementById('imagePreview');
-        preview.innerHTML = '';
+        const imageInput = document.getElementById('imageInput');
+        const validFiles = Array.from(files).filter(file => allowedImageTypes.includes(file.type));
 
-        if (files.length > 0) {
-            selectedImages = [];
-
-            for (let i = 0; i < Math.min(files.length, maxImages); i++) {
-                const file = files[i];
-
-                if (!file.type.startsWith('image/')) {
-                    showAlert('error', 'Пожалуйста, выберите только изображения (JPG, PNG)');
-                    continue;
-                }
-
-                selectedImages.push(file);
-
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'image-preview__item';
-
-                    imgContainer.innerHTML = `
-                        <img src="${event.target.result}" class="image-preview__img" alt="Preview">
-                        <div class="image-preview__remove" onclick="removeImage(${selectedImages.length - 1})">
-                            <i class="fas fa-times"></i>
-                        </div>
-                    `;
-
-                    preview.appendChild(imgContainer);
-                };
-                reader.readAsDataURL(file);
-            }
-
-            document.getElementById('submitImagesBtn').disabled = selectedImages.length === 0;
-
-            if (files.length > maxImages) {
-                showAlert('warning', `Можно загрузить не более ${maxImages} изображений. Остальные файлы были проигнорированы.`);
-            }
+        if (validFiles.length === 0 && files.length > 0) {
+            showAlert('error', 'Пожалуйста, выберите изображения в формате JPG, PNG или WEBP');
+            return;
         }
-    }
 
-    // Удаление изображения из предпросмотра
-    function removeImage(index) {
-        selectedImages.splice(index, 1);
+        validFiles.forEach(file => {
+            if (!selectedImages.some(img => img.name === file.name && img.size === file.size) &&
+                selectedImages.length < maxImages) {
+                selectedImages.push(file);
+            }
+        });
+
+        if (selectedImages.length > maxImages) {
+            selectedImages = selectedImages.slice(0, maxImages);
+            showAlert('warning', `Максимум ${maxImages} изображений. Лишние файлы были исключены.`);
+        }
+
         updateImagePreview();
+        imageInput.value = '';
         document.getElementById('submitImagesBtn').disabled = selectedImages.length === 0;
     }
 
@@ -988,75 +968,62 @@
         preview.innerHTML = '';
 
         selectedImages.forEach((file, index) => {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'image-preview__item';
-
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = e => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'image-preview__item';
                 imgContainer.innerHTML = `
-                    <img src="${event.target.result}" class="image-preview__img" alt="Preview">
-                    <div class="image-preview__remove" onclick="removeImage(${index})">
-                        <i class="fas fa-times"></i>
-                    </div>
-                `;
-
+        <img src="${e.target.result}" class="image-preview__img" alt="Превью ${index + 1}">
+        <div class="image-preview__remove" onclick="removeImage(${index})">
+          <i class="fas fa-times"></i>
+        </div>
+      `;
                 preview.appendChild(imgContainer);
             };
             reader.readAsDataURL(file);
         });
     }
 
+    // Удаление изображения
+    function removeImage(index) {
+        selectedImages.splice(index, 1);
+        updateImagePreview();
+        document.getElementById('submitImagesBtn').disabled = selectedImages.length === 0;
+    }
+
     // Обработка загрузки документа
-    function handleDocumentUpload(e) {
-        const file = e.target.files[0];
+    function handleDocumentUpload(files) {
+        const file = files[0];
         const preview = document.getElementById('documentPreview');
         preview.innerHTML = '';
 
-        if (file) {
-            const allowedTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-            ];
+        if (!file) return;
 
-            if (!allowedTypes.includes(file.type)) {
-                showAlert('error', 'Пожалуйста, выберите файл одного из разрешенных типов: PDF, Word, Excel или PowerPoint');
-                e.target.value = '';
-                return;
-            }
-
-            selectedDocument = file;
-
-            let iconClass;
-            if (file.type.includes('pdf')) {
-                iconClass = 'fas fa-file-pdf';
-            } else if (file.type.includes('word')) {
-                iconClass = 'fas fa-file-word';
-            } else if (file.type.includes('excel')) {
-                iconClass = 'fas fa-file-excel';
-            } else if (file.type.includes('powerpoint')) {
-                iconClass = 'fas fa-file-powerpoint';
-            } else {
-                iconClass = 'fas fa-file';
-            }
-
-            preview.innerHTML = `
-                <div class="file-preview__item">
-                    <i class="${iconClass} file-preview__icon"></i>
-                    <span class="file-preview__name">${file.name}</span>
-                    <i class="fas fa-times file-preview__remove" onclick="removeDocument()"></i>
-                </div>
-            `;
-
-            document.getElementById('submitDocBtn').disabled = false;
+        if (!allowedDocumentTypes.includes(file.type)) {
+            showAlert('error', 'Поддерживаются только PDF, Word, Excel или PowerPoint файлы');
+            document.getElementById('documentInput').value = '';
+            return;
         }
+
+        selectedDocument = file;
+
+        const iconClass = file.type.includes('pdf') ? 'fas fa-file-pdf' :
+            file.type.includes('word') ? 'fas fa-file-word' :
+                file.type.includes('excel') ? 'fas fa-file-excel' :
+                    file.type.includes('powerpoint') ? 'fas fa-file-powerpoint' : 'fas fa-file';
+
+        preview.innerHTML = `
+    <div class="file-preview__item">
+      <i class="${iconClass} file-preview__icon"></i>
+      <span class="file-preview__name">${file.name}</span>
+      <i class="fas fa-times file-preview__remove" onclick="removeDocument()"></i>
+    </div>
+  `;
+
+        document.getElementById('submitDocBtn').disabled = false;
     }
 
-    // Удаление документа из предпросмотра
+    // Удаление документа
     function removeDocument() {
         selectedDocument = null;
         document.getElementById('documentInput').value = '';
@@ -1064,10 +1031,30 @@
         document.getElementById('submitDocBtn').disabled = true;
     }
 
+    // Универсальная функция обработки ответа сервера
+    async function handleServerResponse(response) {
+        const contentType = response.headers.get('content-type');
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}. Ответ: ${text.substring(0, 100)}...`);
+        }
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Неизвестная ошибка');
+            }
+            return data;
+        } else {
+            const text = await response.text();
+            console.warn('Получен не-JSON ответ:', text.substring(0, 100));
+            return { success: true, message: 'Операция выполнена' };
+        }
+    }
+
     // Обработка отправки формы с изображениями
     function handleImageFormSubmit(e) {
         e.preventDefault();
-
+        const form = e.target;
         const productId = document.getElementById('imgProductId').value;
 
         if (!productId) {
@@ -1080,32 +1067,21 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.append('productId', productId);
+        const formData = new FormData(form);
+        selectedImages.forEach(image => formData.append('images', image));
 
-        selectedImages.forEach((image, index) => {
-            formData.append('images', image);
-        });
-
-        // Отправка данных на сервер
-        fetch(e.target.action, {
+        fetch(form.action, {
             method: 'POST',
             body: formData
         })
-            .then(response => {
-                if (response.ok) {
-                    showAlert('success', 'Фотографии успешно загружены');
-                    closeModal('imageModal');
-                    selectedImages = [];
-                    document.getElementById('imagePreview').innerHTML = '';
-                    document.getElementById('imageInput').value = '';
-                    document.getElementById('submitImagesBtn').disabled = true;
-                } else {
-                    throw new Error('Ошибка при загрузке фотографий');
-                }
+            .then(handleServerResponse)
+            .then(data => {
+                showAlert('success', data.message || 'Фотографии успешно загружены');
+                closeModal('imageModal');
+                resetImageForm();
             })
             .catch(error => {
-                showAlert('error', 'Произошла ошибка при загрузке фотографий');
+                showAlert('error', error.message || 'Произошла ошибка при загрузке фотографий');
                 console.error('Error:', error);
             });
     }
@@ -1113,8 +1089,9 @@
     // Обработка отправки формы с документацией
     function handleDocumentFormSubmit(e) {
         e.preventDefault();
-
+        const form = e.target;
         const productId = document.getElementById('docProductId').value;
+        const description = document.getElementById('docDescription').value;
 
         if (!productId) {
             showAlert('error', 'Пожалуйста, выберите товар');
@@ -1126,113 +1103,148 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.append('productId', productId);
-        formData.append('documentation', selectedDocument);
-        formData.append('description', document.getElementById('docDescription').value);
-
-        // Отправка данных на сервер
-        fetch(e.target.action, {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => {
-                if (response.ok) {
-                    showAlert('success', 'Документация успешно загружена');
-                    closeModal('documentModal');
-                    selectedDocument = null;
-                    document.getElementById('documentPreview').innerHTML = '';
-                    document.getElementById('documentInput').value = '';
-                    document.getElementById('docDescription').value = '';
-                    document.getElementById('submitDocBtn').disabled = true;
-                } else {
-                    throw new Error('Ошибка при загрузке документации');
-                }
-            })
-            .catch(error => {
-                showAlert('error', 'Произошла ошибка при загрузке документации');
-                console.error('Error:', error);
-            });
-    }
-
-    // Обработка отправки формы с ценой
-    function handlePriceFormSubmit(e) {
-        e.preventDefault();
-
-        const productId = document.getElementById('priceProductId').value;
-
-        if (!productId) {
-            showAlert('error', 'Пожалуйста, выберите товар');
+        if (!description.trim()) {
+            showAlert('error', 'Пожалуйста, укажите описание документа');
             return;
         }
 
-        // Отправка данных на сервер
-        fetch(e.target.action, {
+        const formData = new FormData(form);
+        formData.append('documentation', selectedDocument);
+        formData.append('description', description);
+
+        fetch(form.action, {
             method: 'POST',
-            body: new FormData(e.target)
+            body: formData
         })
-            .then(response => {
-                if (response.ok) {
-                    showAlert('success', 'Цена успешно установлена');
-                    closeModal('priceModal');
-                    e.target.reset();
-                } else {
-                    throw new Error('Ошибка при установке цены');
-                }
+            .then(handleServerResponse)
+            .then(data => {
+                showAlert('success', data.message || 'Документ успешно загружен');
+                closeModal('documentModal');
+                resetDocumentForm();
             })
             .catch(error => {
-                showAlert('error', 'Произошла ошибка при установке цены');
+                showAlert('error', error.message || 'Произошла ошибка при загрузке документа');
                 console.error('Error:', error);
             });
     }
 
-    // Обработка отправки основной формы товара
+    // Обработка отправки формы товара
     function handleProductFormSubmit(e) {
         e.preventDefault();
-        fetch(e.target.action, {
+        const form = e.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
             method: 'POST',
-            body: new FormData(e.target)
+            body: formData
         })
-            .then(response => {
-                if (response.ok) {
-                    showAlert('success', 'Товар успешно добавлен');
-                    e.target.reset();
-                } else {
-                    throw new Error('Ошибка при добавлении товара');
-                }
+            .then(handleServerResponse)
+            .then(data => {
+                showAlert('success', data.message || 'Товар успешно добавлен');
+                form.reset();
+                setTimeout(() => window.location.reload(), 1500);
             })
             .catch(error => {
-                showAlert('error', 'Произошла ошибка при добавлении товара');
+                showAlert('error', error.message || 'Произошла ошибка при добавлении товара');
                 console.error('Error:', error);
             });
+    }
+
+    // Обработка отправки формы с автоматическим расчетом цен
+    function handleAutoPriceFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(handleServerResponse)
+            .then(data => {
+                showAlert('success', data.message || 'Цены успешно рассчитаны');
+                closeModal('priceModal');
+                form.reset();
+                setTimeout(() => window.location.reload(), 1500);
+            })
+            .catch(error => {
+                showAlert('error', error.message || 'Произошла ошибка при расчете цен');
+                console.error('Error:', error);
+            });
+    }
+
+    // Обработка отправки формы с ручным вводом цены
+    function handleManualPriceFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+            .then(handleServerResponse)
+            .then(data => {
+                showAlert('success', data.message || 'Цена успешно добавлена');
+                closeModal('priceModal');
+                form.reset();
+                setTimeout(() => window.location.reload(), 1500);
+            })
+            .catch(error => {
+                showAlert('error', error.message || 'Произошла ошибка при добавлении цены');
+                console.error('Error:', error);
+            });
+    }
+
+    // Сброс формы изображений
+    function resetImageForm() {
+        selectedImages = [];
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('imageInput').value = '';
+        document.getElementById('imgProductId').value = '';
+        document.getElementById('submitImagesBtn').disabled = true;
+    }
+
+    // Сброс формы документации
+    function resetDocumentForm() {
+        selectedDocument = null;
+        document.getElementById('documentPreview').innerHTML = '';
+        document.getElementById('documentInput').value = '';
+        document.getElementById('docDescription').value = '';
+        document.getElementById('docProductId').value = '';
+        document.getElementById('submitDocBtn').disabled = true;
+    }
+
+    // Инициализация обработчиков событий
+    function initEventListeners() {
+        document.getElementById('imageInput').addEventListener('change', e => handleImageUpload(e.target.files));
+        document.getElementById('documentInput').addEventListener('change', e => handleDocumentUpload(e.target.files));
+        document.getElementById('imageForm').addEventListener('submit', handleImageFormSubmit);
+        document.getElementById('documentationForm').addEventListener('submit', handleDocumentFormSubmit);
+        document.getElementById('productForm').addEventListener('submit', handleProductFormSubmit);
+        document.getElementById('autoPriceForm').addEventListener('submit', handleAutoPriceFormSubmit);
+        document.getElementById('manualPriceForm').addEventListener('submit', handleManualPriceFormSubmit);
+
+        window.addEventListener('click', e => {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
     }
 
     // Показать уведомление
     function showAlert(type, message) {
         const alertContainer = document.getElementById('alertContainer');
-        let icon, alertClass;
-
-        if (type === 'success') {
-            icon = 'fas fa-check-circle';
-            alertClass = 'alert--success';
-        } else if (type === 'error') {
-            icon = 'fas fa-exclamation-circle';
-            alertClass = 'alert--error';
-        } else {
-            icon = 'fas fa-info-circle';
-            alertClass = 'alert--info';
-        }
+        const alertClass = type === 'success' ? 'alert--success' :
+            type === 'error' ? 'alert--error' : 'alert--info';
+        const icon = type === 'success' ? 'fas fa-check-circle' :
+            type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle';
 
         const alert = document.createElement('div');
         alert.className = `alert ${alertClass} animate-fade`;
-        alert.innerHTML = `
-            <i class="${icon}"></i>
-            <span>${message}</span>
-        `;
-
+        alert.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
         alertContainer.appendChild(alert);
 
-        // Автоматическое скрытие через 5 секунд
         setTimeout(() => {
             alert.style.opacity = '0';
             setTimeout(() => alert.remove(), 300);
@@ -1243,8 +1255,6 @@
     function openModal(modalId) {
         const modal = document.getElementById(modalId);
         modal.classList.add('modal--show');
-
-        // Блокировка прокрутки фона
         document.body.style.overflow = 'hidden';
     }
 
@@ -1252,27 +1262,38 @@
     function closeModal(modalId) {
         const modal = document.getElementById(modalId);
         modal.classList.remove('modal--show');
-
-        // Разблокировка прокрутки фона
         document.body.style.overflow = '';
+    }
+
+    // Переключение вкладок в модальном окне цен
+    function switchPriceTab(tab) {
+        const autoTab = document.getElementById('autoTab');
+        const manualTab = document.getElementById('manualTab');
+        const autoForm = document.getElementById('autoPriceForm');
+        const manualForm = document.getElementById('manualPriceForm');
+
+        if (tab === 'auto') {
+            autoTab.classList.add('tab--active');
+            manualTab.classList.remove('tab--active');
+            autoForm.style.display = 'block';
+            manualForm.style.display = 'none';
+        } else {
+            autoTab.classList.remove('tab--active');
+            manualTab.classList.add('tab--active');
+            autoForm.style.display = 'none';
+            manualForm.style.display = 'block';
+        }
     }
 
     // Открытие/закрытие бокового меню
     function openNav() {
-        document.getElementById("sidebar").classList.add("app-sidebar--open");
+        document.getElementById('sidebar').classList.add('app-sidebar--open');
     }
 
     function closeNav() {
-        document.getElementById("sidebar").classList.remove("app-sidebar--open");
-    }
-
-    // Закрытие модальных окон при клике вне их области
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.classList.remove('modal--show');
-            document.body.style.overflow = '';
-        }
+        document.getElementById('sidebar').classList.remove('app-sidebar--open');
     }
 </script>
+
 </body>
 </html>

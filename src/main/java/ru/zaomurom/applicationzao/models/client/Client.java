@@ -27,10 +27,6 @@ public class Client {
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Contacts> contacts;
 
-    @ManyToOne
-    @JoinColumn(name = "price_id")
-    private Price selectedPrice;
-
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users;
 
@@ -116,14 +112,6 @@ public class Client {
 
     public void setContacts(List<Contacts> contacts) {
         this.contacts = contacts;
-    }
-
-    public Price getSelectedPrice() {
-        return selectedPrice;
-    }
-
-    public void setSelectedPrice(Price selectedPrice) {
-        this.selectedPrice = selectedPrice;
     }
 
     public List<User> getUsers() {

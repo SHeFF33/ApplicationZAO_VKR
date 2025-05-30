@@ -355,11 +355,14 @@
         </a>
         <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
             <i class="fas fa-file-invoice-dollar"></i>
-            Типы документов и прайсы
+            Типы документов
         </a>
         <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
             <i class="fas fa-file-alt"></i>
             Документация
+        </a>
+        <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+            <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
@@ -412,7 +415,7 @@
                 <div class="product-card__content">
                     <h3 class="product-card__title" th:text="${product.name}"></h3>
                     <p class="product-card__spec"><strong>Сорт:</strong> <span th:text="${product.sort}"></span></p>
-                    <p class="product-card__spec"><strong>Толщина:</strong> <span th:text="${product.tolsh}"></span></p>
+                    <p class="product-card__spec"><strong>Толщина:</strong> <span th:text="${#numbers.formatDecimal(product.tolsh, 1, 2)}"></span></p>
                     <p class="product-card__spec"><strong>Длина:</strong> <span th:text="${product.length}"></span></p>
                 </div>
             </div>
@@ -457,10 +460,10 @@
         document.querySelectorAll('.product-card').forEach(card => {
             const title = card.querySelector('.product-card__title').textContent.toLowerCase();
             const sort = card.querySelector('.product-card__spec:nth-of-type(1) span').textContent.toLowerCase();
-            const tolsh = card.querySelector('.product-card__spec:nth-of-type(2) span').textContent.toLowerCase();
+            const tolsh = parseFloat(card.querySelector('.product-card__spec:nth-of-type(2) span').textContent);
             const length = card.querySelector('.product-card__spec:nth-of-type(3) span').textContent.toLowerCase();
 
-            if (title.includes(query) || sort.includes(query) || tolsh.includes(query) || length.includes(query)) {
+            if (title.includes(query) || sort.includes(query) || (tolsh && !isNaN(tolsh) && tolsh.toString().includes(query)) || length.includes(query)) {
                 filteredProducts += card.outerHTML;
                 hasResults = true;
             }

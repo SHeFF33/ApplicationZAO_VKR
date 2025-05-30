@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Типы документов и прайсы | Админ-панель | ЗАО Муром</title>
+  <title>Типы документов| Админ-панель | ЗАО Муром</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -387,11 +387,14 @@
     </a>
     <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
       <i class="fas fa-file-invoice-dollar"></i>
-      Типы документов и прайсы
+      Типы документов
     </a>
     <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
       <i class="fas fa-file-alt"></i>
       Документация
+    </a>
+    <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+      <i class="fas fa-map-marked-alt"></i> Регионы
     </a>
     <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
       <i class="fas fa-comments"></i>
@@ -406,7 +409,7 @@
 
 <main class="app-container">
   <div class="page-header">
-    <h1 class="page-title">Типы документов и прайсы</h1>
+    <h1 class="page-title">Типы документов</h1>
   </div>
 
   <!-- Document Types Section -->
@@ -452,54 +455,6 @@
     </form>
   </div>
 
-  <!-- Prices Section -->
-  <div class="card">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-tags"></i> Прайсы
-      </h2>
-    </div>
-
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-        <tr>
-          <th>Вид</th>
-          <th>Имя</th>
-          <th>Действия</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="price : ${prices}">
-          <td th:text="${price.vid}"></td>
-          <td th:text="${price.name}"></td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(prices)}">
-          <td colspan="3" class="empty-state">
-            <i class="fas fa-tags"></i>
-            <p>Прайсы не добавлены</p>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <form th:action="@{/admin/addPrice}" method="post">
-      <div class="form-group">
-        <label for="priceVid" class="form-label">Вид прайса</label>
-        <input type="text" id="priceVid" name="vid" class="form-control" placeholder="Введите вид прайса" required />
-      </div>
-
-      <div class="form-group">
-        <label for="priceName" class="form-label">Имя прайса</label>
-        <input type="text" id="priceName" name="name" class="form-control" placeholder="Введите имя прайса" required />
-      </div>
-
-      <button type="submit" class="btn btn--primary">
-        <i class="fas fa-plus"></i> Добавить прайс
-      </button>
-    </form>
-  </div>
 </main>
 
 <script>

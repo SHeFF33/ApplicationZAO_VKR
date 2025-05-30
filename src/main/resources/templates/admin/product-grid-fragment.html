@@ -7,7 +7,6 @@
         <div th:each="product : ${products}" class="product-block">
             <a th:href="@{/admin/editProduct/{id}(id=${product.id})}">
                 <div class="image-container">
-                    <!-- Проверка на наличие изображений -->
                     <div th:if="${#lists.isEmpty(product.images)}" class="no-image-message">
                         Фото не добавлено
                     </div>
@@ -18,7 +17,7 @@
                 <div class="product-info">
                     <h3 th:text="${product.name}"></h3>
                     <p><strong>Сорт:</strong> <span th:text="${product.sort}"></span></p>
-                    <p><strong>Толщина:</strong> <span th:text="${product.tolsh}"></span></p>
+                    <p><strong>Толщина:</strong> <span th:text="${#numbers.formatDecimal(product.tolsh, 1, 2)}"></span></p>
                     <p><strong>Длина:</strong> <span th:text="${product.length}"></span></p>
                 </div>
             </a>

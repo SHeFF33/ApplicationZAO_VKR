@@ -16,7 +16,7 @@ public class Product {
     private Long id;
     private String name;
     private String sort;
-    private String tolsh;
+    private Double tolsh;
     private Double length;
     private Double volume;
     private int quantity;
@@ -38,7 +38,7 @@ public class Product {
 
     public Product() {}
 
-    public Product(String name, String sort, String tolsh, double length, double volume, int quantity, String description, boolean visible) {
+    public Product(String name, String sort, double tolsh, double length, double volume, int quantity, String description, boolean visible) {
         this.name = name;
         this.sort = sort;
         this.tolsh = tolsh;
@@ -73,11 +73,11 @@ public class Product {
         this.sort = sort;
     }
 
-    public String getTolsh() {
+    public double getTolsh() {
         return tolsh;
     }
 
-    public void setTolsh(String tolsh) {
+    public void setTolsh(double tolsh) {
         this.tolsh = tolsh;
     }
 

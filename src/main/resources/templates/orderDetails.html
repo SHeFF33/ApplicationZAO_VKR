@@ -388,8 +388,8 @@
           <td th:text="${tchOrder.product.name}"></td>
           <td th:text="${tchOrder.quantity}"></td>
           <td th:text="${tchOrder.volume}"></td>
-          <td th:text="${tchOrder.price} + ' руб.'"></td>
-          <td th:text="${#numbers.formatDecimal(tchOrder.quantity * tchOrder.volume * tchOrder.price, 0, 'COMMA', 2, 'POINT')} + ' руб.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.price, 1, 2)} + ' руб.'"></td>
+          <td th:text="${#numbers.formatDecimal(tchOrder.quantity * tchOrder.price, 1, 2)} + ' руб.'"></td>
         </tr>
         </tbody>
       </table>
@@ -398,7 +398,7 @@
     <div class="order-details__item" style="text-align: right; margin-top: 1.5rem;">
       <div class="order-details__label">Итого</div>
       <div class="order-details__value" style="font-size: 1.25rem; font-weight: 600;">
-        <span th:text="${totalSum} + ' руб.'"></span>
+        <span th:text="${#numbers.formatDecimal(totalSum, 1, 2)} + ' руб.'"></span>
       </div>
     </div>
   </div>

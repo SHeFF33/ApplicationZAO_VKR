@@ -133,7 +133,6 @@
                 @RequestParam String factaddress,
                 @RequestParam(required = false) Double sum1,
                 @RequestParam(required = false) Double sum2,
-                @RequestParam Long selectedPriceId,
                 @RequestParam(required = false) List<Long> regionIds,
                 @RequestParam(required = false) List<String> postalcodes,
                 @RequestParam(required = false) List<String> countries,
@@ -154,10 +153,17 @@
                 @RequestParam(required = false) List<String> userEmails,
                 RedirectAttributes redirectAttributes) {
 
+            logger.debug("Received usernames: {}", usernames);
+            logger.debug("Received nameuser: {}", nameuser);
+            logger.debug("Received passwords: {}", passwords);
+            logger.debug("Received isAdmins: {}", isAdmins);
+            logger.debug("Received userEmails: {}", userEmails);
+
             // Проверка уникальности username
             if (usernames != null) {
                 for (String username : usernames) {
                     if (userService.existsByUsername(username)) {
+                        logger.warn("Username already exists: {}", username);
                         redirectAttributes.addFlashAttribute("errorMessage",
                                 "Пользователь с логином '" + username + "' уже существует");
                         return "redirect:/admin/addClient";
@@ -169,13 +175,15 @@
             if (isAdmins != null && userEmails != null) {
                 for (int i = 0; i < isAdmins.size(); i++) {
                     if (Boolean.parseBoolean(isAdmins.get(i))) {
-                        String email = userEmails.get(i);
+                        String email = userEmails.size() > i ? userEmails.get(i) : null;
                         if (email == null || email.isEmpty()) {
+                            logger.warn("Email required for admin user at index: {}", i);
                             redirectAttributes.addFlashAttribute("errorMessage",
                                     "Для администратора необходимо указать email");
                             return "redirect:/admin/addClient";
                         }
                         if (userService.existsByEmail(email)) {
+                            logger.warn("Email already exists: {}", email);
                             redirectAttributes.addFlashAttribute("errorMessage",
                                     "Пользователь с email '" + email + "' уже существует");
                             return "redirect:/admin/addClient";
@@ -193,10 +201,8 @@
             client.setSum1(sum1);
             client.setSum2(sum2);
 
-            Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
-            client.setSelectedPrice(selectedPrice);
-
             client = clientService.save(client);
+            logger.debug("Saved client with ID: {}", client.getId());
 
             // Сохраняем выбранные регионы
             if (regionIds != null && !regionIds.isEmpty()) {
@@ -217,9 +223,9 @@
                     Addresses address = new Addresses();
                     address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
                     address.setCountry(countries.get(i));
-                    // Устанавливаем ClientsRegion вместо строки region
                     Region region = regionService.findById(regionIds.get(i)).orElse(null);
                     if (region == null) {
+                        logger.warn("Region not found for ID: {}", regionIds.get(i));
                         redirectAttributes.addFlashAttribute("errorMessage",
                                 "Регион с ID " + regionIds.get(i) + " не найден");
                         return "redirect:/admin/addClient";
@@ -241,7 +247,6 @@
             }
             client.setAddresses(addressesList);
 
-            // Обработка контактов (без изменений)
             List<Contacts> contactsList = new ArrayList<>();
             if (contactNames != null && !contactNames.isEmpty()) {
                 for (int i = 0; i < contactNames.size(); i++) {
@@ -261,6 +266,7 @@
                 for (int i = 0; i < usernames.size(); i++) {
                     if ((nameuser == null || nameuser.size() <= i) ||
                             (passwords == null || passwords.size() <= i)) {
+                        logger.warn("Missing nameuser or password at index: {}", i);
                         continue;
                     }
 
@@ -271,18 +277,29 @@
                     user.setAdmin(isAdmin);
                     user.setName(nameuser.get(i));
 
-                    if (isAdmin && userEmails != null && userEmails.size() > i) {
+                    if (isAdmin && userEmails != null && userEmails.size() > i && !userEmails.get(i).isEmpty()) {
                         user.setEmail(userEmails.get(i));
+                    } else {
+                        user.setEmail(null);
                     }
 
                     user.setClient(client);
                     usersList.add(user);
+                    logger.debug("Added user: {}", user.getUsername());
                 }
             }
             client.setUsers(usersList);
 
-            redirectAttributes.addFlashAttribute("successMessage", "Клиент успешно добавлен");
-            return "redirect:/admin/clients";
+            try {
+                clientService.save(client);
+                logger.debug("Client saved successfully with {} users", usersList.size());
+                redirectAttributes.addFlashAttribute("successMessage", "Клиент успешно добавлен");
+                return "redirect:/admin/clients";
+            } catch (Exception e) {
+                logger.error("Error saving client: {}", e.getMessage(), e);
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при сохранении клиента: " + e.getMessage());
+                return "redirect:/admin/addClient";
+            }
         }
 
         @GetMapping("/admin/editClient/{id}")
@@ -298,7 +315,6 @@
                         .collect(Collectors.toList());
 
                 model.addAttribute("client", client);
-                model.addAttribute("prices", priceService.findAll());
                 model.addAttribute("regions", allRegions);
                 model.addAttribute("clientRegions", clientRegions);
                 return "admin/editClient";
@@ -316,7 +332,6 @@
                 @RequestParam String factaddress,
                 @RequestParam(required = false) Double sum1,
                 @RequestParam(required = false) Double sum2,
-                @RequestParam Long selectedPriceId,
                 @RequestParam(required = false) List<String> postalcodes,
                 @RequestParam(required = false) List<String> countries,
                 @RequestParam(required = false) List<Long> regionIds,
@@ -359,8 +374,7 @@
             client.setSum1(sum1);
             client.setSum2(sum2);
 
-            Price selectedPrice = priceService.findById(selectedPriceId).orElse(null);
-            client.setSelectedPrice(selectedPrice);
+            client = clientService.save(client);
 
             // Обновляем связи с регионами
             if (regionIds != null) {
@@ -576,27 +590,15 @@
         }
 
         @PostMapping("/admin/addProduct")
-        public String addProduct(
-                @RequestParam String name,
-                @RequestParam String sort,
-                @RequestParam String tolsh,
-                @RequestParam double volume,
-                @RequestParam Double length,
-                @RequestParam int quantity,
-                @RequestParam String description
-        ) {
-            Product product = new Product();
-            product.setName(name);
-            product.setSort(sort);
-            product.setTolsh(tolsh);
-            product.setVolume(volume);
-            product.setLength(length);
-            product.setQuantity(quantity);
-            product.setDescription(description);
-
-            productService.save(product);
-
-            return "redirect:/admin/products";
+        public String addProduct(@ModelAttribute Product product, RedirectAttributes redirectAttributes) {
+            try {
+                Product savedProduct = productService.save(product);
+                redirectAttributes.addFlashAttribute("successMessage", "Товар успешно добавлен");
+                return "redirect:/admin/products";
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при добавлении товара: " + e.getMessage());
+                return "redirect:/admin/products";
+            }
         }
 
         @PostMapping("/admin/addDocumentation")
@@ -642,25 +644,65 @@
         @PostMapping("/admin/addSum")
         public String addSum(
                 @RequestParam Long productId,
-                @RequestParam List<Double> summas,
-                @RequestParam List<String> periods,
-                @RequestParam List<Long> priceIds) {
-            Product product = productService.findById(productId).orElse(null);
-            if (product != null) {
-                for (int i = 0; i < summas.size(); i++) {
-                    Price price = priceService.findById(priceIds.get(i)).orElse(null);
-                    if (price != null) {
-                        Sum sum = new Sum();
-                        sum.setSumma(summas.get(i));
-                        sum.setPeriod(java.sql.Date.valueOf(periods.get(i)));
-                        sum.setProduct(product);
-                        sum.setPrice(price);
-                        sumService.save(sum);
-                    }
+                @RequestParam(required = false) Double summa,
+                @RequestParam String period,
+                @RequestParam(required = false) String regionName,
+                RedirectAttributes redirectAttributes) {
+            try {
+                Product product = productService.findById(productId)
+                        .orElseThrow(() -> new RuntimeException("Продукт не найден"));
+
+                if (summa == null) {
+                    // Автоматический расчет цен
+                    List<Sum> calculatedSums = sumService.calculateAutomaticPrices(product, java.sql.Date.valueOf(period));
+                    redirectAttributes.addFlashAttribute("successMessage", "Цены успешно рассчитаны");
+                } else {
+                    // Ручное добавление цены
+                    Sum sum = new Sum();
+                    sum.setSumma(summa);
+                    sum.setPeriod(java.sql.Date.valueOf(period));
+                    sum.setProduct(product);
+                    sum.setRegionName(regionName);
+                    sumService.save(sum);
+                    redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
                 }
+                productService.updateProductVisibility(productId);
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка: " + e.getMessage());
             }
-            productService.updateProductVisibility(productId);
-            return "redirect:/admin/products";
+            return "redirect:/admin/editProduct/" + productId;
+        }
+
+        @PostMapping("/admin/calculateAutomaticPrices")
+        public String calculateAutomaticPrices(
+                @RequestParam Long productId,
+                @RequestParam String period,
+                RedirectAttributes redirectAttributes) {
+            try {
+                Product product = productService.findById(productId)
+                        .orElseThrow(() -> new RuntimeException("Продукт не найден"));
+
+                List<Sum> calculatedSums = sumService.calculateAutomaticPrices(
+                    product, 
+                    java.sql.Date.valueOf(period)
+                );
+                
+                if (calculatedSums.isEmpty()) {
+                    redirectAttributes.addFlashAttribute("warningMessage", 
+                        "Не найдены цены для данной толщины (" + product.getTolsh() + ")");
+                } else {
+                    redirectAttributes.addFlashAttribute("successMessage", 
+                        "Цены успешно рассчитаны для " + calculatedSums.size() + " регионов");
+                }
+                
+                productService.updateProductVisibility(productId);
+                
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "Ошибка при расчете цен: " + e.getMessage());
+            }
+            
+            return "redirect:/admin/editProduct/" + productId;
         }
 
         @GetMapping("/admin/orders")
@@ -975,7 +1017,7 @@
                 @PathVariable Long id,
                 @RequestParam String name,
                 @RequestParam String sort,
-                @RequestParam String tolsh,
+                @RequestParam double tolsh,
                 @RequestParam Double length,
                 @RequestParam Double volume,
                 @RequestParam int quantity,
@@ -1058,16 +1100,15 @@
         @PostMapping("/admin/deleteProductPrices")
         public String deleteProductPrices(
                 @RequestParam Long productId,
-                @RequestParam List<Long> sumIds,
+                @RequestParam Long sumIds,
                 RedirectAttributes redirectAttributes) {
             try {
-                for (Long sumId : sumIds) {
-                    sumService.deleteById(sumId);
-                }
+                sumService.deleteById(sumIds);
                 productService.updateProductVisibility(productId);
-                redirectAttributes.addFlashAttribute("successMessage", "Цены успешно удалены");
+                redirectAttributes.addFlashAttribute("successMessage", "Цена успешно удалена");
             } catch (Exception e) {
-                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении цен: " + e.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "Ошибка при удалении цены: " + e.getMessage());
             }
             return "redirect:/admin/editProduct/" + productId;
         }
@@ -1114,46 +1155,33 @@
         @PostMapping("/admin/addSumEditProducts")
         public String addSumEditProducts(
                 @RequestParam Long productId,
-                @RequestParam List<Double> summas,
-                @RequestParam List<String> periods,
-                @RequestParam List<Long> priceIds) {
-            Product product = productService.findById(productId).orElse(null);
-            if (product != null) {
-                for (int i = 0; i < summas.size(); i++) {
-                    Price price = priceService.findById(priceIds.get(i)).orElse(null);
-                    if (price != null) {
-                        Sum sum = new Sum();
-                        sum.setSumma(summas.get(i));
-                        sum.setPeriod(java.sql.Date.valueOf(periods.get(i)));
-                        sum.setProduct(product);
-                        sum.setPrice(price);
-                        sumService.save(sum);
-                    }
+                @RequestParam Double summa,
+                @RequestParam String period,
+                @RequestParam String regionName,
+                RedirectAttributes redirectAttributes) {
+            try {
+                Product product = productService.findById(productId).orElse(null);
+                if (product != null) {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                    Date periodDate = dateFormat.parse(period);
+
+                    Sum sum = new Sum();
+                    sum.setSumma(summa);
+                    sum.setPeriod(periodDate);
+                    sum.setProduct(product);
+                    sum.setRegionName(regionName);
+                    
+                    sumService.save(sum);
+                    productService.updateProductVisibility(productId);
+                    
+                    redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
                 }
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "Ошибка при добавлении цены: " + e.getMessage());
             }
-            productService.updateProductVisibility(productId);
             return "redirect:/admin/editProduct/" + productId;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         @GetMapping("/admin/regions")
         public String regions(Model model,
@@ -1352,5 +1380,176 @@
         @ResponseBody
         public List<Region> getAllRegions() {
             return regionService.findAll();
+        }
+
+        @PostMapping("/admin/editClient/{clientId}/addAddress")
+        public ResponseEntity<?> addAddress(
+                @PathVariable Long clientId,
+                @RequestParam String postalcode,
+                @RequestParam String country,
+                @RequestParam Long regionId,
+                @RequestParam(required = false) String rayon,
+                @RequestParam String city,
+                @RequestParam String street,
+                @RequestParam String home,
+                @RequestParam String roomnumber,
+                @RequestParam(required = false) String schedule,
+                @RequestParam(required = false) Long contactId,
+                RedirectAttributes redirectAttributes) {
+
+            logger.debug("Adding address for client ID: {}", clientId);
+
+            Optional<Client> optionalClient = clientService.findById(clientId);
+            if (!optionalClient.isPresent()) {
+                logger.error("Client not found with ID: {}", clientId);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Клиент не найден"));
+            }
+
+            Client client = optionalClient.get();
+
+            try {
+                // Проверка почтового индекса
+                if (!postalcode.matches("\\d{6}")) {
+                    logger.error("Invalid postal code: {}", postalcode);
+                    return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Почтовый индекс должен содержать 6 цифр"));
+                }
+
+                Addresses address = new Addresses();
+                address.setPostalcode(Integer.parseInt(postalcode));
+                address.setCountry(country);
+                address.setRayon(rayon != null ? rayon : "");
+                address.setCity(city);
+                address.setStreet(street);
+                address.setHome(home);
+                address.setRoomnumber(roomnumber);
+                address.setSchedule(schedule != null ? schedule : "");
+                address.setClient(client);
+
+                // Установка региона
+                ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
+                if (clientsRegion == null) {
+                    Region region = regionService.findById(regionId).orElse(null);
+                    if (region == null) {
+                        logger.error("Region not found with ID: {}", regionId);
+                        return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Регион не найден"));
+                    }
+                    clientsRegion = new ClientsRegion();
+                    clientsRegion.setClient(client);
+                    clientsRegion.setRegion(region);
+                    clientsRegionService.save(clientsRegion);
+                }
+                address.setClientsRegion(clientsRegion);
+
+                // Установка контакта, если указан
+                if (contactId != null) {
+                    Optional<Contacts> contact = contactsService.findById(contactId);
+                    if (contact.isPresent()) {
+                        address.setContact(contact.get());
+                    } else {
+                        logger.warn("Contact not found with ID: {}", contactId);
+                    }
+                }
+
+                // Добавление адреса в список клиента
+                client.getAddresses().add(address);
+                clientService.save(client);
+
+                logger.debug("Address added successfully for client ID: {}", clientId);
+                return ResponseEntity.ok().body(Map.of("success", true));
+
+            } catch (Exception e) {
+                logger.error("Error adding address for client ID {}: {}", clientId, e.getMessage());
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Ошибка при добавлении адреса: " + e.getMessage()));
+            }
+        }
+        @PostMapping("/admin/editClient/{clientId}/editAddress")
+        public ResponseEntity<?> editAddress(
+                @PathVariable Long clientId,
+                @RequestParam Long id, // ID адреса
+                @RequestParam String postalcode,
+                @RequestParam String country,
+                @RequestParam Long regionId,
+                @RequestParam(required = false) String rayon,
+                @RequestParam String city,
+                @RequestParam String street,
+                @RequestParam String home,
+                @RequestParam String roomnumber,
+                @RequestParam(required = false) String schedule,
+                @RequestParam(required = false) Long contactId,
+                RedirectAttributes redirectAttributes) {
+
+            logger.debug("Editing address ID: {} for client ID: {}", id, clientId);
+
+            Optional<Client> optionalClient = clientService.findById(clientId);
+            if (!optionalClient.isPresent()) {
+                logger.error("Client not found with ID: {}", clientId);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Клиент не найден"));
+            }
+
+            Client client = optionalClient.get();
+            Optional<Addresses> optionalAddress = client.getAddresses().stream()
+                    .filter(addr -> addr.getId().equals(id))
+                    .findFirst();
+
+            if (!optionalAddress.isPresent()) {
+                logger.error("Address not found with ID: {}", id);
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Адрес не найден"));
+            }
+
+            try {
+                Addresses address = optionalAddress.get();
+
+                // Проверка почтового индекса
+                if (!postalcode.matches("\\d{6}")) {
+                    logger.error("Invalid postal code: {}", postalcode);
+                    return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Почтовый индекс должен содержать 6 цифр"));
+                }
+
+                address.setPostalcode(Integer.parseInt(postalcode));
+                address.setCountry(country);
+                address.setRayon(rayon != null ? rayon : "");
+                address.setCity(city);
+                address.setStreet(street);
+                address.setHome(home);
+                address.setRoomnumber(roomnumber);
+                address.setSchedule(schedule != null ? schedule : "");
+
+                // Установка региона
+                ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
+                if (clientsRegion == null) {
+                    Region region = regionService.findById(regionId).orElse(null);
+                    if (region == null) {
+                        logger.error("Region not found with ID: {}", regionId);
+                        return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Регион не найден"));
+                    }
+                    clientsRegion = new ClientsRegion();
+                    clientsRegion.setClient(client);
+                    clientsRegion.setRegion(region);
+                    clientsRegionService.save(clientsRegion);
+                }
+                address.setClientsRegion(clientsRegion);
+
+                // Установка контакта
+                if (contactId != null) {
+                    Optional<Contacts> contact = contactsService.findById(contactId);
+                    if (contact.isPresent()) {
+                        address.setContact(contact.get());
+                    } else {
+                        logger.warn("Contact not found with ID: {}", contactId);
+                        address.setContact(null);
+                    }
+                } else {
+                    address.setContact(null);
+                }
+
+                clientService.save(client);
+
+                logger.debug("Address ID: {} updated successfully for client ID: {}", id, clientId);
+                return ResponseEntity.ok().body(Map.of("success", true));
+
+            } catch (Exception e) {
+                logger.error("Error editing address ID {} for client ID {}: {}", id, clientId, e.getMessage());
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Ошибка при редактировании адреса: " + e.getMessage()));
+            }
         }
     }

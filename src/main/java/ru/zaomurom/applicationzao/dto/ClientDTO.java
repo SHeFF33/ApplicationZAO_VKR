@@ -18,8 +18,6 @@ public class ClientDTO {
     private List<AddressesDTO> addresses;
     private List<ContactsDTO> contacts;
     private List<UserDTO> users;
-    private List<ClientsRegionDTO> clientsRegions;
-    private PriceDTO selectedPrice;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -43,8 +41,4 @@ public class ClientDTO {
     public void setContacts(List<ContactsDTO> contacts) { this.contacts = contacts; }
     public List<UserDTO> getUsers() { return users; }
     public void setUsers(List<UserDTO> users) { this.users = users; }
-    public List<ClientsRegionDTO> getClientsRegions() { return clientsRegions; }
-    public void setClientsRegions(List<ClientsRegionDTO> clientsRegions) { this.clientsRegions = clientsRegions; }
-    public PriceDTO getSelectedPrice() { return selectedPrice; }
-    public void setSelectedPrice(PriceDTO selectedPrice) { this.selectedPrice = selectedPrice; }
 }

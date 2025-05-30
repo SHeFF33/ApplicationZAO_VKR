@@ -349,11 +349,14 @@
     </a>
     <a th:href="@{/admin/documentTypes}" class="app-sidebar__nav-item">
       <i class="fas fa-file-invoice-dollar"></i>
-      Типы документов и прайсы
+      Типы документов
     </a>
     <a th:href="@{/admin/document}" class="app-sidebar__nav-item">
       <i class="fas fa-file-alt"></i>
       Документация
+    </a>
+    <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
+      <i class="fas fa-map-marked-alt"></i> Регионы
     </a>
     <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
       <i class="fas fa-comments"></i>
@@ -408,10 +411,6 @@
         <div class="client-card__detail">
           <div class="client-card__label">Факт. адрес:</div>
           <div class="client-card__value" th:text="${client.factaddress}"></div>
-        </div>
-        <div class="client-card__detail">
-          <div class="client-card__label">Тип прайса:</div>
-          <div class="client-card__value" th:text="${client.selectedPrice.name}"></div>
         </div>
       </div>
     </div>

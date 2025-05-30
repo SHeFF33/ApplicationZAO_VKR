@@ -739,6 +739,42 @@
             align-items: center;
             margin-bottom: 1rem;
         }
+        /* Order summary styles */
+        .order-summary {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .order-summary__header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .order-summary__header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .order-summary__total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .checkout-total {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -829,16 +865,17 @@
                         <h3 class="product-item__name" th:text="${item.product.name}"></h3>
                         <div class="product-item__description">
                             <span class="product-item__spec">Сорт: <span th:text="${item.product.sort}"></span></span>
-                            <span class="product-item__spec">Толщина: <span th:text="${item.product.tolsh}"></span></span>
+                            <span class="product-item__spec">Толщина: <span th:text="${#numbers.formatDecimal(item.product.tolsh, 1, 2)}"></span></span>
                             <span class="product-item__spec">Объем: <span th:text="${item.product.volume}"></span></span>
                             <span class="product-item__spec">Длина: <span th:text="${item.product.length}"></span></span>
                         </div>
-                        <div class="product-item__price">
-                            <span th:text="${item.sum.summa} + ' ₽'"></span>
+                        <div class="product-item__price" th:data-product-id="${item.product.id}">
+                            <span th:if="${item.sum != null}" th:text="${#numbers.formatDecimal(item.sum.summa, 1, 2)} + ' ₽'"></span>
+                            <span th:unless="${item.sum != null}">Цена будет определена после выбора адреса доставки</span>
                         </div>
 
                         <div class="product-item__actions">
-                            <div class="quantity-control" th:data-item-id="${item.product.id}" th:data-sum-id="${item.sum.id}">
+                            <div class="quantity-control" th:data-item-id="${item.product.id}" th:data-sum-id="${item.sum != null ? item.sum.id : ''}">
                                 <button class="quantity-control__btn" onclick="decreaseQuantity(this)">
                                     <i class="fas fa-minus"></i>
                                 </button>
@@ -855,6 +892,17 @@
     </section>
 
     <aside class="checkout-section">
+
+        <div class="order-summary">
+            <div class="order-summary__header">
+                <h3><i class="fas fa-receipt"></i> Итого</h3>
+            </div>
+            <div class="order-summary__total">
+                <span>Общая сумма:</span>
+                <span class="checkout-total" th:if="${cart != null}" th:text="${#numbers.formatDecimal(cartService.calculateCartTotal(cart), 1, 2)} + ' ₽'">0 ₽</span>
+                <span class="checkout-total" th:unless="${cart != null}">0 ₽</span>
+            </div>
+        </div>
         <h2 class="checkout-section__title">
             <i class="fas fa-receipt"></i> Оформление заказа
         </h2>
@@ -863,6 +911,7 @@
             <div class="form-group">
                 <label for="addressId" class="form-label">Адрес доставки</label>
                 <select id="addressId" name="addressId" class="form-control">
+                    <option value="" data-schedule="">Выберите адрес</option>
                     <option th:each="address : ${client.addresses}"
                             th:value="${address.id}"
                             th:text="${address.postalcode + ', ' + address.country + ', ' + (address.clientsRegion != null ? address.clientsRegion.region.name : '') + ', ' + address.city + ', ' + address.street + ', ' + address.home + (address.roomnumber != null ? ', ' + address.roomnumber : '')}"
@@ -901,7 +950,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3>Ручное распределение товаров</h3>
-            <button class="modal-close">&times;</button>
+            <button class="modal-close">×</button>
         </div>
         <div class="modal-body">
             <div class="distribution-container">
@@ -961,64 +1010,138 @@
             closeNav();
         }
     });
+
+    // Управление состоянием кнопки "Оформить заказ"
+    function toggleCheckoutButton() {
+        const priceElements = document.querySelectorAll('.product-item__price');
+        const checkoutButton = document.querySelector('form button[type="submit"]');
+        let allPricesSet = true;
+
+        priceElements.forEach(priceElement => {
+            if (priceElement.textContent.includes('Цена будет определена')) {
+                allPricesSet = false;
+            }
+        });
+
+        checkoutButton.disabled = !allPricesSet;
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        var addressSelect = document.getElementById('addressId');
-        var scheduleInput = document.getElementById('schedule');
+        const addressSelect = document.getElementById('addressId');
+        const scheduleInput = document.getElementById('schedule');
 
-        if (addressSelect && scheduleInput) {
-            // Установите значение графика доставки при загрузке страницы
-            var selectedOption = addressSelect.options[addressSelect.selectedIndex];
-            var schedule = selectedOption.getAttribute('data-schedule');
-            scheduleInput.value = schedule;
-        }
-    });
-
-    document.getElementById('addressId').addEventListener('change', function() {
-        var selectedOption = this.options[this.selectedIndex];
-        var schedule = selectedOption.getAttribute('data-schedule');
-        console.log('Selected schedule:', schedule); // Отладочное сообщение
-
-        var scheduleInput = document.getElementById('schedule');
-        console.log('Schedule input element:', scheduleInput); // Проверка, что элемент найден
-
+        // Устанавливаем пустой график по умолчанию
         if (scheduleInput) {
-            scheduleInput.value = schedule;
-            console.log('Schedule input value set to:', scheduleInput.value); // Проверка установленного значения
-        } else {
-            console.error('Schedule input element not found');
+            scheduleInput.value = '';
         }
-    });
 
+        // Восстанавливаем выбранный адрес из sessionStorage, если есть
+        const savedAddressId = sessionStorage.getItem('selectedAddressId');
+        if (savedAddressId && addressSelect) {
+            addressSelect.value = savedAddressId;
+            const selectedOption = addressSelect.options[addressSelect.selectedIndex];
+            if (selectedOption && scheduleInput) {
+                scheduleInput.value = selectedOption.getAttribute('data-schedule') || '';
+            }
+        }
 
-    document.getElementById('clearCartBtn').addEventListener('click', function() {
-        if (confirm('Вы уверены, что хотите полностью очистить корзину? Это действие нельзя отменить.')) {
-            fetch('/cart/clear', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+        // Инициализируем состояние кнопки
+        toggleCheckoutButton();
+
+        if (addressSelect) {
+            addressSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const schedule = selectedOption.getAttribute('data-schedule');
+                const selectedAddressId = this.value;
+
+                // Обновляем график доставки
+                if (scheduleInput) {
+                    scheduleInput.value = schedule || '';
                 }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        location.reload();
-                    } else {
-                        throw new Error('Ошибка при очистке корзины');
+
+                // Сохраняем выбранный адрес в sessionStorage
+                sessionStorage.setItem('selectedAddressId', selectedAddressId);
+
+                // Если выбран пустой вариант, очищаем цены
+                if (!selectedAddressId) {
+                    document.querySelectorAll('.product-item__price').forEach(priceElement => {
+                        priceElement.innerHTML = 'Цена будет определена после выбора адреса доставки';
+                    });
+                    document.querySelectorAll('.checkout-total').forEach(element => {
+                        element.textContent = '0 ₽';
+                    });
+                    toggleCheckoutButton();
+                    return;
+                }
+
+                // Обновляем цены
+                fetch('/cart/updatePrices?addressId=' + selectedAddressId, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content,
+                        'Content-Type': 'application/json'
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert(error.message);
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updatePricesOnPage(data.prices, data.total);
+                            // Проверяем состояние кнопки после обновления цен
+                            toggleCheckoutButton();
+                        } else {
+                            throw new Error(data.error || 'Ошибка при обновлении цен');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Ошибка при обновлении цен: ' + error.message);
+                        // Восстанавливаем график, если запрос не удался
+                        if (scheduleInput) {
+                            scheduleInput.value = schedule || '';
+                        }
+                    });
+            });
         }
+
+        document.getElementById('clearCartBtn').addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите полностью очистить корзину? Это действие нельзя отменить.')) {
+                fetch('/cart/clear', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                    }
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            sessionStorage.removeItem('selectedAddressId'); // Очищаем сохранённый адрес
+                            location.reload();
+                        } else {
+                            throw new Error('Ошибка при очистке корзины');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message);
+                    });
+            }
+        });
     });
 
     function updateQuantity(button, delta) {
         const container = button.closest('.quantity-control');
         const productId = container.getAttribute('data-item-id');
-        const sumId = container.getAttribute('data-sum-id');
         const username = document.querySelector('meta[name="username"]').content;
+        const addressId = document.getElementById('addressId').value;
 
-        fetch(`/cart/updateQuantity?productId=${productId}&sumId=${sumId}&delta=${delta}&username=${username}`, {
+        const url = new URL('/cart/updateQuantity', window.location.origin);
+        url.searchParams.append('productId', productId);
+        url.searchParams.append('username', username);
+        url.searchParams.append('delta', delta);
+        if (addressId) {
+            url.searchParams.append('addressId', addressId);
+        }
+
+        fetch(url, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content,
@@ -1036,6 +1159,28 @@
                 console.error('Error:', error);
                 alert(error.message);
             });
+    }
+
+    function updatePricesOnPage(prices, total) {
+        document.querySelectorAll('.product-item__price').forEach(priceElement => {
+            const productId = priceElement.getAttribute('data-product-id');
+            if (prices[productId]) {
+                priceElement.innerHTML = Number(prices[productId].price).toFixed(2) + ' ₽';
+                // Обновляем sumId в соответствующем контроле количества
+                const quantityControl = document.querySelector(`.quantity-control[data-item-id="${productId}"]`);
+                if (quantityControl) {
+                    quantityControl.setAttribute('data-sum-id', prices[productId].sumId || '');
+                }
+            } else {
+                priceElement.innerHTML = 'Цена будет определена после выбора адреса доставки';
+            }
+        });
+
+        // Обновляем общую сумму
+        const totalElements = document.querySelectorAll('.checkout-total');
+        totalElements.forEach(element => {
+            element.textContent = Number(total).toFixed(2) + ' ₽';
+        });
     }
 
     function increaseQuantity(button) {
@@ -1133,7 +1278,6 @@
 
         return element;
     }
-
 
     function splitProductItem(itemElement) {
         const quantityInput = itemElement.querySelector('.quantity-input');
@@ -1269,7 +1413,6 @@
                 dropzone.classList.remove('dropzone-hover');
 
                 if (draggedItem.parentNode !== dropzone) {
-
                     if (dropzone.id === 'allProducts') {
                         const productData = {
                             productId: draggedItem.dataset.productId,
@@ -1278,21 +1421,14 @@
                             productName: draggedItem.querySelector('.distribution-item__name').textContent,
                             quantity: parseInt(draggedItem.querySelector('.quantity-input').value)
                         };
-
                         const newItem = createProductElement(productData, true);
-
                         dropzone.appendChild(newItem);
-
                         draggedItem.remove();
-                    }
-
-                    else if (dropzone.classList.contains('truck-products')) {
+                    } else if (dropzone.classList.contains('truck-products')) {
                         if (!validateTruckCapacity(dropzone, draggedItem)) {
                             return;
                         }
-
                         const existingItem = findExistingItem(dropzone, draggedItem);
-
                         if (existingItem) {
                             updateItemQuantity(existingItem, draggedItem);
                         } else {
@@ -1303,13 +1439,8 @@
                                 productName: draggedItem.querySelector('.distribution-item__name').textContent,
                                 quantity: parseInt(draggedItem.querySelector('.quantity-input').value)
                             };
-
                             const newItem = createProductElement(productData, false);
-
-                            // Добавляем в машину
                             dropzone.appendChild(newItem);
-
-                            // Удаляем оригинальный элемент
                             draggedItem.remove();
                         }
                     }
@@ -1317,7 +1448,6 @@
             }
         });
 
-        // Обработчик для кнопки разделения
         document.addEventListener('click', function(e) {
             if (e.target.closest('.split-btn')) {
                 e.preventDefault();
@@ -1334,15 +1464,12 @@
 
     function validateTruckCapacity(dropzone, draggedItem) {
         const truckProducts = dropzone.querySelectorAll('.distribution-item');
-
-        // Подсчитываем общее количество товаров и количество длинных
         let totalItems = 0;
         let longProductsCount = 0;
 
         truckProducts.forEach(item => {
             const quantity = parseInt(item.querySelector('.quantity-input').value);
             totalItems += quantity;
-
             if (parseFloat(item.dataset.length) === 2.8) {
                 longProductsCount += quantity;
             }
@@ -1351,7 +1478,6 @@
         const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
         const productLength = parseFloat(draggedItem.dataset.length);
 
-        // Если добавляем длинный товар или уже есть 7+ длинных
         if (productLength === 2.8 || longProductsCount >= 7) {
             if (totalItems + draggedQuantity > 13) {
                 alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
@@ -1379,7 +1505,6 @@
         draggedItem.remove();
     }
 
-    // Автораспределение
     document.getElementById('autoDistributeBtn').addEventListener('click', async function() {
         if (confirm('Выполнить автораспределение товаров? Текущее распределение будет сброшено.')) {
             try {
@@ -1398,7 +1523,6 @@
                     throw new Error('Ошибка автораспределения');
                 }
 
-                // Перезагружаем данные
                 loadManualDistributionData();
             } catch (error) {
                 console.error('Error:', error);
@@ -1412,7 +1536,6 @@
         const truckElements = document.querySelectorAll('.truck');
         let isValid = true;
 
-        // Проверяем каждую машину
         truckElements.forEach(truckElement => {
             const truck = {
                 id: truckElement.dataset.truckId,
@@ -1440,7 +1563,6 @@
                 });
             });
 
-            // Проверка ограничений
             if (longProductsCount >= 7 && totalItems > 13) {
                 alert(`Машина ${truckElement.querySelector('.truck-header span').textContent} содержит ${totalItems} пачек при ${longProductsCount} длинных товарах. Максимум 13 пачек разрешено.`);
                 isValid = false;
@@ -1456,7 +1578,6 @@
             return;
         }
 
-        // Если проверка пройдена, сохраняем
         try {
             const token = document.querySelector('meta[name="_csrf"]').content;
             const header = document.querySelector('meta[name="_csrf_header"]').content;
@@ -1481,6 +1602,7 @@
             alert('Ошибка сохранения: ' + error.message);
         }
     });
+
     function setupQuantityInputListeners() {
         document.querySelectorAll('.quantity-input').forEach(input => {
             input.addEventListener('change', function() {
@@ -1504,7 +1626,6 @@
         items.forEach(item => {
             const quantity = parseInt(item.querySelector('.quantity-input').value);
             totalItems += quantity;
-
             if (parseFloat(item.dataset.length) === 2.8) {
                 longProductsCount += quantity;
             }
@@ -1513,16 +1634,13 @@
         if (longProductsCount >= 7 && totalItems > 13) {
             alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
             input.value = 1;
-            validateTruckQuantity(input); // Повторная проверка
+            validateTruckQuantity(input);
         } else if (totalItems > 16) {
             alert('В машину можно добавить не более 16 пачек');
             input.value = 1;
-            validateTruckQuantity(input); // Повторная проверка
+            validateTruckQuantity(input);
         }
     }
-
-
-
 </script>
 </body>
 </html>

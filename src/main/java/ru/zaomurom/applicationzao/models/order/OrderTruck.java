@@ -53,8 +53,9 @@ public class OrderTruck {
         this.tchOrders = tchOrders;
     }
     public double getTotal() {
-        return tchOrders.stream()
+        double total = tchOrders.stream()
                 .mapToDouble(TCHOrder::getTotalSum)
                 .sum();
+        return Math.round(total * 100.0) / 100.0;
     }
 }

@@ -73,16 +73,34 @@ public class Cart {
         this.products = products;
     }
 
+    public void addProduct(Product product, int quantity) {
+        for (CartItem item : cartItems) {
+            if (item.getProduct().equals(product) && item.getSum() == null) {
+                item.setQuantity(item.getQuantity() + quantity);
+                return;
+            }
+        }
+        CartItem cartItem = new CartItem(this, product, quantity, null);
+        cartItems.add(cartItem);
+        products.add(product);
+    }
+
     public void addProduct(Product product, int quantity, Sum sum) {
         for (CartItem item : cartItems) {
-            if (item.getProduct().equals(product) && item.getSum().equals(sum)) {
+            if (item.getProduct().equals(product) && 
+                (item.getSum() == null || item.getSum().equals(sum))) {
                 item.setQuantity(item.getQuantity() + quantity);
+                item.setSum(sum);
                 return;
             }
         }
         CartItem cartItem = new CartItem(this, product, quantity, sum);
         cartItems.add(cartItem);
         products.add(product);
+    }
+
+    public void updateItemPrice(CartItem item, Sum sum) {
+        item.setSum(sum);
     }
 
     @Transactional

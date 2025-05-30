@@ -52,7 +52,7 @@ public class Addresses {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getPostalcode() { return postalcode; }
+    public int getPostalcode() { return postalcode; }
     public void setPostalcode(int postalcode) { this.postalcode = postalcode; }
 
     public String getCountry() { return country; }

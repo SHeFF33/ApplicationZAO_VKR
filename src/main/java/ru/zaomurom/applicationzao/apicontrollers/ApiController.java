@@ -460,7 +460,7 @@ public class ApiController {
         dto.setId(doc.getId());
         dto.setName(doc.getName());
         dto.setDescription(doc.getDescription());
-        dto.setBytes(doc.getBytes()); // Добавлен массив байт документа
+        dto.setBytes(doc.getBytes());
         return dto;
     }
 
@@ -469,10 +469,7 @@ public class ApiController {
         dto.setId(sum.getId());
         dto.setSumma(sum.getSumma());
         dto.setPeriod(sum.getPeriod());
-        if (sum.getPrice() != null) {
-            dto.setPriceId(sum.getPrice().getId());
-            dto.setPriceName(sum.getPrice().getName());
-        }
+        dto.setRegion(sum.getRegionName());  // Исправлено с dto.getRegion() на sum.getRegion()
         return dto;
     }
 
@@ -542,36 +539,27 @@ public class ApiController {
         dto.setFactaddress(client.getFactaddress());
         dto.setSum1(client.getSum1());
         dto.setSum2(client.getSum2());
-        
+
         // Convert addresses
         if (client.getAddresses() != null) {
             dto.setAddresses(client.getAddresses().stream()
                     .map(this::convertToAddressesDTO)
                     .collect(Collectors.toList()));
         }
-        
+
         // Convert contacts
         if (client.getContacts() != null) {
             dto.setContacts(client.getContacts().stream()
                     .map(this::convertToContactsDTO)
                     .collect(Collectors.toList()));
         }
-        
+
         // Convert users
         if (client.getUsers() != null) {
             dto.setUsers(client.getUsers().stream()
                     .map(this::convertToUserDTO)
                     .collect(Collectors.toList()));
         }
-        // Convert selected price
-        if (client.getSelectedPrice() != null) {
-            PriceDTO priceDTO = new PriceDTO();
-            priceDTO.setId(client.getSelectedPrice().getId());
-            priceDTO.setName(client.getSelectedPrice().getName());
-            priceDTO.setVid(client.getSelectedPrice().getVid());
-            dto.setSelectedPrice(priceDTO);
-        }
-        
         return dto;
     }
 
@@ -580,18 +568,12 @@ public class ApiController {
         dto.setId(address.getId());
         dto.setPostalcode(address.getPostalcode());
         dto.setCountry(address.getCountry());
-        if (address.getClientsRegion() != null && address.getClientsRegion().getRegion() != null) {
-            dto.setRegionName(address.getClientsRegion().getRegion().getName());
-        }
         dto.setRayon(address.getRayon());
         dto.setCity(address.getCity());
         dto.setStreet(address.getStreet());
         dto.setHome(address.getHome());
         dto.setRoomnumber(address.getRoomnumber());
         dto.setSchedule(address.getSchedule());
-        if (address.getContact() != null) {
-            dto.setContactDTO(convertToContactsDTO(address.getContact()));
-        }
         return dto;
     }
 
@@ -619,13 +601,6 @@ public class ApiController {
         DocumentTypeDTO dto = new DocumentTypeDTO();
         dto.setId(documentType.getId());
         dto.setName(documentType.getName());
-        return dto;
-    }
-
-    private RegionDTO convertToRegionDTO(Region region) {
-        RegionDTO dto = new RegionDTO();
-        dto.setId(region.getId());
-        dto.setName(region.getName());
         return dto;
     }
 }

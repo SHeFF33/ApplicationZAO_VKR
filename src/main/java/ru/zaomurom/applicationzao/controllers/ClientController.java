@@ -267,8 +267,6 @@ public class ClientController {
         List<Product> products = productService.findAllVisible();
         model.addAttribute("products", products);
         model.addAttribute("username", username);
-        Long selectedPriceId = client.getSelectedPrice() != null ? client.getSelectedPrice().getId() : null;
-        model.addAttribute("selectedPriceId", selectedPriceId);
 
         return "products";
     }
@@ -282,12 +280,10 @@ public class ClientController {
             model.addAttribute("username", username);
             User user = userService.findByUsername(username);
             Client client = user.getClient();
-            Long selectedPriceId = client.getSelectedPrice() != null ? client.getSelectedPrice().getId() : null;
-            model.addAttribute("selectedPriceId", selectedPriceId);
+            
             return "productDetails";
-        } else {
-            return "error";
         }
+        return "redirect:/products";
     }
 
     @GetMapping("/search")
@@ -304,10 +300,10 @@ public class ClientController {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
-        Long selectedPriceId = client.getSelectedPrice() != null ? client.getSelectedPrice().getId() : null;
+        //Long selectedPriceId = client.getSelectedPrice() != null ? client.getSelectedPrice().getId() : null;
 
         model.addAttribute("products", products);
-        model.addAttribute("selectedPriceId", selectedPriceId);
+        //model.addAttribute("selectedPriceId", selectedPriceId);
 
         return "product-grid-fragment :: productGrid";
     }
@@ -348,7 +344,7 @@ public class ClientController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> ProductaddToCart(
             @RequestParam Long productId,
-            @RequestParam Long sumId,
+            @RequestParam(required = false) Long sumId,
             @RequestParam String username,
             @RequestParam int quantity) {
 
@@ -361,36 +357,41 @@ public class ClientController {
         }
 
         Product product = productService.findById(productId).orElse(null);
-        Sum sum = productService.findSumById(sumId).orElse(null);
 
-        if (product != null && sum != null) {
-            cart.addProduct(product, quantity, sum);
+        if (product != null) {
+            if (sumId != null) {
+                Sum sum = productService.findSumById(sumId).orElse(null);
+                if (sum != null) {
+                    cart.addProduct(product, quantity, sum);
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Invalid sum ID"));
+                }
+            } else {
+                cart.addProduct(product, quantity);
+            }
             cartService.save(cart);
 
             int filledTrucksCount = 0;
             int remainingItems = quantity;
 
-            // Подсчитываем общее количество товаров
             int totalItems = cart.getTrucks().stream()
                     .flatMap(truck -> truck.getItems().stream())
                     .mapToInt(CartTruckItem::getQuantity)
                     .sum();
 
-            // Определяем вместимость первой машины
             boolean firstTruckHasLongProducts = cart.getTrucks().stream()
                     .flatMap(truck -> truck.getItems().stream())
                     .anyMatch(item -> item.getProduct().getLength() == 2.8);
 
             int firstTruckCapacity = firstTruckHasLongProducts ? Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
 
-            // Вычисляем количество заполненных машин
             filledTrucksCount = (int) Math.ceil((double) totalItems / firstTruckCapacity);
 
             Map<String, Object> response = new HashMap<>();
             response.put("redirect", "/products");
 
             if (filledTrucksCount > 0) {
-                String message = filledTrucksCount == 1 ?
+                String message = filledTrucksCount == 0 ?
                         "Первая грузовая машина заполнена" :
                         "Количество заполненных грузовых машин: " + filledTrucksCount;
                 response.put("message", message);
@@ -399,8 +400,9 @@ public class ClientController {
             return ResponseEntity.ok(response);
         }
 
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.badRequest().body(Map.of("error", "Invalid product ID"));
     }
+
     @GetMapping("/orders")
     @Transactional
     public String orders(Model model, Principal principal, @RequestParam(required = false) String status) {
@@ -438,7 +440,7 @@ public class ClientController {
             Order order = orderOpt.get();
 
             double totalSum = order.getTchOrders().stream()
-                    .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getVolume() * tchOrder.getPrice())
+                    .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getPrice())
                     .sum();
 
             model.addAttribute("order", order);
@@ -581,6 +583,7 @@ public class ClientController {
             model.addAttribute("cart", cart);
             model.addAttribute("username", username);
             model.addAttribute("client", client);
+            model.addAttribute("cartService", cartService);
 
             // Передача графика доставки
             List<Addresses> addresses = addressesService.findByClientId(client.getId());
@@ -635,9 +638,7 @@ public class ClientController {
         String formattedDeliveryDateTime = formatter.format(parsedDeliveryDateTime);
 
         double totalSum = cart.getCartItems().stream()
-                .mapToDouble(cartItem -> cartItem.getProduct().getVolume() *
-                        cartItem.getQuantity() *
-                        cartItem.getSum().getSumma())
+                .mapToDouble(cartItem -> cartItem.getQuantity() * cartItem.getSum().getSumma())
                 .sum();
 
         model.addAttribute("addressId", addressId);
@@ -724,28 +725,6 @@ public class ClientController {
         return "redirect:/orders";
     }
 
-
-    public Double getProductPrice(Product product, Long selectedPriceId) {
-        if (selectedPriceId != null) {
-            return product.getSums().stream()
-                    .filter(sum -> sum.getPrice().getId().equals(selectedPriceId))
-                    .findFirst()
-                    .map(Sum::getSumma)
-                    .orElse(null);
-        }
-        return null;
-    }
-
-    public Long getProductPriceId(Product product, Long selectedPriceId) {
-        if (selectedPriceId != null) {
-            return product.getSums().stream()
-                    .filter(sum -> sum.getPrice().getId().equals(selectedPriceId))
-                    .findFirst()
-                    .map(Sum::getId)
-                    .orElse(null);
-        }
-        return null;
-    }
     @PostMapping("/cart/increaseQuantity/{itemId}")
     public ResponseEntity<Map<String, Integer>> increaseQuantity(@PathVariable Long itemId, Principal principal) {
         String username = principal.getName();
@@ -821,17 +800,18 @@ public class ClientController {
     @PostMapping("/cart/updateQuantity")
     public ResponseEntity<Void> updateQuantity(
             @RequestParam Long productId,
-            @RequestParam Long sumId,
+            @RequestParam String username,
             @RequestParam int delta,
-            @RequestParam String username) {
+            @RequestParam(required = false) Long addressId) {
 
         User user = userService.findByUsername(username);
         Client client = user.getClient();
         Cart cart = cartService.findByClient(client);
 
         if (cart != null) {
+            // Находим товар в корзине с учетом текущего адреса
             CartItem item = cart.getCartItems().stream()
-                    .filter(i -> i.getProduct().getId().equals(productId) && i.getSum().getId().equals(sumId))
+                    .filter(i -> i.getProduct().getId().equals(productId))
                     .findFirst()
                     .orElse(null);
 
@@ -845,8 +825,15 @@ public class ClientController {
                     cartService.deleteCartItem(item);
                 }
 
+                // Обновляем распределение по машинам
                 cart.distributeItemsToTrucks();
                 cartService.save(cart);
+
+                // Если указан адрес, обновляем цены
+                if (addressId != null) {
+                    cartService.updateCartItemPrices(cart, addressId);
+                }
+
                 return ResponseEntity.ok().build();
             }
         }
@@ -919,6 +906,31 @@ public class ClientController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cart/updatePrices")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateCartPrices(
+            @RequestParam Long addressId,
+            Principal principal) {
+
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        Cart cart = cartService.findByClient(client);
+
+        if (cart == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Cart not found"));
+        }
+
+        Map<String, CartService.PriceInfo> prices = cartService.updateCartItemPrices(cart, addressId);
+        double total = cartService.calculateCartTotal(cart);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("total", total);
+        response.put("prices", prices);
+        response.put("success", true);
+        return ResponseEntity.ok(response);
     }
 }
 

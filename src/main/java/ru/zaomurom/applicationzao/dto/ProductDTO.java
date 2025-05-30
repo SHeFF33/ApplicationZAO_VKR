@@ -6,7 +6,7 @@ public class ProductDTO {
     private Long id;
     private String name;
     private String sort;
-    private String tolsh;
+    private double tolsh;
     private Double length;
     private Double volume;
     private int quantity;
@@ -20,8 +20,8 @@ public class ProductDTO {
     public void setName(String name) { this.name = name; }
     public String getSort() { return sort; }
     public void setSort(String sort) { this.sort = sort; }
-    public String getTolsh() { return tolsh; }
-    public void setTolsh(String tolsh) { this.tolsh = tolsh; }
+    public double getTolsh() { return tolsh; }
+    public void setTolsh(double tolsh) { this.tolsh = tolsh; }
     public Double getLength() { return length; }
     public void setLength(Double length) { this.length = length; }
     public Double getVolume() { return volume; }
