@@ -48,6 +48,9 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderStatusHistory> statusHistory;
 
+    @Column(name = "related_orders_info")
+    private String relatedOrdersInfo;
+
     public Order() {}
 
     public Order(Client client, Addresses deliveryAddress, Date deliveryDate, String status) {
@@ -154,5 +157,13 @@ public class Order {
     public String getFormattedDeliveryDate() {
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
         return formatter.format(deliveryDate);
+    }
+
+    public String getRelatedOrdersInfo() {
+        return relatedOrdersInfo;
+    }
+
+    public void setRelatedOrdersInfo(String relatedOrdersInfo) {
+        this.relatedOrdersInfo = relatedOrdersInfo;
     }
 }

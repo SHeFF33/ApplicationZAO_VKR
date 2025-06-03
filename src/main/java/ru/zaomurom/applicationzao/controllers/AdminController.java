@@ -759,7 +759,8 @@
                 orderService.addStatusHistory(order, status, user);
 
                 // Асинхронная отправка уведомлений
-                emailService.sendOrderStatusUpdateEmailAsync(order, status);
+                List<String> emailAddresses = orderService.collectOrderEmailAddresses(order);
+                emailService.sendOrderStatusUpdateEmailAsync(order, status, emailAddresses);
 
                 redirectAttributes.addFlashAttribute("successMessage", "Статус заказа успешно обновлен.");
             }
@@ -1277,101 +1278,91 @@
 
         @PostMapping("/admin/importPricesOnRegions")
         public String importPricesOnRegions(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-            if (file.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessage", "Пожалуйста, выберите файл для загрузки");
-                return "redirect:/admin/regions";
-            }
+            List<String> errorMessages = new ArrayList<>();
+            List<String> successMessages = new ArrayList<>();
+            int rowNum = 0;
+            int processedRows = 0;
 
             try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
                 Sheet sheet = workbook.getSheetAt(0);
-                Iterator<Row> rowIterator = sheet.iterator();
 
                 // Пропускаем заголовок
+                Iterator<Row> rowIterator = sheet.iterator();
                 if (rowIterator.hasNext()) {
-                    rowIterator.next();
+                    rowIterator.next(); // Пропускаем первую строку (заголовки)
                 }
 
-                int rowNum = 1;
-                int successCount = 0;
-                List<String> errorMessages = new ArrayList<>();
-
+                // Проходим по всем строкам
                 while (rowIterator.hasNext()) {
                     Row row = rowIterator.next();
                     rowNum++;
 
                     try {
                         // Читаем данные из строки
-                        Cell idCell = row.getCell(0);
-                        Cell regionIdCell = row.getCell(1);
-                        Cell thicknessCell = row.getCell(2);
-                        Cell priceCell = row.getCell(3);
+                        Cell thicknessCell = row.getCell(0);
+                        Cell regionNameCell = row.getCell(1);
+                        Cell priceCell = row.getCell(2);
 
                         // Проверяем, что ячейки не пустые
-                        if (regionIdCell == null || thicknessCell == null || priceCell == null) {
+                        if (thicknessCell == null || regionNameCell == null || priceCell == null) {
                             errorMessages.add("Строка " + rowNum + ": пустые ячейки");
                             continue;
                         }
 
-                        Long id = idCell != null && idCell.getCellType() == CellType.NUMERIC
-                                ? (long) idCell.getNumericCellValue() : null;
-                        Long regionId = (long) regionIdCell.getNumericCellValue();
                         Double thickness = thicknessCell.getNumericCellValue();
+                        String regionName = regionNameCell.getStringCellValue().trim();
                         Double pricePerSquareMeter = priceCell.getNumericCellValue();
 
-                        // Проверяем существование региона
-                        Region region = regionService.findById(regionId).orElse(null);
-                        if (region == null) {
-                            errorMessages.add("Строка " + rowNum + ": регион с ID " + regionId + " не найден");
-                            continue;
+                        // Находим или создаем регион
+                        Region region;
+                        if (regionService.existsByName(regionName)) {
+                            region = regionService.findAll().stream()
+                                    .filter(r -> r.getName().equals(regionName))
+                                    .findFirst()
+                                    .orElseThrow();
+                        } else {
+                            region = new Region(regionName);
+                            region = regionService.save(region);
+                            successMessages.add("Создан новый регион: " + regionName);
                         }
 
+                        // Ищем существующую запись цены для этого региона и толщины
+                        List<PricesOnRegions> existingPrices = pricesOnRegionsService.findByFilters(region.getId(), thickness);
                         PricesOnRegions price;
-                        if (id != null) {
-                            // Загружаем существующую запись
-                            Optional<PricesOnRegions> existingPrice = pricesOnRegionsService.findById(id);
-                            if (existingPrice.isEmpty()) {
-                                errorMessages.add("Строка " + rowNum + ": запись с ID " + id + " не найдена");
-                                continue;
-                            }
-                            price = existingPrice.get();
+
+                        if (!existingPrices.isEmpty()) {
+                            // Обновляем существующую запись
+                            price = existingPrices.get(0);
+                            price.setPricePerSquareMeter(pricePerSquareMeter);
                         } else {
                             // Создаем новую запись
                             price = new PricesOnRegions();
+                            price.setRegion(region);
+                            price.setThickness(thickness);
+                            price.setPricePerSquareMeter(pricePerSquareMeter);
                         }
 
-                        // Обновляем поля
-                        price.setRegion(region);
-                        price.setThickness(thickness);
-                        price.setPricePerSquareMeter(pricePerSquareMeter);
+                        pricesOnRegionsService.save(price);
+                        processedRows++;
 
-                        // Сохраняем запись
-                        try {
-                            pricesOnRegionsService.save(price);
-                            successCount++;
-                        } catch (ObjectOptimisticLockingFailureException e) {
-                            errorMessages.add("Строка " + rowNum + ": запись (ID " + id + ") была изменена другой транзакцией");
-                        }
                     } catch (Exception e) {
-                        errorMessages.add("Строка " + rowNum + ": " + e.getMessage());
+                        errorMessages.add("Ошибка в строке " + rowNum + ": " + e.getMessage());
                     }
                 }
 
-                // Формируем итоговое сообщение
-                if (successCount > 0) {
-                    redirectAttributes.addFlashAttribute("successMessage",
-                            "Импортировано " + successCount + " записей");
-                }
-                if (!errorMessages.isEmpty()) {
-                    redirectAttributes.addFlashAttribute("errorMessage",
-                            "Ошибки при импорте: " + String.join("; ", errorMessages));
-                } else if (successCount == 0) {
-                    redirectAttributes.addFlashAttribute("errorMessage",
-                            "Ни одна запись не была импортирована");
+                if (processedRows > 0) {
+                    successMessages.add("Успешно обработано строк: " + processedRows);
                 }
 
-            } catch (IOException e) {
-                redirectAttributes.addFlashAttribute("errorMessage",
-                        "Ошибка при чтении файла: " + e.getMessage());
+            } catch (Exception e) {
+                errorMessages.add("Ошибка при обработке файла: " + e.getMessage());
+            }
+
+            if (!errorMessages.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessages", errorMessages);
+            }
+            if (!successMessages.isEmpty()) {
+                redirectAttributes.addFlashAttribute("successMessages", successMessages);
             }
 
             return "redirect:/admin/regions";
@@ -1551,5 +1542,16 @@
                 logger.error("Error editing address ID {} for client ID {}: {}", id, clientId, e.getMessage());
                 return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Ошибка при редактировании адреса: " + e.getMessage()));
             }
+        }
+
+        @PostMapping("/admin/updateDocumentType")
+        public String updateDocumentType(@RequestParam Long id, @RequestParam String name) {
+            Optional<DocumentType> documentTypeOptional = documentTypeService.findById(id);
+            if (documentTypeOptional.isPresent()) {
+                DocumentType documentType = documentTypeOptional.get();
+                documentType.setName(name);
+                documentTypeService.save(documentType);
+            }
+            return "redirect:/admin/documentTypes";
         }
     }

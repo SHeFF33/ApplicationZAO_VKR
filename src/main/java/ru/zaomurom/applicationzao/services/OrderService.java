@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 @Service
 public class OrderService {
@@ -145,5 +148,27 @@ public class OrderService {
     }
     public List<Order> findByClientId(Long clientId) {
         return orderRepository.findByClientId(clientId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> collectOrderEmailAddresses(Order order) {
+        Set<String> emailAddresses = new HashSet<>();
+        Client client = order.getClient();
+
+        // Add emails from client contacts
+        if (client.getContacts() != null) {
+            client.getContacts().stream()
+                .filter(contact -> contact.getEmail() != null && !contact.getEmail().isEmpty())
+                .forEach(contact -> emailAddresses.add(contact.getEmail()));
+        }
+
+        // Add emails from client users
+        if (client.getUsers() != null) {
+            client.getUsers().stream()
+                .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
+                .forEach(user -> emailAddresses.add(user.getEmail()));
+        }
+
+        return new ArrayList<>(emailAddresses);
     }
 }

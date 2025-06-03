@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
   <title>Типы документов| Админ-панель | ЗАО Муром</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -200,6 +202,16 @@
       background-color: rgba(46, 125, 50, 0.05);
     }
 
+    .btn--danger {
+      background-color: var(--error);
+      color: white;
+    }
+
+    .btn--danger:hover {
+      background-color: #b71c1c;
+      box-shadow: var(--shadow-md);
+    }
+
     /* Form styles */
     .form-group {
       margin-bottom: 1.5rem;
@@ -301,23 +313,52 @@
       background-color: rgba(76, 175, 80, 0.05);
     }
 
-    /* Badge styles */
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.75rem;
-      font-weight: 500;
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1050;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      overflow-y: auto;
     }
 
-    .badge--primary {
-      background-color: var(--primary-light);
-      color: white;
+    .modal-content {
+      background-color: var(--surface);
+      margin: 2rem auto;
+      padding: 2rem;
+      border-radius: var(--radius-md);
+      width: 90%;
+      max-width: 600px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
     }
 
-    .badge--secondary {
-      background-color: var(--border);
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.5rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .modal-close:hover {
       color: var(--text-primary);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     /* Empty state */
@@ -333,6 +374,17 @@
       color: var(--border);
     }
 
+    /* Action buttons */
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-buttons .btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+
     /* Responsive styles */
     @media (max-width: 768px) {
       .app-container {
@@ -343,6 +395,11 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+      }
+
+      .modal-content {
+        width: 95%;
+        padding: 1.5rem;
       }
     }
 
@@ -418,6 +475,9 @@
       <h2 class="card__title">
         <i class="fas fa-file-alt"></i> Типы документов
       </h2>
+      <button class="btn btn--primary" onclick="openModal('addDocumentTypeModal')">
+        <i class="fas fa-plus"></i> Добавить тип документа
+      </button>
     </div>
 
     <div class="table-container">
@@ -431,6 +491,15 @@
         <tbody>
         <tr th:each="type : ${documentTypes}">
           <td th:text="${type.name}"></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn--secondary edit-document-type" 
+                      th:data-id="${type.id}" 
+                      th:data-name="${type.name}">
+                <i class="fas fa-edit"></i> Изменить
+              </button>
+            </div>
+          </td>
         </tr>
         <tr th:if="${#lists.isEmpty(documentTypes)}">
           <td colspan="2" class="empty-state">
@@ -441,21 +510,57 @@
         </tbody>
       </table>
     </div>
+  </div>
+</main>
 
-    <form th:action="@{/admin/addDocumentType}" method="post" class="form-group">
+<!-- Add Document Type Modal -->
+<div id="addDocumentTypeModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('addDocumentTypeModal')">&times;</button>
+    <h3 class="modal-title">
+      <i class="fas fa-plus"></i> Добавить тип документа
+    </h3>
+    <form id="addDocumentTypeForm" th:action="@{/admin/addDocumentType}" method="post">
       <div class="form-group">
-        <label for="documentTypeName" class="form-label">Новый тип документа</label>
-        <div style="display: flex; gap: 0.5rem;">
-          <input type="text" id="documentTypeName" name="name" class="form-control" placeholder="Введите название типа" required />
-          <button type="submit" class="btn btn--primary">
-            <i class="fas fa-plus"></i> Добавить
-          </button>
-        </div>
+        <label for="documentTypeName" class="form-label">Название типа документа</label>
+        <input type="text" id="documentTypeName" name="name" class="form-control" required />
+      </div>
+      <div class="action-buttons">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button type="button" class="btn btn--secondary" onclick="closeModal('addDocumentTypeModal')">
+          <i class="fas fa-times"></i> Отмена
+        </button>
       </div>
     </form>
   </div>
+</div>
 
-</main>
+<!-- Edit Document Type Modal -->
+<div id="editDocumentTypeModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('editDocumentTypeModal')">&times;</button>
+    <h3 class="modal-title">
+      <i class="fas fa-edit"></i> Изменить тип документа
+    </h3>
+    <form id="editDocumentTypeForm" th:action="@{/admin/updateDocumentType}" method="post">
+      <input type="hidden" id="editDocumentTypeId" name="id" />
+      <div class="form-group">
+        <label for="editDocumentTypeName" class="form-label">Название типа документа</label>
+        <input type="text" id="editDocumentTypeName" name="name" class="form-control" required />
+      </div>
+      <div class="action-buttons">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button type="button" class="btn btn--secondary" onclick="closeModal('editDocumentTypeModal')">
+          <i class="fas fa-times"></i> Отмена
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
   function openNav() {
@@ -477,6 +582,38 @@
       closeNav();
     }
   });
+
+  function openModal(modalId) {
+    document.getElementById(modalId).style.display = "block";
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = "none";
+  }
+
+  function openEditModal(id, name) {
+    document.getElementById('editDocumentTypeId').value = id;
+    document.getElementById('editDocumentTypeName').value = name;
+    openModal('editDocumentTypeModal');
+  }
+
+  // Добавляем обработчики для кнопок редактирования
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.edit-document-type').forEach(button => {
+      button.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const name = this.getAttribute('data-name');
+        openEditModal(id, name);
+      });
+    });
+  });
+
+  // Закрытие модальных окон при клике вне их области
+  window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+      event.target.style.display = "none";
+    }
+  }
 </script>
 </body>
 </html>

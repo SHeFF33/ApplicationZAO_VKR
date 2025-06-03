@@ -387,7 +387,8 @@ public class ApiController {
         orderService.addStatusHistory(order, newStatus, user);
 
         // Отправка уведомления на email
-        emailService.sendOrderStatusUpdateEmailAsync(order, newStatus);
+        List<String> emailAddresses = orderService.collectOrderEmailAddresses(order);
+        emailService.sendOrderStatusUpdateEmailAsync(order, newStatus, emailAddresses);
 
         return ResponseEntity.ok(convertToOrderDTO(updatedOrder));
     }

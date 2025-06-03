@@ -681,21 +681,26 @@ public class ClientController {
             return "cart";
         }
 
-        Order order = new Order();
-        order.setClient(client);
-        order.setDeliveryAddress(addressesService.findById(addressId).orElse(null));
-        order.setDeliveryDate(parsedDeliveryDate);
-        order.setOrderDate(new Date());
-        order.setStatus("В обработке");
-        order.setComment(comment);
+        // Создаем список заказов
+        List<Order> orders = new ArrayList<>();
 
-        List<OrderTruck> orderTrucks = new ArrayList<>();
-        List<TCHOrder> tchOrders = new ArrayList<>();
-
+        // Создаем отдельный заказ для каждой машины
         for (CartTruck cartTruck : cartTrucks) {
+            Order order = new Order();
+            order.setClient(client);
+            order.setDeliveryAddress(addressesService.findById(addressId).orElse(null));
+            order.setDeliveryDate(parsedDeliveryDate);
+            order.setOrderDate(new Date());
+            order.setStatus("В обработке");
+            order.setComment(comment);
+
+            // Создаем одну машину для этого заказа
             OrderTruck orderTruck = new OrderTruck(order);
+            List<OrderTruck> orderTrucks = new ArrayList<>();
             orderTrucks.add(orderTruck);
 
+            // Создаем TCHOrders для товаров в этой машине
+            List<TCHOrder> tchOrders = new ArrayList<>();
             for (CartTruckItem cartTruckItem : cartTruck.getItems()) {
                 TCHOrder tchOrder = new TCHOrder(
                         order,
@@ -707,17 +712,37 @@ public class ClientController {
                 tchOrder.setTruck(orderTruck);
                 tchOrders.add(tchOrder);
             }
+
+            order.setTchOrders(tchOrders);
+            order.setTrucks(orderTrucks);
+            
+            // Сохраняем заказ
+            orderService.save(order);
+            orderService.addStatusHistory(order, "В обработке", user);
+            
+            orders.add(order);
         }
 
-        order.setTchOrders(tchOrders);
-        order.setTrucks(orderTrucks);
-        orderService.save(order);
+        // Отправляем одно уведомление для всех заказов
+        if (!orders.isEmpty()) {
+            // Используем первый заказ для уведомления, но включаем информацию о количестве машин
+            Order firstOrder = orders.get(0);
+            String relatedOrdersInfo = String.format("Сформировано %d заказов (по одной машине в каждом). Номера заказов: %s", 
+                orders.size(),
+                orders.stream()
+                    .map(o -> String.format("№%d", o.getId()))
+                    .collect(Collectors.joining(", "))
+            );
+            
+            // Устанавливаем информацию о связанных заказах
+            firstOrder.setRelatedOrdersInfo(relatedOrdersInfo);
+            orderService.save(firstOrder);
+            
+            // Отправляем уведомление
+            emailService.sendNewOrderNotification(firstOrder, client.getName());
+        }
 
-        orderService.addStatusHistory(order, "В обработке", user);
-
-        // Асинхронная отправка уведомлений администраторам
-        emailService.sendNewOrderNotification(order, client.getName());
-
+        // Очищаем корзину
         cart.getCartItems().clear();
         cart.getTrucks().clear();
         cartService.save(cart);
