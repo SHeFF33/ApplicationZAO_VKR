@@ -467,6 +467,21 @@
       color: var(--error);
     }
 
+    .error-message {
+      color: var(--error);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      display: none;
+    }
+
+    .form-control.error {
+      border-color: var(--error);
+    }
+
+    .form-control.error:focus {
+      box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
+    }
+
     /* Responsive styles */
     @media (max-width: 768px) {
       .form-grid {
@@ -476,6 +491,39 @@
       .app-container {
         padding: 0 1rem;
       }
+    }
+
+    .password-generator {
+      margin-bottom: 1rem;
+    }
+    
+    .generator-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .generator-input-group input {
+      flex: 1;
+    }
+
+    .generator-input-group button {
+      padding: 0.75rem;
+    }
+
+    #generatePassword {
+      width: 100%;
+    }
+
+    /* Анимация для кнопки копирования */
+    @keyframes copyAnimation {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    .copy-animation {
+      animation: copyAnimation 0.3s ease-in-out;
     }
   </style>
 </head>
@@ -545,13 +593,15 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">ИНН <span class="required">*</span></label>
-          <input type="text" name="inn" class="form-control" required>
+          <label class="form-label" for="inn">ИНН</label>
+          <input type="text" class="form-control" id="inn" name="inn" th:value="${client?.inn}" required>
+          <div id="inn-error" class="error-message">ИНН должен содержать 10 или 12 цифр</div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">КПП <span class="required">*</span></label>
-          <input type="text" name="kpp" class="form-control" required>
+          <label class="form-label" for="kpp">КПП</label>
+          <input type="text" class="form-control" id="kpp" name="kpp" th:value="${client?.kpp}" required>
+          <div id="kpp-error" class="error-message">КПП должен содержать ровно 9 цифр</div>
         </div>
 
         <div class="form-group">
@@ -663,7 +713,19 @@
 
         <div class="form-group">
           <label class="form-label">Пароль <span class="required">*</span></label>
+          <div class="password-generator">
+            <div class="generator-input-group">
+              <input type="text" id="generatedPassword" class="form-control" readonly placeholder="Сгенерированный пароль">
+              <button type="button" class="btn btn--secondary" id="copyPassword" title="Копировать пароль">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <button type="button" class="btn btn--secondary" id="generatePassword">
+              <i class="fas fa-key"></i> Сгенерировать пароль
+            </button>
+          </div>
           <input type="password" id="password" class="form-control" required>
+          <div id="password-error" class="error-message">Пароль должен содержать от 8 до 16 символов</div>
         </div>
 
         <div class="form-group" id="emailGroup" style="display: none;">
@@ -812,7 +874,145 @@
       // Инициализируем отображение выбранных регионов
       updateSelectedRegionsDisplay();
     }
+
+    // Add validation for INN field
+    const innInput = document.querySelector('input[name="inn"]');
+    const innError = document.getElementById('inn-error');
+    let isInnValid = false; // Add flag for INN validation
+    
+    if (innInput) {
+        innInput.addEventListener('input', function() {
+            // Remove any non-digit characters
+            this.value = this.value.replace(/\D/g, '');
+            
+            // Limit to 10 or 12 digits
+            if (this.value.length > 12) {
+                this.value = this.value.slice(0, 12);
+            }
+
+            // Show/hide error message based on length
+            if (this.value.length !== 0 && this.value.length !== 10 && this.value.length !== 12) {
+                this.classList.add('error');
+                innError.style.display = 'block';
+                innError.textContent = 'ИНН должен содержать 10 или 12 цифр';
+                isInnValid = false;
+            } else {
+                this.classList.remove('error');
+                innError.style.display = 'none';
+                if (this.value.length === 0) {
+                    isInnValid = false;
+                }
+            }
+        });
+
+        innInput.addEventListener('blur', async function() {
+            if (this.value.length === 0) {
+                isInnValid = false;
+                return;
+            }
+
+            if (this.value.length !== 10 && this.value.length !== 12) {
+                this.classList.add('error');
+                innError.style.display = 'block';
+                innError.textContent = 'ИНН должен содержать 10 или 12 цифр';
+                isInnValid = false;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/checkInn?inn=${this.value}`);
+                const data = await response.json();
+                if (!data.valid) {
+                    this.classList.add('error');
+                    innError.style.display = 'block';
+                    innError.textContent = data.message || 'Этот ИНН уже используется';
+                    isInnValid = false;
+                } else {
+                    this.classList.remove('error');
+                    innError.style.display = 'none';
+                    isInnValid = true;
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке ИНН:', error);
+                isInnValid = false;
+            }
+        });
+    }
+
+    // Update form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validate INN
+            if (!isInnValid) {
+                innInput.classList.add('error');
+                innError.style.display = 'block';
+                innError.textContent = innError.textContent || 'Проверьте правильность ИНН';
+                innInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            // If all validations pass, submit the form
+            this.submit();
+        });
+    }
+
+    // Add input event listeners for phone number fields
+    document.addEventListener('input', function(e) {
+      if (e.target.matches('input[name="phonenumbers[]"]')) {
+        // Remove any non-digit characters
+        e.target.value = e.target.value.replace(/\D/g, '');
+        
+        // Limit to 11 digits
+        if (e.target.value.length > 11) {
+          e.target.value = e.target.value.slice(0, 11);
+        }
+      }
+    });
   });
+
+  function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: var(--error);
+      color: white;
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    `;
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+
+    setTimeout(() => {
+      errorDiv.style.animation = 'slideOut 0.3s ease-in';
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 300);
+    }, 5000);
+  }
+
+  // Add these styles to your existing styles
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
 
   let userCounter = 0;
 
@@ -899,12 +1099,27 @@
             .catch(() => callback(false, 'Ошибка проверки email'));
   }
 
+  function validatePassword(password) {
+    return password.length >= 8 && password.length <= 16;
+  }
+
   function addUser() {
     const username = document.getElementById('username').value;
     const nameuser = document.getElementById('nameuser').value;
     const password = document.getElementById('password').value;
     const isAdmin = document.getElementById('isAdmin').checked;
     const email = document.getElementById('userEmail').value;
+    const passwordError = document.getElementById('password-error');
+
+    // Validate password
+    if (!validatePassword(password)) {
+      document.getElementById('password').classList.add('error');
+      passwordError.style.display = 'block';
+      return;
+    } else {
+      document.getElementById('password').classList.remove('error');
+      passwordError.style.display = 'none';
+    }
 
     // Валидация имени пользователя
     validateUsername(username, (valid, message) => {
@@ -1026,6 +1241,134 @@
             !menuBtn.contains(event.target)) {
       closeNav();
     }
+  });
+
+  function validateINN(inn) {
+    // Remove any non-digit characters
+    inn = inn.replace(/\D/g, '');
+    
+    // Check if length is either 10 or 12
+    if (inn.length !== 10 && inn.length !== 12) {
+        return false;
+    }
+    
+    return true;
+  }
+
+  function validateKPP(kpp) {
+    // Remove any non-digit characters
+    kpp = kpp.replace(/\D/g, '');
+    
+    // Check if length is exactly 9
+    return kpp.length === 9;
+  }
+
+  function setupValidation() {
+    const innInput = document.getElementById('inn');
+    const kppInput = document.getElementById('kpp');
+    const saveButton = document.querySelector('button[type="submit"]');
+    const innError = document.getElementById('inn-error');
+    const kppError = document.getElementById('kpp-error');
+
+    function validateForm() {
+      let isValid = true;
+
+      // Validate INN
+      if (!validateINN(innInput.value)) {
+        innInput.classList.add('error');
+        innError.style.display = 'block';
+        isValid = false;
+      } else {
+        innInput.classList.remove('error');
+        innError.style.display = 'none';
+      }
+
+      // Validate KPP
+      if (!validateKPP(kppInput.value)) {
+        kppInput.classList.add('error');
+        kppError.style.display = 'block';
+        isValid = false;
+      } else {
+        kppInput.classList.remove('error');
+        kppError.style.display = 'none';
+      }
+
+      // Enable/disable save button
+      saveButton.disabled = !isValid;
+    }
+
+    // Allow only numbers in INN and KPP fields
+    function allowOnlyNumbers(event) {
+      if (!/[0-9]/.test(event.key) && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+        event.preventDefault();
+      }
+    }
+
+    innInput.addEventListener('keydown', allowOnlyNumbers);
+    kppInput.addEventListener('keydown', allowOnlyNumbers);
+
+    innInput.addEventListener('input', validateForm);
+    kppInput.addEventListener('input', validateForm);
+
+    // Initial validation
+    validateForm();
+  }
+
+  // Run setup when DOM is loaded
+  document.addEventListener('DOMContentLoaded', setupValidation);
+
+  function generateRandomPassword() {
+    const length = Math.floor(Math.random() * (16 - 8 + 1)) + 8; // Random length between 8 and 16
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '!_-.';
+    const allChars = uppercase + lowercase + numbers + special;
+    
+    // Ensure at least one character from each category
+    let password = '';
+    password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+    password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+    password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    password += special.charAt(Math.floor(Math.random() * special.length));
+    
+    // Fill the rest with random characters
+    for (let i = password.length; i < length; i++) {
+      password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+    }
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const generateBtn = document.getElementById('generatePassword');
+    const copyBtn = document.getElementById('copyPassword');
+    const generatedPasswordInput = document.getElementById('generatedPassword');
+    const passwordInput = document.getElementById('password');
+
+    generateBtn.addEventListener('click', function() {
+      const newPassword = generateRandomPassword();
+      generatedPasswordInput.value = newPassword;
+    });
+
+    copyBtn.addEventListener('click', function() {
+      if (generatedPasswordInput.value) {
+        // Копируем пароль в буфер обмена
+        navigator.clipboard.writeText(generatedPasswordInput.value).then(() => {
+          // Вставляем пароль в поле ввода пароля
+          passwordInput.value = generatedPasswordInput.value;
+          
+          // Добавляем анимацию для кнопки копирования
+          copyBtn.classList.add('copy-animation');
+          setTimeout(() => copyBtn.classList.remove('copy-animation'), 300);
+          
+          // Запускаем валидацию пароля
+          const event = new Event('input');
+          passwordInput.dispatchEvent(event);
+        });
+      }
+    });
   });
 </script>
 </body>

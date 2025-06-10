@@ -205,6 +205,19 @@
         .new-conversation {
             background-color: #fff8e1;
         }
+        .conversation-form input,
+        .conversation-form textarea {
+            width: calc(100% - 22px); /* Accounting for padding and border */
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            box-sizing: border-box;
+        }
+        .conversation-form textarea {
+            height: 100px;
+            resize: vertical;
+        }
     </style>
 </head>
 <body>

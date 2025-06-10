@@ -10,6 +10,7 @@ public class Product {
     public static final int MAX_ITEMS_SHORT = 16;
     public static final int MAX_ITEMS_LONG = 13;
     public static final int THRESHOLD_LONG = 7;
+    public static final int MAX_IMAGES = 3;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -139,6 +140,14 @@ public class Product {
 
     public boolean isReadyForDisplay() {
         return !images.isEmpty() && !sums.isEmpty();
+    }
+
+    public boolean canAddMoreImages() {
+        return images.size() < MAX_IMAGES;
+    }
+
+    public int getRemainingImageSlots() {
+        return MAX_IMAGES - images.size();
     }
 
     public Double getLength() {

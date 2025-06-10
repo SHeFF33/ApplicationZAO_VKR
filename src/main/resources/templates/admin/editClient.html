@@ -611,6 +611,21 @@
         input[type="checkbox"]:hover {
             border-color: var(--primary-light);
         }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .form-control.error {
+            border-color: var(--error);
+        }
+
+        .form-control.error:focus {
+            box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -679,13 +694,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">ИНН <span class="required">*</span></label>
-                    <input type="text" name="inn" class="form-control" th:value="${client.inn}" required>
+                    <label class="form-label" for="inn">ИНН</label>
+                    <input type="text" class="form-control" id="inn" name="inn" th:value="${client.inn}" required>
+                    <div id="inn-error" class="error-message">ИНН должен содержать 10 или 12 цифр</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">КПП <span class="required">*</span></label>
-                    <input type="text" name="kpp" class="form-control" th:value="${client.kpp}" required>
+                    <label class="form-label" for="kpp">КПП</label>
+                    <input type="text" class="form-control" id="kpp" name="kpp" th:value="${client.kpp}" required>
+                    <div id="kpp-error" class="error-message">КПП должен содержать ровно 9 цифр</div>
                 </div>
 
                 <div class="form-group">
@@ -836,8 +853,19 @@
                     <tr th:each="contact : ${client.contacts}">
                         <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required></td>
                         <td><input type="text" name="contactNames" th:value="${contact.name}" required></td>
-                        <td><input type="text" name="phonenumbers" th:value="${contact.phonenumber}" required></td>
-                        <td><input type="email" name="emails" th:value="${contact.email}" required></td>
+                        <td>
+                            <input type="text" name="phonenumbers" th:value="${contact.phonenumber}"
+                                   class="phone-input" maxlength="11" required
+                                   pattern="[0-9]{11}"
+                                   title="Номер телефона должен содержать 11 цифр">
+                            <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
+                        </td>
+                        <td>
+                            <input type="email" name="emails" th:value="${contact.email}"
+                                   class="email-input" required
+                                   th:data-contact-id="${contact.id}">
+                            <div class="error-message email-error">Email уже используется</div>
+                        </td>
                         <td style="text-align: center;">
                             <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
                                 <i class="fas fa-trash-alt"></i>
@@ -888,10 +916,11 @@
                         <td>
                             <input type="email" name="userEmails" th:value="${user.email}"
                                    th:required="${user.admin}" th:disabled="${!user.admin}"
-                                   th:attr="data-index=${stat.index}"
+                                   th:attr="data-index=${stat.index}, data-user-id=${user.id}"
+                                   class="user-email-input"
                                    placeholder="Недоступно для заполнения"
-                                   onblur="validateEmail(this, ${user.id})">
-                            <div class="invalid-feedback" th:id="'email-feedback-' + ${stat.index}"></div>
+                                   onblur="validateUserEmail(this)">
+                            <div class="error-message email-error">Email уже используется</div>
                         </td>
                         <td style="text-align: center;">
                             <input type="hidden" name="_isAdmins" value="on">
@@ -1025,20 +1054,24 @@
     function toggleEmailRequired(checkbox, index) {
         const row = checkbox.closest('tr');
         const emailInput = row.querySelector('input[name="userEmails"]');
-        const emailFeedback = document.getElementById('email-feedback-' + index);
+        const errorDiv = emailInput.nextElementSibling;
 
         if (checkbox.checked) {
             emailInput.required = true;
             emailInput.disabled = false;
             emailInput.placeholder = "Введите email администратора";
-            emailInput.value = ""; // Очищаем поле при включении админки
+            emailInput.value = "";
+            // Добавляем класс для валидации
+            emailInput.classList.add('user-email-input');
         } else {
             emailInput.required = false;
             emailInput.disabled = true;
             emailInput.placeholder = "Недоступно для заполнения";
-            emailInput.value = ""; // Очищаем поле при выключении админки
-            emailInput.classList.remove('is-invalid');
-            if (emailFeedback) emailFeedback.textContent = '';
+            emailInput.value = "";
+            emailInput.classList.remove('error');
+            errorDiv.style.display = 'none';
+            // Удаляем класс валидации
+            emailInput.classList.remove('user-email-input');
         }
     }
 
@@ -1080,39 +1113,50 @@
             });
     }
 
-    function validateEmail(input, userId) {
+    function validateUserEmail(input) {
+        const userId = input.getAttribute('data-user-id') || '';
         const email = input.value;
-        const feedbackId = 'email-feedback-' + Array.from(input.closest('tr').parentNode.children).indexOf(input.closest('tr'));
-        const feedback = document.getElementById(feedbackId);
-        const isAdmin = input.closest('tr').querySelector('input[name="isAdmins"]').checked;
-
-        if (!isAdmin) {
-            input.classList.remove('is-invalid');
-            feedback.textContent = '';
-            return;
-        }
+        const errorDiv = input.nextElementSibling;
 
         if (!email) {
-            input.classList.add('is-invalid');
-            feedback.textContent = 'Email обязателен для администратора';
-            return;
+            if (input.required) {
+                input.classList.add('error');
+                errorDiv.textContent = 'Email обязателен для администратора';
+                errorDiv.style.display = 'block';
+                return Promise.resolve(false);
+            }
+            return Promise.resolve(true);
         }
 
-        fetch('/api/checkEmail?email=' + encodeURIComponent(email) + (userId ? '&userId=' + userId : ''))
+        return fetch('/api/checkUserEmail?email=' + encodeURIComponent(email) +
+                    (userId ? '&userId=' + userId : ''))
             .then(response => response.json())
             .then(data => {
-                if (data.valid) {
-                    input.classList.remove('is-invalid');
-                    feedback.textContent = '';
+                console.log('User email check response:', data); // Добавляем логирование
+                if (data.available) {
+                    input.classList.remove('error');
+                    errorDiv.style.display = 'none';
+                    return true;
                 } else {
-                    input.classList.add('is-invalid');
-                    feedback.textContent = data.message || 'Пользователь с таким email уже существует';
+                    input.classList.add('error');
+                    errorDiv.textContent = data.message || 'Email уже используется';
+                    errorDiv.style.display = 'block';
+                    return false;
                 }
             })
-            .catch(() => {
-                input.classList.add('is-invalid');
-                feedback.textContent = 'Ошибка проверки email';
+            .catch(error => {
+                console.error('Error checking user email:', error); // Добавляем логирование ошибок
+                input.classList.add('error');
+                errorDiv.textContent = 'Ошибка проверки email. Пожалуйста, попробуйте позже.';
+                errorDiv.style.display = 'block';
+                return false;
             });
+    }
+
+    function validatePassword(password) {
+        // Empty password is allowed in edit form (means no change)
+        if (password === '') return true;
+        return password.length >= 8 && password.length <= 16;
     }
 
     function addTableRow(tableId) {
@@ -1193,10 +1237,19 @@
             newRow.innerHTML = `
                 <td><input type="text" name="typeContacts" required></td>
                 <td><input type="text" name="contactNames" required></td>
-                <td><input type="text" name="phonenumbers" required></td>
-                <td><input type="email" name="emails" required></td>
+                <td>
+                    <input type="text" name="phonenumbers" class="phone-input"
+                           maxlength="11" required pattern="[0-9]{11}"
+                           title="Номер телефона должен содержать 11 цифр">
+                    <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
+                </td>
+                <td>
+                    <input type="email" name="emails" class="email-input" required>
+                    <div class="error-message email-error">Email уже используется</div>
+                </td>
                 <td style="text-align: center;">
-                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </td>
@@ -1210,7 +1263,10 @@
                     <div class="invalid-feedback" id="username-feedback-${newIndex}"></div>
                 </td>
                 <td><input type="text" name="nameuser" required></td>
-                <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+                <td>
+                    <input type="password" name="passwords" placeholder="Введите пароль" required>
+                    <div class="error-message password-error">Пароль должен содержать от 8 до 16 символов</div>
+                </td>
                 <td>
                     <input type="email" name="userEmails" disabled>
                     <div class="invalid-feedback" id="email-feedback-${newIndex}"></div>
@@ -1225,6 +1281,20 @@
                     </button>
                 </td>
             `;
+
+            // Add password validation for the new row
+            const passwordInput = newRow.querySelector('input[name="passwords"]');
+            const passwordError = newRow.querySelector('.password-error');
+
+            passwordInput.addEventListener('input', function() {
+                if (!validatePassword(this.value)) {
+                    this.classList.add('error');
+                    passwordError.style.display = 'block';
+                } else {
+                    this.classList.remove('error');
+                    passwordError.style.display = 'none';
+                }
+            });
         }
 
         tbody.appendChild(newRow);
@@ -1286,6 +1356,370 @@
             toggleEmailRequired(checkbox, index);
         });
     });
+
+    // Add validation for existing password fields
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup validation for existing password fields
+        document.querySelectorAll('input[name="passwords"]').forEach(input => {
+            const errorDiv = input.nextElementSibling;
+
+            input.addEventListener('input', function() {
+                if (!validatePassword(this.value)) {
+                    this.classList.add('error');
+                    errorDiv.style.display = 'block';
+                } else {
+                    this.classList.remove('error');
+                    errorDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Add form submit validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const phoneInputs = document.querySelectorAll('input[name="phonenumbers"]'),
+                      phones = Array.from(phoneInputs).map(input => input.value.trim()),
+                      uniquePhones = new Set(phones.filter(phone => phone !== '')),
+                      hasErrors = false;
+
+                // Проверка на дубликаты
+                const duplicatePhones = phones.filter((phone, index) => 
+                    phone !== '' && phones.indexOf(phone) !== index
+                );
+
+                if (duplicatePhones.length > 0) {
+                    phoneInputs.forEach(input => {
+                        if (duplicatePhones.includes(input.value.trim())) {
+                            markPhoneError(input, 'Этот номер телефона уже используется в форме');
+                        }
+                    });
+                    return false;
+                }
+
+                // Проверка формата и уникальности
+                for (const input of phoneInputs) {
+                    const phone = input.value.trim();
+                    if (phone === '') continue;
+
+                    if (!/^\d{11}$/.test(phone)) {
+                        markPhoneError(input, 'Номер телефона должен содержать ровно 11 цифр');
+                        return false;
+                    }
+
+                    try {
+                        const tr = input.closest('tr'),
+                              contactId = tr ? tr.getAttribute('data-contact-id') : '',
+                              response = await fetch(`/api/checkPhone?phone=${phone}${contactId ? `&contactId=${contactId}` : ''}`),
+                              data = await response.json();
+
+                        if (!data.valid) {
+                            markPhoneError(input, data.message || 'Этот номер телефона уже используется другим контактом');
+                            return false;
+                        } else {
+                            clearPhoneError(input);
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при проверке номера телефона:', error);
+                        return false;
+                    }
+                }
+
+                // Если все проверки пройдены, отправляем форму
+                this.submit();
+            });
+        }
+
+        function markPhoneError(input, message) {
+            input.classList.add('error');
+            const errorDiv = input.nextElementSibling;
+            if (errorDiv && errorDiv.classList.contains('error-message')) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = message;
+            }
+        }
+
+        function clearPhoneError(input) {
+            input.classList.remove('error');
+            const errorDiv = input.nextElementSibling;
+            if (errorDiv && errorDiv.classList.contains('error-message')) {
+                errorDiv.style.display = 'none';
+            }
+        }
+    });
+
+    function validateINN(inn) {
+        // Remove any non-digit characters
+        inn = inn.replace(/\D/g, '');
+
+        // Check if length is either 10 or 12
+        if (inn.length !== 10 && inn.length !== 12) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateKPP(kpp) {
+        // Remove any non-digit characters
+        kpp = kpp.replace(/\D/g, '');
+
+        // Check if length is exactly 9
+        return kpp.length === 9;
+    }
+
+    function setupValidation() {
+        const innInput = document.getElementById('inn');
+        const kppInput = document.getElementById('kpp');
+        const saveButton = document.querySelector('button[type="submit"]');
+        const innError = document.getElementById('inn-error');
+        const kppError = document.getElementById('kpp-error');
+
+        function validateForm() {
+            let isValid = true;
+
+            // Validate INN
+            if (!validateINN(innInput.value)) {
+                innInput.classList.add('error');
+                innError.style.display = 'block';
+                isValid = false;
+            } else {
+                innInput.classList.remove('error');
+                innError.style.display = 'none';
+            }
+
+            // Validate KPP
+            if (!validateKPP(kppInput.value)) {
+                kppInput.classList.add('error');
+                kppError.style.display = 'block';
+                isValid = false;
+            } else {
+                kppInput.classList.remove('error');
+                kppError.style.display = 'none';
+            }
+
+            // Enable/disable save button
+            saveButton.disabled = !isValid;
+        }
+
+        // Allow only numbers in INN and KPP fields
+        function allowOnlyNumbers(event) {
+            if (!/[0-9]/.test(event.key) && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+                event.preventDefault();
+            }
+        }
+
+        innInput.addEventListener('keydown', allowOnlyNumbers);
+        kppInput.addEventListener('keydown', allowOnlyNumbers);
+
+        innInput.addEventListener('input', validateForm);
+        kppInput.addEventListener('input', validateForm);
+
+        // Initial validation
+        validateForm();
+    }
+
+    // Run setup when DOM is loaded
+    document.addEventListener('DOMContentLoaded', setupValidation);
+
+    function validatePhoneNumber(phone) {
+        return /^[0-9]{11}$/.test(phone);
+    }
+
+    function validateContactEmail(email, contactId = '') {
+        return fetch('/api/checkContactEmail?email=' + encodeURIComponent(email) +
+                    (contactId ? '&contactId=' + contactId : ''))
+            .then(response => response.json())
+            .then(data => {
+                console.log('Contact email check response:', data); // Добавляем логирование
+                return data.available;
+            })
+            .catch(error => {
+                console.error('Error checking contact email:', error); // Добавляем логирование ошибок
+                return false;
+            });
+    }
+
+    function setupContactValidation() {
+        // Валидация телефонных номеров
+        document.querySelectorAll('.phone-input').forEach(input => {
+            const errorDiv = input.nextElementSibling;
+
+            // Разрешаем только цифры при вводе
+            input.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key) || input.value.length >= 11) {
+                    e.preventDefault();
+                }
+            });
+
+            input.addEventListener('input', function() {
+                // Удаляем все нецифровые символы
+                this.value = this.value.replace(/\D/g, '');
+
+                if (!validatePhoneNumber(this.value)) {
+                    this.classList.add('error');
+                    errorDiv.style.display = 'block';
+                } else {
+                    this.classList.remove('error');
+                    errorDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Валидация email
+        document.querySelectorAll('.email-input').forEach(input => {
+            const errorDiv = input.nextElementSibling;
+            const contactId = input.getAttribute('data-contact-id') || '';
+
+            input.addEventListener('blur', async function() {
+                if (this.value) {
+                    const isAvailable = await validateContactEmail(this.value, contactId);
+                    if (!isAvailable) {
+                        this.classList.add('error');
+                        errorDiv.style.display = 'block';
+                    } else {
+                        this.classList.remove('error');
+                        errorDiv.style.display = 'none';
+                    }
+                }
+            });
+        });
+    }
+
+    // Обновляем обработчик отправки формы
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let hasErrors = false;
+
+        // Validate INN
+        const innInput = document.getElementById('inn');
+        const innError = document.getElementById('inn-error');
+        
+        // Проверяем текущее значение ИНН
+        try {
+            const clientId = window.location.pathname.split('/').pop();
+            const response = await fetch(`/api/checkInn?inn=${innInput.value}&clientId=${clientId}`);
+            const data = await response.json();
+            if (!data.valid) {
+                innInput.classList.add('error');
+                innError.style.display = 'block';
+                innError.textContent = data.message || 'Этот ИНН уже используется';
+                innInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                hasErrors = true;
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке ИНН:', error);
+            hasErrors = true;
+        }
+
+        // Validate phone numbers - только проверка на 11 цифр
+        const phoneInputs = document.querySelectorAll('input[name="phonenumbers"]');
+        
+        for (const input of phoneInputs) {
+            const phone = input.value.trim();
+            if (phone === '') continue; // Пропускаем пустые поля
+
+            if (!/^\d{11}$/.test(phone)) {
+                input.classList.add('error');
+                const errorDiv = input.nextElementSibling;
+                if (errorDiv && errorDiv.classList.contains('error-message')) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.textContent = 'Номер телефона должен содержать ровно 11 цифр';
+                }
+                hasErrors = true;
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // Прерываем отправку формы
+            } else {
+                input.classList.remove('error');
+                const errorDiv = input.nextElementSibling;
+                if (errorDiv && errorDiv.classList.contains('error-message')) {
+                    errorDiv.style.display = 'none';
+                }
+            }
+        }
+
+        // Если есть ошибки, не отправляем форму
+        if (hasErrors) {
+            return;
+        }
+
+        // Если все проверки пройдены успешно, отправляем форму
+        this.submit();
+    });
+
+    // Инициализация валидации при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        setupContactValidation();
+    });
+
+    // Add input event listeners for phone number fields
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input[name="phonenumbers"]')) {
+            // Remove any non-digit characters
+            e.target.value = e.target.value.replace(/\D/g, '');
+            
+            // Limit to 11 digits
+            if (e.target.value.length > 11) {
+                e.target.value = e.target.value.slice(0, 11);
+            }
+
+            // Show/hide error message based on length
+            const errorDiv = e.target.nextElementSibling;
+            if (errorDiv && errorDiv.classList.contains('error-message')) {
+                if (e.target.value.length !== 0 && e.target.value.length !== 11) {
+                    e.target.classList.add('error');
+                    errorDiv.style.display = 'block';
+                    errorDiv.textContent = 'Номер телефона должен содержать ровно 11 цифр';
+                } else {
+                    e.target.classList.remove('error');
+                    errorDiv.style.display = 'none';
+                }
+            }
+        }
+    });
+
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--error);
+            color: white;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        `;
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+
+        setTimeout(() => {
+            errorDiv.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    // Add these styles to your existing styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
 </script>
 
 <!-- Модальное окно для управления регионами -->

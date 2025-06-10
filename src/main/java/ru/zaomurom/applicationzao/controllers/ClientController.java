@@ -211,6 +211,7 @@ public class ClientController {
                 Long id = Long.parseLong(contactData.get("id"));
                 Contacts contact = contactsService.findById(id).orElseThrow(() -> new RuntimeException("Контакт не найден"));
 
+                // Validate and update fields
                 if (contactData.containsKey("contactType")) {
                     contact.setContactType(contactData.get("contactType"));
                 }
@@ -218,10 +219,32 @@ public class ClientController {
                     contact.setName(contactData.get("name"));
                 }
                 if (contactData.containsKey("phonenumber")) {
-                    contact.setPhonenumber(contactData.get("phonenumber"));
+                    String newPhone = contactData.get("phonenumber");
+                    // Validate phone number format
+                    if (!newPhone.matches("\\d{11}")) {
+                        return ResponseEntity.badRequest().body("Неверный формат номера телефона");
+                    }
+                    // Check if phone exists (excluding current contact)
+                    boolean phoneExists = contactsService.findAll().stream()
+                            .filter(c -> !c.getId().equals(id))
+                            .anyMatch(c -> c.getPhonenumber().equals(newPhone));
+                    if (phoneExists) {
+                        return ResponseEntity.badRequest().body("Номер телефона уже используется");
+                    }
+                    contact.setPhonenumber(newPhone);
                 }
                 if (contactData.containsKey("email")) {
-                    contact.setEmail(contactData.get("email"));
+                    String newEmail = contactData.get("email");
+                    // Check if email exists in contacts (excluding current contact)
+                    boolean emailExistsInContacts = contactsService.findAll().stream()
+                            .filter(c -> !c.getId().equals(id))
+                            .anyMatch(c -> c.getEmail().equals(newEmail));
+                    // Check if email exists in users
+                    boolean emailExistsInUsers = userService.findByEmail(newEmail) != null;
+                    if (emailExistsInContacts || emailExistsInUsers) {
+                        return ResponseEntity.badRequest().body("Email уже используется");
+                    }
+                    contact.setEmail(newEmail);
                 }
 
                 contactsService.save(contact);
@@ -242,6 +265,26 @@ public class ClientController {
             @RequestParam String email,
             Principal principal
     ) {
+        // Validate phone number format
+        if (!phonenumber.matches("\\d{11}")) {
+            return "redirect:/profile?error=invalid_phone";
+        }
+
+        // Check if phone number exists
+        boolean phoneExists = contactsService.findAll().stream()
+                .anyMatch(contact -> contact.getPhonenumber().equals(phonenumber));
+        if (phoneExists) {
+            return "redirect:/profile?error=phone_exists";
+        }
+
+        // Check if email exists in contacts or users
+        boolean emailExistsInContacts = contactsService.findAll().stream()
+                .anyMatch(contact -> contact.getEmail().equals(email));
+        boolean emailExistsInUsers = userService.findByEmail(email) != null;
+        if (emailExistsInContacts || emailExistsInUsers) {
+            return "redirect:/profile?error=email_exists";
+        }
+
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
@@ -955,6 +998,41 @@ public class ClientController {
         response.put("total", total);
         response.put("prices", prices);
         response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/profile/check-phone")
+    @ResponseBody
+    public ResponseEntity<?> checkPhoneNumber(
+            @RequestParam String phone,
+            @RequestParam(required = false) Long excludeId) {
+        
+        // Check if phone number exists in contacts
+        boolean exists = contactsService.findAll().stream()
+                .filter(contact -> excludeId == null || !contact.getId().equals(excludeId))
+                .anyMatch(contact -> contact.getPhonenumber().equals(phone));
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", exists);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/profile/check-email")
+    @ResponseBody
+    public ResponseEntity<?> checkEmail(
+            @RequestParam String email,
+            @RequestParam(required = false) Long excludeId) {
+        
+        // Check if email exists in contacts
+        boolean existsInContacts = contactsService.findAll().stream()
+                .filter(contact -> excludeId == null || !contact.getId().equals(excludeId))
+                .anyMatch(contact -> contact.getEmail().equals(email));
+
+        // Check if email exists in users
+        boolean existsInUsers = userService.findByEmail(email) != null;
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", existsInContacts || existsInUsers);
         return ResponseEntity.ok(response);
     }
 }

@@ -564,6 +564,53 @@
             return ResponseEntity.ok(response);
         }
 
+        @GetMapping("/api/checkInn")
+        @ResponseBody
+        public ResponseEntity<?> checkInn(
+                @RequestParam String inn,
+                @RequestParam(required = false) Long clientId) {
+
+            if (inn == null || inn.isEmpty()) {
+                return ResponseEntity.ok(Collections.singletonMap("valid", false));
+            }
+
+            boolean exists = clientService.findAll().stream()
+                    .filter(client -> clientId == null || !client.getId().equals(clientId))
+                    .anyMatch(client -> client.getInn().equals(inn));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("valid", !exists);
+            if (exists) {
+                response.put("message", "Клиент с таким ИНН уже существует");
+            }
+
+            return ResponseEntity.ok(response);
+        }
+
+        @GetMapping("/api/checkPhone")
+        @ResponseBody
+        public ResponseEntity<?> checkPhone(
+                @RequestParam String phone,
+                @RequestParam(required = false) Long contactId) {
+
+            if (phone == null || phone.isEmpty()) {
+                return ResponseEntity.ok(Collections.singletonMap("valid", false));
+            }
+
+            // Check if phone number exists in contacts
+            boolean exists = contactsService.findAll().stream()
+                    .filter(contact -> contactId == null || !contact.getId().equals(contactId))
+                    .anyMatch(contact -> contact.getPhonenumber().equals(phone));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("valid", !exists);
+            if (exists) {
+                response.put("message", "Контакт с таким номером телефона уже существует");
+            }
+
+            return ResponseEntity.ok(response);
+        }
+
         @PostMapping("/admin/deleteUser/{clientId}/{userId}")
         public String deleteUser(@PathVariable Long clientId, @PathVariable Long userId) {
             Optional<Client> optionalClient = clientService.findById(clientId);
@@ -621,21 +668,37 @@
         @PostMapping("/admin/addProductImages")
         public String addProductImages(
                 @RequestParam Long productId,
-                @RequestParam("images") List<MultipartFile> images) throws IOException {
+                @RequestParam("images") List<MultipartFile> images,
+                RedirectAttributes redirectAttributes) throws IOException {
             Product product = productService.findById(productId).orElse(null);
             if (product != null) {
+                if (!product.canAddMoreImages()) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Достигнут лимит в " + Product.MAX_IMAGES + " фотографии для товара");
+                    return "redirect:/admin/dashboard";
+                }
+
+                int remainingSlots = product.getRemainingImageSlots();
+                List<MultipartFile> allowedImages = images.subList(0, Math.min(images.size(), remainingSlots));
+
                 List<ProductImage> imageList = new ArrayList<>();
-                if (images != null && !images.isEmpty()) {
-                    for (MultipartFile image : images) {
+                if (allowedImages != null && !allowedImages.isEmpty()) {
+                    for (MultipartFile image : allowedImages) {
                         ProductImage productImage = new ProductImage();
                         productImage.setBytes(image.getBytes());
                         productImage.setProduct(product);
                         imageList.add(productImage);
                     }
-                    productImageService.saveAll(imageList); // Сохраняем все изображения
+                    productImageService.saveAll(imageList);
+                    
+                    if (images.size() > remainingSlots) {
+                        redirectAttributes.addFlashAttribute("warningMessage", 
+                            "Добавлено только " + remainingSlots + " фото, так как достигнут лимит в " + Product.MAX_IMAGES + " фотографии");
+                    } else {
+                        redirectAttributes.addFlashAttribute("successMessage", "Фотографии успешно добавлены");
+                    }
                 }
                 productService.updateProductVisibility(productId);
-                return "redirect:/admin/dashboard"; // Перенаправляем на страницу dashboard
+                return "redirect:/admin/dashboard";
             }
             return "redirect:/admin/products";
         }
@@ -1117,21 +1180,37 @@
         @PostMapping("/admin/addProductImagesEditProducts")
         public String addProductImagesEditProducts(
                 @RequestParam Long productId,
-                @RequestParam("images") List<MultipartFile> images) throws IOException {
+                @RequestParam("images") List<MultipartFile> images,
+                RedirectAttributes redirectAttributes) throws IOException {
             Product product = productService.findById(productId).orElse(null);
             if (product != null) {
+                if (!product.canAddMoreImages()) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Достигнут лимит в " + Product.MAX_IMAGES + " фотографии для товара");
+                    return "redirect:/admin/editProduct/" + productId;
+                }
+
+                int remainingSlots = product.getRemainingImageSlots();
+                List<MultipartFile> allowedImages = images.subList(0, Math.min(images.size(), remainingSlots));
+
                 List<ProductImage> imageList = new ArrayList<>();
-                if (images != null && !images.isEmpty()) {
-                    for (MultipartFile image : images) {
+                if (allowedImages != null && !allowedImages.isEmpty()) {
+                    for (MultipartFile image : allowedImages) {
                         ProductImage productImage = new ProductImage();
                         productImage.setBytes(image.getBytes());
                         productImage.setProduct(product);
                         imageList.add(productImage);
                     }
-                    productImageService.saveAll(imageList); // Сохраняем все изображения
+                    productImageService.saveAll(imageList);
+                    
+                    if (images.size() > remainingSlots) {
+                        redirectAttributes.addFlashAttribute("warningMessage", 
+                            "Добавлено только " + remainingSlots + " фото, так как достигнут лимит в " + Product.MAX_IMAGES + " фотографии");
+                    } else {
+                        redirectAttributes.addFlashAttribute("successMessage", "Фотографии успешно добавлены");
+                    }
                 }
                 productService.updateProductVisibility(productId);
-                return "redirect:/admin/dashboard"; // Перенаправляем на страницу dashboard
+                return "redirect:/admin/editProduct/" + productId;
             }
             return "redirect:/admin/editProduct/" + productId;
         }

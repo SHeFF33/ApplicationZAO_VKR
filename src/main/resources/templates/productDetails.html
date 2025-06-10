@@ -651,7 +651,8 @@
       <div th:each="image, iter : ${product.images}"
            class="product-gallery__thumb"
            th:classappend="${iter.index == 0} ? 'product-gallery__thumb--active'"
-           th:attr="data-index=${iter.index}, onclick='showImage(${iter.index})'">
+           th:onclick="'showImage(' + ${iter.index} + ')'"
+           th:attr="data-index=${iter.index}">
         <img th:src="@{/product/image/{id}(id=${image.id})}" alt="Product Thumbnail">
       </div>
     </div>

@@ -188,12 +188,14 @@
       border-radius: var(--radius-md);
     }
     .reply-form textarea {
-      width: 100%;
+      width: calc(100% - 22px); /* Accounting for padding and border */
       padding: 10px;
       margin-bottom: 10px;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       height: 100px;
+      resize: vertical;
+      box-sizing: border-box;
     }
     .reply-form button {
       background-color: var(--primary);

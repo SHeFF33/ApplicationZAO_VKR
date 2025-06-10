@@ -435,6 +435,63 @@ public class ApiController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/checkContactEmail")
+    public ResponseEntity<?> checkContactEmail(
+            @RequestParam String email,
+            @RequestParam(required = false) Long contactId) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Find all contacts
+            List<Contacts> allContacts = contactsService.findAll();
+            
+            // Check if email exists in any contact except the current one
+            boolean emailExists = allContacts.stream()
+                    .anyMatch(contact -> 
+                            contact.getEmail() != null && 
+                            contact.getEmail().equalsIgnoreCase(email) && 
+                            (contactId == null || !contact.getId().equals(contactId)));
+            
+            response.put("available", !emailExists);
+            if (emailExists) {
+                response.put("message", "Email уже используется другим контактом");
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("available", false);
+            response.put("message", "Ошибка при проверке email");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/checkUserEmail")
+    public ResponseEntity<?> checkUserEmail(
+            @RequestParam String email,
+            @RequestParam(required = false) Long userId) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            User existingUser = userService.findByEmail(email);
+            
+            boolean isAvailable = existingUser == null || 
+                                (userId != null && existingUser.getId().equals(userId));
+            
+            response.put("available", isAvailable);
+            if (!isAvailable) {
+                response.put("message", "Email уже используется другим пользователем");
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("available", false);
+            response.put("message", "Ошибка при проверке email");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
     private ProductDTO convertToProductDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
