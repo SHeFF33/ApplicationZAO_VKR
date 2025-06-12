@@ -690,7 +690,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label">Имя компании <span class="required">*</span></label>
-                    <input type="text" name="name" class="form-control" th:value="${client.name}" required>
+                    <input type="text" name="name" class="form-control" th:value="${client.name}" required maxlength="100">
                 </div>
 
                 <div class="form-group">
@@ -707,22 +707,28 @@
 
                 <div class="form-group">
                     <label class="form-label">Юридический адрес <span class="required">*</span></label>
-                    <input type="text" name="uraddress" class="form-control" th:value="${client.uraddress}" required>
+                    <input type="text" name="uraddress" class="form-control" th:value="${client.uraddress}" required maxlength="150">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Фактический адрес <span class="required">*</span></label>
-                    <input type="text" name="factaddress" class="form-control" th:value="${client.factaddress}" required>
+                    <input type="text" name="factaddress" class="form-control" th:value="${client.factaddress}" required maxlength="150">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Денег на счету</label>
-                    <input type="number" step="0.01" name="sum1" class="form-control" th:value="${client.sum1}">
+                    <input type="number" step="0.01" name="sum1" class="form-control" th:value="${client.sum1}" required
+                           pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
+                           title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
+                           min="0">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">В том числе свободные</label>
-                    <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}">
+                    <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}" required
+                           pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
+                           title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
+                           min="0">
                 </div>
             </div>
         </div>
@@ -787,7 +793,7 @@
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                    title="Почтовый индекс должен содержать 6 цифр"
                                    required></td>
-                        <td><input type="text" name="countries" th:value="${address.country}" required></td>
+                        <td><input type="text" name="countries" th:value="${address.country}" required maxlength="50"></td>
                         <td>
                             <select name="addressRegionIds" class="form-control" required>
                                 <option value="">Выберите регион</option>
@@ -799,11 +805,11 @@
                             </select>
                         </td>
                         <td><input type="text" name="rayons" th:value="${address.rayon}"></td>
-                        <td><input type="text" name="cities" th:value="${address.city}" required></td>
-                        <td><input type="text" name="streets" th:value="${address.street}" required></td>
-                        <td><input type="text" name="homes" th:value="${address.home}" required></td>
-                        <td><input type="text" name="roomnumbers" th:value="${address.roomnumber}" required></td>
-                        <td><textarea name="schedules" th:text="${address.schedule}"></textarea></td>
+                        <td><input type="text" name="cities" th:value="${address.city}" required maxlength="100"></td>
+                        <td><input type="text" name="streets" th:value="${address.street}" required maxlength="100"></td>
+                        <td><input type="text" name="homes" th:value="${address.home}" required maxlength="100"></td>
+                        <td><input type="text" name="roomnumbers" th:value="${address.roomnumber}" required maxlength="100"></td>
+                        <td><textarea name="schedules" th:text="${address.schedule}" maxlength="300"></textarea></td>
                         <td>
                             <select name="contactIds">
                                 <option value="">Нет контакта</option>
@@ -851,8 +857,8 @@
                     </thead>
                     <tbody>
                     <tr th:each="contact : ${client.contacts}">
-                        <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required></td>
-                        <td><input type="text" name="contactNames" th:value="${contact.name}" required></td>
+                        <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required maxlength="100"></td>
+                        <td><input type="text" name="contactNames" th:value="${contact.name}" required maxlength="100"></td>
                         <td>
                             <input type="text" name="phonenumbers" th:value="${contact.phonenumber}"
                                    class="phone-input" maxlength="11" required

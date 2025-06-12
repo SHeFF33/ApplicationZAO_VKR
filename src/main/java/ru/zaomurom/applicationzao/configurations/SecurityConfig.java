@@ -67,14 +67,17 @@ public class SecurityConfig {
                                             response.getWriter().write("{\"error\":\"Invalid username or password\"}");
                                             response.setContentType("application/json");
                                         } else {
-                                            response.sendRedirect("/login?error");
+                                            String redirectUrl = "/login?error=true";
+                                            response.sendRedirect(redirectUrl);
                                         }
                                     }
                                 })
                                 .permitAll()
                 )
                 .logout(logout ->
-                        logout.permitAll()
+                        logout
+                                .logoutSuccessUrl("/login")
+                                .permitAll()
                 )
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling

@@ -496,7 +496,7 @@
     .password-generator {
       margin-bottom: 1rem;
     }
-    
+
     .generator-input-group {
       display: flex;
       gap: 0.5rem;
@@ -589,7 +589,7 @@
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Имя компании <span class="required">*</span></label>
-          <input type="text" name="name" class="form-control" required>
+          <input type="text" name="name" class="form-control" required maxlength="100">
         </div>
 
         <div class="form-group">
@@ -606,22 +606,28 @@
 
         <div class="form-group">
           <label class="form-label">Юридический адрес <span class="required">*</span></label>
-          <input type="text" name="uraddress" class="form-control" required>
+          <input type="text" name="uraddress" class="form-control" required maxlength="150">
         </div>
 
         <div class="form-group">
           <label class="form-label">Фактический адрес <span class="required">*</span></label>
-          <input type="text" name="factaddress" class="form-control" required>
+          <input type="text" name="factaddress" class="form-control" required maxlength="150">
         </div>
 
         <div class="form-group">
           <label class="form-label">Денег на счету</label>
-          <input type="number" step="0.01" name="sum1" class="form-control">
+          <input type="number" step="0.01" name="sum1" class="form-control"
+                 required pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
+                 title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
+                 min="0">>
         </div>
 
         <div class="form-group">
           <label class="form-label">В том числе свободные</label>
-          <input type="number" step="0.01" name="sum2" class="form-control">
+          <input type="number" step="0.01" name="sum2" class="form-control"
+                 required pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
+                 title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
+                 min="0">>
         </div>
       </div>
     </div>
@@ -702,13 +708,13 @@
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Имя пользователя <span class="required">*</span></label>
-          <input type="text" id="username" class="form-control" required>
+          <input type="text" id="username" class="form-control" required maxlength="50">
           <div class="invalid-feedback" id="username-feedback"></div>
         </div>
 
         <div class="form-group">
           <label class="form-label">Имя <span class="required">*</span></label>
-          <input type="text" id="nameuser" class="form-control" required>
+          <input type="text" id="nameuser" class="form-control" required maxlength="50">
         </div>
 
         <div class="form-group">
@@ -879,12 +885,12 @@
     const innInput = document.querySelector('input[name="inn"]');
     const innError = document.getElementById('inn-error');
     let isInnValid = false; // Add flag for INN validation
-    
+
     if (innInput) {
         innInput.addEventListener('input', function() {
             // Remove any non-digit characters
             this.value = this.value.replace(/\D/g, '');
-            
+
             // Limit to 10 or 12 digits
             if (this.value.length > 12) {
                 this.value = this.value.slice(0, 12);
@@ -944,7 +950,7 @@
     if (form) {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             // Validate INN
             if (!isInnValid) {
                 innInput.classList.add('error');
@@ -964,7 +970,7 @@
       if (e.target.matches('input[name="phonenumbers[]"]')) {
         // Remove any non-digit characters
         e.target.value = e.target.value.replace(/\D/g, '');
-        
+
         // Limit to 11 digits
         if (e.target.value.length > 11) {
           e.target.value = e.target.value.slice(0, 11);
@@ -1246,19 +1252,19 @@
   function validateINN(inn) {
     // Remove any non-digit characters
     inn = inn.replace(/\D/g, '');
-    
+
     // Check if length is either 10 or 12
     if (inn.length !== 10 && inn.length !== 12) {
         return false;
     }
-    
+
     return true;
   }
 
   function validateKPP(kpp) {
     // Remove any non-digit characters
     kpp = kpp.replace(/\D/g, '');
-    
+
     // Check if length is exactly 9
     return kpp.length === 9;
   }
@@ -1324,19 +1330,19 @@
     const numbers = '0123456789';
     const special = '!_-.';
     const allChars = uppercase + lowercase + numbers + special;
-    
+
     // Ensure at least one character from each category
     let password = '';
     password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
     password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
     password += numbers.charAt(Math.floor(Math.random() * numbers.length));
     password += special.charAt(Math.floor(Math.random() * special.length));
-    
+
     // Fill the rest with random characters
     for (let i = password.length; i < length; i++) {
       password += allChars.charAt(Math.floor(Math.random() * allChars.length));
     }
-    
+
     // Shuffle the password
     return password.split('').sort(() => Math.random() - 0.5).join('');
   }
@@ -1346,29 +1352,109 @@
     const copyBtn = document.getElementById('copyPassword');
     const generatedPasswordInput = document.getElementById('generatedPassword');
     const passwordInput = document.getElementById('password');
+    const userModal = document.getElementById('userModal');
 
+    // Функция генерации случайного пароля
+    function generateRandomPassword() {
+      const length = Math.floor(Math.random() * (16 - 8 + 1)) + 8;
+      const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+      const numbers = '0123456789';
+      const special = '_-.';
+      const allChars = uppercase + lowercase + numbers + special;
+
+      let password = '';
+      password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+      password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+      password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+      password += special.charAt(Math.floor(Math.random() * special.length));
+
+      for (let i = password.length; i < length; i++) {
+        password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+      }
+
+      return password.split('').sort(() => Math.random() - 0.5).join('');
+    }
+
+    // Генерация пароля
     generateBtn.addEventListener('click', function() {
       const newPassword = generateRandomPassword();
       generatedPasswordInput.value = newPassword;
     });
 
+    // Копирование пароля
     copyBtn.addEventListener('click', function() {
       if (generatedPasswordInput.value) {
-        // Копируем пароль в буфер обмена
         navigator.clipboard.writeText(generatedPasswordInput.value).then(() => {
-          // Вставляем пароль в поле ввода пароля
-          passwordInput.value = generatedPasswordInput.value;
-          
-          // Добавляем анимацию для кнопки копирования
           copyBtn.classList.add('copy-animation');
           setTimeout(() => copyBtn.classList.remove('copy-animation'), 300);
-          
-          // Запускаем валидацию пароля
-          const event = new Event('input');
-          passwordInput.dispatchEvent(event);
+          showModalNotification('Пароль скопирован в буфер обмена');
+        }).catch(err => {
+          console.error('Ошибка при копировании: ', err);
+          showModalNotification('Не удалось скопировать пароль', true);
         });
+      } else {
+        showModalNotification('Сначала сгенерируйте пароль', true);
       }
     });
+
+    // Функция для показа уведомления в модальном окне
+    function showModalNotification(message, isError = false) {
+      // Удаляем предыдущие уведомления
+      const existingNotif = userModal.querySelector('.modal-notification');
+      if (existingNotif) existingNotif.remove();
+
+      const notification = document.createElement('div');
+      notification.className = 'modal-notification' + (isError ? ' error' : '');
+      notification.textContent = message;
+
+      // Вставляем уведомление после заголовка модального окна
+      const modalHeader = userModal.querySelector('.modal-header');
+      modalHeader.insertAdjacentElement('afterend', notification);
+
+      setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // Добавляем стили для уведомления в модальном окне
+    const style = document.createElement('style');
+    style.textContent = `
+    .modal-notification {
+      position: sticky;
+      top: 10px;
+      margin: 0 1.5rem;
+      padding: 12px 16px;
+      background-color: rgba(100, 100, 100, 0.9);
+      color: white;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      z-index: 10;
+      text-align: center;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .modal-notification.error {
+      background-color: rgba(211, 47, 47, 0.9);
+    }
+
+    .modal-notification.fade-out {
+      animation: fadeOutUp 0.3s ease-in;
+      opacity: 0;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeOutUp {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-20px); opacity: 0; }
+    }
+  `;
+    document.head.appendChild(style);
   });
 </script>
 </body>

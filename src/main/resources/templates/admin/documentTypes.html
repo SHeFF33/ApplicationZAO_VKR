@@ -523,7 +523,7 @@
     <form id="addDocumentTypeForm" th:action="@{/admin/addDocumentType}" method="post">
       <div class="form-group">
         <label for="documentTypeName" class="form-label">Название типа документа</label>
-        <input type="text" id="documentTypeName" name="name" class="form-control" required />
+        <input type="text" id="documentTypeName" name="name" class="form-control" required maxlength="50"/>
       </div>
       <div class="action-buttons">
         <button type="submit" class="btn btn--primary">
@@ -548,7 +548,7 @@
       <input type="hidden" id="editDocumentTypeId" name="id" />
       <div class="form-group">
         <label for="editDocumentTypeName" class="form-label">Название типа документа</label>
-        <input type="text" id="editDocumentTypeName" name="name" class="form-control" required />
+        <input type="text" id="editDocumentTypeName" name="name" class="form-control" required maxlength="50"/>
       </div>
       <div class="action-buttons">
         <button type="submit" class="btn btn--primary">

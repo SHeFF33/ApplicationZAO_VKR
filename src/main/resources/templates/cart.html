@@ -938,7 +938,7 @@
             </div>
 
             <div class="form-group">
-                <label for="schedule" class="form-label">График работы адреса доставки</label>
+                <label for="schedule" class="form-label" >График работы адреса доставки</label>
                 <input type="text" id="schedule" name="schedule" class="form-control" readonly>
             </div>
 
@@ -946,12 +946,12 @@
             <div class="form-group">
                 <label for="deliveryDateTime" class="form-label">Дата доставки</label>
                 <input type="datetime-local" id="deliveryDateTime" name="deliveryDateTime"
-                       th:attr="min=${minDateTime}" class="form-control" required>
+                       th:attr="min=${minDateTime}" class="form-control" required >
             </div>
 
             <div class="form-group">
                 <label for="comment" class="form-label">Комментарий к заказу</label>
-                <textarea id="comment" name="comment" class="form-control" rows="4" maxlength="3000"></textarea>
+                <textarea id="comment" name="comment" class="form-control" rows="4" maxlength="2500"></textarea>
             </div>
 
             <button type="submit" class="btn">
@@ -962,7 +962,6 @@
 
 </main>
 
-<!-- Модальное окно ручного распределения -->
 <div id="manualDistributionModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">

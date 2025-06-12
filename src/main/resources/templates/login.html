@@ -169,7 +169,20 @@
             color: var(--error);
             font-size: 0.875rem;
             margin-top: 0.5rem;
+            padding: 0.75rem;
+            background-color: rgba(211, 47, 47, 0.1);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--error);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
             display: none;
+        }
+
+        .error-message.show {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
         }
 
         .password-field {
@@ -183,6 +196,15 @@
             transform: translateY(-50%);
             color: var(--text-secondary);
             cursor: pointer;
+            z-index: 1;
+            background: transparent;
+            border: none;
+            padding: 0.5rem;
+            margin-top: 10px;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
         }
 
         @media (max-width: 480px) {
@@ -206,9 +228,9 @@
         <p class="login-subtitle">Войдите в свой аккаунт</p>
     </div>
 
-    <form th:action="@{/login}" method="post" class="login-form">
-        <div th:if="${param.error}" class="form-group">
-            <div class="error-message" style="display: block;">
+    <form th:action="@{/login}" method="post" class="login-form" id="loginForm">
+        <div class="form-group error-container">
+            <div class="error-message" th:if="${param.error}" style="display: block;">
                 Неверное имя пользователя или пароль
             </div>
         </div>
@@ -221,7 +243,9 @@
         <div class="form-group password-field">
             <label for="password" class="form-label">Пароль</label>
             <input type="password" id="password" name="password" class="form-control" required>
-            <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility()"></i>
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility()">
+                <i class="fas fa-eye"></i>
+            </button>
         </div>
 
         <div class="form-group">
@@ -241,7 +265,7 @@
 <script>
     function togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
-        const icon = document.querySelector('.toggle-password');
+        const icon = document.querySelector('.toggle-password i');
 
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
@@ -253,6 +277,17 @@
             icon.classList.add('fa-eye');
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorMessage = document.querySelector('.error-message');
+        
+        if (urlParams.has('error') && errorMessage) {
+            errorMessage.style.display = 'block';
+            errorMessage.style.opacity = '1';
+            errorMessage.style.transform = 'translateY(0)';
+        }
+    });
 </script>
 </body>
 </html>
