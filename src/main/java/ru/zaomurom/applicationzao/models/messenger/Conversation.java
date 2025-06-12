@@ -23,6 +23,7 @@ public class Conversation {
     @JoinColumn(name = "admin_id")
     private User admin;
 
+    @Column(length = 150)
     private String subject;
 
     @Column(name = "is_closed")

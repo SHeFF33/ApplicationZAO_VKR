@@ -473,29 +473,6 @@
         .table-responsive {
             overflow-x: auto;
         }
-
-        .error-messages {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 300px;
-        }
-
-        .error-message {
-            background-color: var(--error);
-            color: white;
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            margin-bottom: 0.5rem;
-            box-shadow: var(--shadow-sm);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
     </style>
 </head>
 <body>
@@ -507,11 +484,6 @@
         <i class="fas fa-bars"></i>
     </button>
 </header>
-
-<!-- Add error messages container -->
-<div id="errorMessages" class="error-messages" style="display: none;">
-    <div class="error-message"></div>
-</div>
 
 <aside id="sidebar" class="app-sidebar">
     <div class="app-sidebar__header">
@@ -1286,16 +1258,179 @@
     }
 
     function showError(message) {
-        const errorContainer = document.getElementById('errorMessages');
-        const errorMessage = errorContainer.querySelector('.error-message');
-        errorMessage.textContent = message;
-        errorContainer.style.display = 'block';
-        
-        // Hide the message after 5 seconds
-        setTimeout(() => {
-            errorContainer.style.display = 'none';
-        }, 5000);
+        alert(message);
     }
+
+    // Валидация полей адреса
+    function validateAddressFields(form) {
+        // Почтовый индекс: только цифры, не более 6
+        const postalcode = form.querySelector('input[name="postalcode"]').value;
+        if (!/^\d{6}$/.test(postalcode)) {
+            showError('Почтовый индекс должен содержать ровно 6 цифр');
+            return false;
+        }
+
+        // Страна: только буквы и дефис, не более 50 символов
+        const country = form.querySelector('input[name="country"]').value;
+        if (!/^[а-яА-ЯёЁa-zA-Z-]{1,50}$/.test(country)) {
+            showError('Название страны должно содержать только буквы и дефис, не более 50 символов');
+            return false;
+        }
+
+        // Район: только буквы и дефис, не более 50 символов
+        const rayon = form.querySelector('input[name="rayon"]').value;
+        if (rayon && !/^[а-яА-ЯёЁa-zA-Z-]{1,50}$/.test(rayon)) {
+            showError('Название района должно содержать только буквы и дефис, не более 50 символов');
+            return false;
+        }
+
+        // Город/поселение: буквы, цифры и дефис, не более 50 символов
+        const city = form.querySelector('input[name="city"]').value;
+        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(city)) {
+            showError('Название города/поселения должно содержать только буквы, цифры и дефис, не более 50 символов');
+            return false;
+        }
+
+        // Улица: буквы, цифры и дефис, не более 50 символов
+        const street = form.querySelector('input[name="street"]').value;
+        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(street)) {
+            showError('Название улицы должно содержать только буквы, цифры и дефис, не более 50 символов');
+            return false;
+        }
+
+        // Дом: буквы, цифры и дефис, не более 50 символов
+        const home = form.querySelector('input[name="home"]').value;
+        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(home)) {
+            showError('Номер дома должен содержать только буквы, цифры и дефис, не более 50 символов');
+            return false;
+        }
+
+        // Строение: буквы, цифры и дефис, не более 50 символов (если заполнено)
+        const roomnumber = form.querySelector('input[name="roomnumber"]').value;
+        if (roomnumber && !/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(roomnumber)) {
+            showError('Номер строения должен содержать только буквы, цифры и дефис, не более 50 символов');
+            return false;
+        }
+
+        // График работы: не более 250 символов
+        const schedule = form.querySelector('textarea[name="schedule"]').value;
+        if (schedule.length > 250) {
+            showError('График работы не должен превышать 250 символов');
+            return false;
+        }
+
+        return true;
+    }
+
+    // Валидация полей контакта
+    function validateContactFields(form) {
+        // Должность: не более 100 символов
+        const contactType = form.querySelector('input[name="contactType"]').value;
+        if (contactType.length > 100) {
+            showError('Должность не должна превышать 100 символов');
+            return false;
+        }
+
+        // Имя: не более 100 символов
+        const name = form.querySelector('input[name="name"]').value;
+        if (name.length > 100) {
+            showError('Имя не должно превышать 100 символов');
+            return false;
+        }
+
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавляем валидацию для формы добавления адреса
+        const addAddressForm = document.querySelector('#addAddressModal form');
+        if (addAddressForm) {
+            addAddressForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateAddressFields(this)) {
+                    this.submit();
+                }
+            });
+        }
+
+        // Добавляем валидацию для формы редактирования адреса
+        const editAddressForm = document.getElementById('editAddressForm');
+        if (editAddressForm) {
+            editAddressForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateAddressFields(this)) {
+                    saveAddressChanges();
+                }
+            });
+        }
+
+        // Добавляем валидацию для формы добавления контакта
+        const addContactForm = document.querySelector('#addContactModal form');
+        if (addContactForm) {
+            addContactForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (validateContactFields(this) && await validateContactForm(this)) {
+                    this.submit();
+                }
+            });
+        }
+
+        // Добавляем валидацию для формы редактирования контакта
+        const editContactForm = document.getElementById('editContactForm');
+        if (editContactForm) {
+            editContactForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const contactId = this.querySelector('input[name="id"]').value;
+                if (validateContactFields(this) && await validateContactForm(this, contactId)) {
+                    saveContactChanges();
+                }
+            });
+        }
+
+        // Добавляем валидацию при вводе для почтового индекса
+        const postalcodeInputs = document.querySelectorAll('input[name="postalcode"]');
+        postalcodeInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '').slice(0, 6);
+            });
+        });
+
+        // Добавляем валидацию при вводе для полей с ограничением на буквы и дефис
+        const letterOnlyInputs = document.querySelectorAll('input[name="country"], input[name="rayon"]');
+        letterOnlyInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^а-яА-ЯёЁa-zA-Z-]/g, '').slice(0, 50);
+            });
+        });
+
+        // Добавляем валидацию при вводе для полей с буквами, цифрами и дефисом
+        const alphanumericInputs = document.querySelectorAll('input[name="city"], input[name="street"], input[name="home"], input[name="roomnumber"]');
+        alphanumericInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^а-яА-ЯёЁa-zA-Z0-9-]/g, '').slice(0, 50);
+            });
+        });
+
+        // Добавляем валидацию при вводе для графика работы
+        const scheduleTextareas = document.querySelectorAll('textarea[name="schedule"]');
+        scheduleTextareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                if (this.value.length > 250) {
+                    this.value = this.value.slice(0, 250);
+                }
+            });
+        });
+
+        // Добавляем валидацию при вводе для полей контакта
+        const contactFields = document.querySelectorAll('input[name="contactType"], input[name="name"]');
+        contactFields.forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value.length > 100) {
+                    this.value = this.value.slice(0, 100);
+                }
+            });
+        });
+    });
 </script>
 </body>
 </html>

@@ -874,25 +874,29 @@
 
     <div class="form-group">
       <label for="name" class="form-label">Название товара</label>
-      <input type="text" id="name" name="name" class="form-control" th:value="${product.name}" required>
+      <input type="text" id="name" name="name" class="form-control" th:value="${product.name}" required maxlength="100">
     </div>
 
     <div class="form-group">
       <label for="sort" class="form-label">Сорт</label>
-      <input type="text" id="sort" name="sort" class="form-control" th:value="${product.sort}" required>
+      <input type="text" id="sort" name="sort" class="form-control" th:value="${product.sort}" required maxlength="50">
     </div>
 
     <div class="form-group">
       <label for="tolsh" class="form-label">Толщина</label>
-      <input type="number" step="0.01" id="tolsh" name="tolsh" class="form-control" th:value="${product.tolsh}" required>
+      <input type="number" step="0.001" id="tolsh" name="tolsh" class="form-control" th:value="${product.tolsh}" required 
+             min="0" 
+             pattern="^(?!0+\.?0*$)\d{1,4}(\.\d{0,3})?$" 
+             title="Введите положительное число не более 7 знаков, с не более чем 3 знаками после запятой">
     </div>
 
     <div class="form-group">
       <label for="volume" class="form-label">Объем</label>
       <input type="text" id="volume" name="volume" class="form-control"
              th:value="${product?.volume}" required
-             pattern="[0-9]+(\.[0-9]+)?"
-             title="Используйте точку в качестве разделителя (например 1.5)">
+             pattern="^(?!0+\.?0*$)\d{1,7}(\.\d{0,3})?$"
+             title="Введите положительное число не более 10 знаков, с не более чем 3 знаками после запятой"
+             min="0">
     </div>
 
     <div class="form-group">
@@ -907,12 +911,15 @@
 
     <div class="form-group">
       <label for="quantity" class="form-label">Количество листов в пачке</label>
-      <input type="number" id="quantity" name="quantity" class="form-control" th:value="${product.quantity}" required>
+      <input type="number" id="quantity" name="quantity" class="form-control" th:value="${product.quantity}" required 
+             min="1" max="9999" 
+             pattern="^[1-9]\d{0,3}$"
+             title="Введите положительное целое число не более 4 знаков">
     </div>
 
     <div class="form-group">
       <label for="description" class="form-label">Описание товара</label>
-      <textarea id="description" name="description" class="form-control" required th:text="${product.description}"></textarea>
+      <textarea id="description" name="description" class="form-control" required maxlength="2500" th:text="${product.description}"></textarea>
     </div>
 
     <div class="checkbox-container">
@@ -1162,7 +1169,7 @@
 
         <div class="form-group">
           <label for="docDescription" class="form-label">Описание документа</label>
-          <textarea id="docDescription" name="description" class="form-control" required
+          <textarea id="docDescription" name="description" class="form-control" required maxlength="200"
                     placeholder="Введите описание документа (например, 'Технические характеристики')"></textarea>
         </div>
 
@@ -1223,7 +1230,7 @@
         <input type="hidden" name="productId" th:value="${product.id}">
         <div class="form-group">
           <label for="autoPeriod" class="form-label">Период действия цен:</label>
-          <input type="date" class="form-control" id="autoPeriod" name="period" required>
+          <input type="date" class="form-control" id="autoPeriod" name="period" required max="3000-12-31">
         </div>
         <div class="alert alert--info">
           <i class="fas fa-info-circle"></i>
@@ -1258,15 +1265,18 @@
         <input type="hidden" name="productId" th:value="${product.id}">
         <div class="form-group">
           <label for="regionName" class="form-label">Регион:</label>
-          <input type="text" class="form-control" id="regionName" name="regionName" required>
+          <input type="text" class="form-control" id="regionName" name="regionName" required maxlength="50">
         </div>
         <div class="form-group">
           <label for="summa" class="form-label">Цена (руб.):</label>
-          <input type="number" class="form-control" id="summa" name="summa" step="0.01" required>
+          <input type="number" class="form-control" id="summa" name="summa" step="0.01" 
+                 min="0" max="10000000" required
+                 pattern="^\d{1,7}(\.\d{0,2})?$" 
+                 title="Введите положительное число не более 10000000, с не более чем 2 знаками после запятой">
         </div>
         <div class="form-group">
           <label for="period" class="form-label">Период действия:</label>
-          <input type="date" class="form-control" id="period" name="period" required>
+          <input type="date" class="form-control" id="period" name="period" required max="3000-12-31">
         </div>
         <div class="action-buttons">
           <button type="button" class="btn btn--outline" onclick="closeModal('addPriceModal')">
@@ -1303,7 +1313,7 @@
                 <input type="hidden" name="productId" th:value="${product.id}">
                 <div class="form-group">
                     <label for="autoPeriod" class="form-label">Период действия</label>
-                    <input type="date" id="autoPeriod" name="period" class="form-control" required>
+                    <input type="date" id="autoPeriod" name="period" class="form-control" required max="3000-12-31">
                 </div>
 
                 <div class="action-buttons">
@@ -1321,17 +1331,20 @@
                 <input type="hidden" name="productId" th:value="${product.id}">
                 <div class="form-group">
                     <label for="summa" class="form-label">Цена (руб.)</label>
-                    <input type="number" id="summa" name="summa" step="0.01" min="0" class="form-control" required>
+                    <input type="number" id="summa" name="summa" step="0.01" 
+                           min="0" max="10000000" class="form-control" required 
+                           pattern="^\d{1,7}(\.\d{0,2})?$" 
+                           title="Введите положительное число не более 10000000, с не более чем 2 знаками после запятой">
                 </div>
 
                 <div class="form-group">
                     <label for="manualPeriod" class="form-label">Период действия</label>
-                    <input type="date" id="manualPeriod" name="period" class="form-control" required>
+                    <input type="date" id="manualPeriod" name="period" class="form-control" required max="3000-12-31">
                 </div>
 
                 <div class="form-group">
                     <label for="regionName" class="form-label">Регион</label>
-                    <input type="text" id="regionName" name="regionName" class="form-control" required>
+                    <input type="text" id="regionName" name="regionName" class="form-control" required maxlength="50">
                 </div>
 
                 <div class="action-buttons">

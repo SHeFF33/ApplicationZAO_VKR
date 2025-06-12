@@ -9,13 +9,11 @@ import ru.zaomurom.applicationzao.models.messenger.Conversation;
 import java.util.List;
 
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
-    @Query("SELECT c FROM Conversation c WHERE c.admin IS NULL AND c.isClosed = false")
+    @Query("SELECT c FROM Conversation c WHERE c.admin IS NULL AND c.isClosed = false ORDER BY c.createdAt DESC")
     List<Conversation> findOpenConversations();
 
-    @Query("SELECT c FROM Conversation c WHERE c.admin = :admin AND c.isClosed = false")
-    List<Conversation> findAdminConversations(@Param("admin") User admin);
+    @Query("SELECT c FROM Conversation c WHERE c.admin = :admin ORDER BY c.createdAt DESC")
+    List<Conversation> findByAdmin(@Param("admin") User admin);
 
     List<Conversation> findByClient(Client client);
-
-    List<Conversation> findByAdmin(User admin);
 }

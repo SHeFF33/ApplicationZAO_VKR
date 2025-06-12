@@ -166,6 +166,10 @@
     .message-text {
       margin: 10px 0;
       line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
     }
     .attachment {
       margin-top: 10px;
@@ -367,7 +371,7 @@
 
   <div class="reply-form" th:unless="${conversation.closed}">
     <form th:action="@{/messenger/reply/{id}(id=${conversation.id})}" method="post" enctype="multipart/form-data">
-      <textarea name="message" placeholder="Дополнить сообщение..." required></textarea>
+      <textarea name="message" placeholder="Дополнить сообщение..." required maxlength="3000"></textarea>
       <input type="file" name="files" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" onchange="validateFiles(this)">
       <div id="fileError" style="color: red; margin-bottom: 10px;"></div>
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>

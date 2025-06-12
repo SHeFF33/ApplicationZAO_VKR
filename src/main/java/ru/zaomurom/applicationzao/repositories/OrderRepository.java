@@ -3,6 +3,7 @@ package ru.zaomurom.applicationzao.repositories;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Sort;
 import ru.zaomurom.applicationzao.models.order.Order;
 import ru.zaomurom.applicationzao.models.client.Client;
 
@@ -18,7 +19,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findWithTchOrdersById(Long id);
     List<Order> findByClientId(Long clientId);
 
-    List<Order> findByClient(Client client);
-    List<Order> findByClientAndStatus(Client client, String status);
-    List<Order> findAll(Specification<Order> spec);
+    List<Order> findByClient(Client client, Sort sort);
+    List<Order> findByClientAndStatus(Client client, String status, Sort sort);
+    List<Order> findAll(Specification<Order> spec, Sort sort);
 }

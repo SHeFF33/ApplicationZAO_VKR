@@ -41,8 +41,9 @@ public class MessengerService {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
-        if (conversation.getAdmin() == null && sender.isAdmin()) {
+        if (sender.isAdmin() && conversation.getAdmin() == null) {
             conversation.setAdmin(sender);
+            conversation.setClosed(false);
         }
 
         Message message = new Message();
@@ -53,16 +54,23 @@ public class MessengerService {
 
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
-                Attachment attachment = new Attachment();
-                attachment.setFileName(file.getOriginalFilename());
-                attachment.setFileType(file.getContentType());
-                attachment.setFileData(file.getBytes());
-                attachment.setMessage(message);
-                message.getAttachments().add(attachment);
+                if (file != null && !file.isEmpty()) {
+                    Attachment attachment = new Attachment();
+                    attachment.setFileName(file.getOriginalFilename());
+                    attachment.setFileType(file.getContentType());
+                    attachment.setFileData(file.getBytes());
+                    attachment.setMessage(message);
+                    message.getAttachments().add(attachment);
+                }
             }
         }
 
         conversation.getMessages().add(message);
+        
+        if (sender.isAdmin()) {
+            conversation.setClosed(false);
+        }
+        
         conversationRepository.save(conversation);
     }
 

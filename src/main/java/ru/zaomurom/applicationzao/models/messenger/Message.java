@@ -22,6 +22,7 @@ public class Message {
     @JoinColumn(name = "sender_id")
     private User sender;
 
+    @Column(length = 3000)
     private String text;
     private LocalDateTime sentAt;
 

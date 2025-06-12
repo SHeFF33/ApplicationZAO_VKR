@@ -2,6 +2,7 @@ package ru.zaomurom.applicationzao.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.zaomurom.applicationzao.models.client.Addresses;
@@ -38,7 +39,7 @@ public class OrderService {
     private OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     public List<Order> findAll() {
-        return orderRepository.findAll();
+        return orderRepository.findAll(Sort.by(Sort.Direction.DESC, "orderDate"));
     }
 
     public Optional<Order> findById(Long id) {
@@ -66,7 +67,7 @@ public class OrderService {
     }
 
     public List<OrderStatusHistory> getStatusHistory(Order order) {
-        return orderStatusHistoryRepository.findByOrder(order);
+        return orderStatusHistoryRepository.findByOrder(order, Sort.by(Sort.Direction.DESC, "changeDate"));
     }
 
     public List<Order> findByClientAndStatus(Client client, String status) {
@@ -74,11 +75,11 @@ public class OrderService {
         if (status != null && !status.isEmpty()) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
-        return orderRepository.findAll(spec);
+        return orderRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "orderDate"));
     }
 
     public List<Order> findByClient(Client client) {
-        return orderRepository.findByClient(client);
+        return orderRepository.findByClient(client, Sort.by(Sort.Direction.DESC, "orderDate"));
     }
 
     public List<Order> findByFilters(Long clientId, String status, LocalDateTime startDate, LocalDateTime endDate) {
@@ -97,7 +98,7 @@ public class OrderService {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("orderDate"), endDate));
         }
 
-        return orderRepository.findAll(spec);
+        return orderRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "orderDate"));
     }
 
     public void addStatusHistory(Order order, String status, User user) {
@@ -118,8 +119,9 @@ public class OrderService {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("changeDate"), endDate));
         }
 
-        return orderStatusHistoryRepository.findAll(spec);
+        return orderStatusHistoryRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "changeDate"));
     }
+    
     public TCHOrder findTchOrderById(Long id) {
         return tchOrderRepository.findById(id).orElse(null);
     }
@@ -139,6 +141,7 @@ public class OrderService {
         }
         return Optional.empty();
     }
+    
     public double calculateOrderTotal(Order order) {
         double total = order.getTchOrders().stream()
                 .mapToDouble(tchOrder -> tchOrder.getQuantity() *
@@ -146,6 +149,7 @@ public class OrderService {
                 .sum();
         return Math.round(total * 100.0) / 100.0;
     }
+    
     public List<Order> findByClientId(Long clientId) {
         return orderRepository.findByClientId(clientId);
     }
