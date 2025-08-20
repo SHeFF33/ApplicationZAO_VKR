@@ -2,6 +2,7 @@ package ru.zaomurom.applicationzao.models.client;
 
 import jakarta.persistence.*;
 import ru.zaomurom.applicationzao.models.prices.ClientsRegion;
+import ru.zaomurom.applicationzao.models.Station;
 
 @Entity
 @Table(name = "addresses")
@@ -19,6 +20,9 @@ public class Addresses {
     @Column(length = 3000)
     private String schedule;
 
+    @Column(length = 3000)
+    private String specialRequirements; // Особые требования, схема проезда
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
     private Client client;
@@ -31,12 +35,16 @@ public class Addresses {
     @JoinColumn(name = "clients_region_id")
     private ClientsRegion clientsRegion;
 
+    @ManyToOne
+    @JoinColumn(name = "station_id")
+    private Station station;
+
     // Конструкторы
     public Addresses() {}
 
     public Addresses(int postalcode, String country, ClientsRegion clientsRegion, String rayon,
                      String city, String street, String home, String roomnumber,
-                     String schedule) {
+                     String schedule, String specialRequirements) {
         this.postalcode = postalcode;
         this.country = country;
         this.clientsRegion = clientsRegion;
@@ -46,6 +54,7 @@ public class Addresses {
         this.home = home;
         this.roomnumber = roomnumber;
         this.schedule = schedule;
+        this.specialRequirements = specialRequirements;
     }
 
     // Геттеры и сеттеры
@@ -79,11 +88,22 @@ public class Addresses {
     public String getSchedule() { return schedule; }
     public void setSchedule(String schedule) { this.schedule = schedule; }
 
+    public String getSpecialRequirements() { return specialRequirements; }
+    public void setSpecialRequirements(String specialRequirements) { this.specialRequirements = specialRequirements; }
+
     public Client getClient() { return client; }
     public void setClient(Client client) { this.client = client; }
 
     public Contacts getContact() { return contact; }
     public void setContact(Contacts contact) { this.contact = contact; }
+
+    public Station getStation() {
+        return station;
+    }
+
+    public void setStation(Station station) {
+        this.station = station;
+    }
 
     // Удобный метод для получения имени региона
     public String getRegionName() {

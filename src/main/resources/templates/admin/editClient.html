@@ -337,7 +337,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             font-size: 0.875rem;
-            min-width: 150px; /* Increased minimum width for input and select fields */
+            min-width: 150px;
         }
 
         .editable-table textarea {
@@ -346,8 +346,8 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             font-size: 0.875rem;
-            min-height: 120px; /* Increased height for textarea */
-            min-width: 200px; /* Increased minimum width for textarea */
+            min-height: 120px;
+            min-width: 200px;
             resize: vertical;
         }
 
@@ -357,10 +357,10 @@
         }
 
         /* Ensure horizontal scrolling for addresses table */
-        #addresses {
+        .table-container {
             display: block;
             overflow-x: auto;
-            white-space: nowrap; /* Prevents text wrapping in table cells */
+            white-space: nowrap;
         }
 
         /* Action buttons */
@@ -385,30 +385,6 @@
             color: var(--border);
         }
 
-        /* Badge */
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: var(--radius-sm);
-        }
-
-        .badge--primary {
-            background-color: var(--primary-light);
-            color: white;
-        }
-
-        .badge--secondary {
-            background-color: var(--border);
-            color: var(--text-primary);
-        }
-
-        /* Validation styles */
-        .is-invalid {
-            border-color: var(--error) !important;
-        }
-
         .invalid-feedback {
             color: var(--error);
             font-size: 0.75rem;
@@ -419,24 +395,7 @@
             color: var(--error);
         }
 
-        /* Responsive styles */
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .app-container {
-                padding: 0 1rem;
-            }
-
-            .editable-table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap; /* Ensures no wrapping on mobile */
-            }
-        }
-
-        /* Стили для модального окна */
+        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -564,18 +523,6 @@
             margin: 0;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-        }
-
-        .empty-state i {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--border);
-        }
-
         /* Стили для чекбоксов */
         input[type="checkbox"] {
             width: 1.25rem;
@@ -626,6 +573,59 @@
         .form-control.error:focus {
             box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
         }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 5px;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            color: var(--primary-dark);
+        }
+
+        #addressModal .modal-content {
+            max-width: 800px;
+        }
+
+        #addressForm .form-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        #addressForm textarea {
+            min-height: 100px;
+            grid-column: span 2;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .app-container {
+                padding: 0 1rem;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -671,6 +671,9 @@
         <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
             <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
+        <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+            <i class="fas fa-balance-scale"></i> Квоты
+        </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
             Обращения клиентов
@@ -683,7 +686,7 @@
 </aside>
 
 <main class="app-container">
-    <form th:action="@{/admin/editClient/{id}(id=${client.id})}" method="post">
+    <form id="clientForm" th:action="@{/admin/editClient/{id}(id=${client.id})}" method="post">
         <div class="form-card">
             <h2 class="form-title"><i class="fas fa-building"></i> Основная информация</h2>
 
@@ -694,14 +697,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="inn">ИНН</label>
-                    <input type="text" class="form-control" id="inn" name="inn" th:value="${client.inn}" required>
+                    <label class="form-label" for="inn">ИНН <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="inn" name="inn" th:value="${client.inn}" required
+                           pattern="\d{10}|\d{12}" maxlength="12">
                     <div id="inn-error" class="error-message">ИНН должен содержать 10 или 12 цифр</div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="kpp">КПП</label>
-                    <input type="text" class="form-control" id="kpp" name="kpp" th:value="${client.kpp}" required>
+                    <label class="form-label" for="kpp">КПП <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="kpp" name="kpp" th:value="${client.kpp}" required
+                           pattern="\d{9}" maxlength="9">
                     <div id="kpp-error" class="error-message">КПП должен содержать ровно 9 цифр</div>
                 </div>
 
@@ -714,21 +719,20 @@
                     <label class="form-label">Фактический адрес <span class="required">*</span></label>
                     <input type="text" name="factaddress" class="form-control" th:value="${client.factaddress}" required maxlength="150">
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label class="form-label">Денег на счету</label>
-                    <input type="number" step="0.01" name="sum1" class="form-control" th:value="${client.sum1}" required
-                           pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
-                           title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
-                           min="0">
+            <!-- Информация по расчетам -->
+            <h2 class="form-title" style="font-size:1.25rem; font-weight:600; color:var(--primary-dark); margin-top:2rem;"><i class="fas fa-ruble-sign"></i> Информация по расчетам</h2>
+            <div class="form-grid">
+                <div class="form-group" style="display:flex; align-items:center;">
+                    <label class="form-label" style="flex:1;">Денег на счету</label>
+                    <input type="number" step="0.01" name="sum1" class="form-control" th:value="${client.sum1}" style="max-width:180px; margin-right:8px;">
+                    <span style="white-space:nowrap; color:var(--text-secondary);">руб.</span>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">В том числе свободные</label>
-                    <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}" required
-                           pattern="^(?!0+\.?0*$)\d{1,10}(\.\d{0,2})?$"
-                           title="Введите положительное число не более 12 знаков, с не более чем 2 знаками после запятой"
-                           min="0">
+                <div class="form-group" style="display:flex; align-items:center;">
+                    <label class="form-label" style="flex:1;">В том числе свободные</label>
+                    <input type="number" step="0.01" name="sum2" class="form-control" th:value="${client.sum2}" style="max-width:180px; margin-right:8px;">
+                    <span style="white-space:nowrap; color:var(--text-secondary);">руб.</span>
                 </div>
             </div>
         </div>
@@ -747,12 +751,8 @@
                         <i class="fas fa-map-marker-alt"></i>
                         <p>Регионы не выбраны</p>
                     </div>
-                    <div th:if="${not #lists.isEmpty(clientRegions)}" class="item-list">
-                        <div th:each="region : ${clientRegions}" class="item-card">
-                            <div class="item-card__header">
-                                <h4 class="item-card__title" th:text="${region.name}" th:data-region-id="${region.id}"></h4>
-                            </div>
-                        </div>
+                    <div th:unless="${#lists.isEmpty(clientRegions)}" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        <span th:each="region : ${clientRegions}" th:text="${region.name}" class="badge badge--primary" style="font-size:1rem; padding:0.5rem 1rem;"></span>
                     </div>
                 </div>
             </div>
@@ -761,81 +761,72 @@
         <div class="section">
             <div class="section-header">
                 <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Адреса</h3>
-                <button type="button" class="btn btn--secondary" onclick="addTableRow('addresses')">
+                <button type="button" class="btn btn--secondary" onclick="openAddressModal(null)">
                     <i class="fas fa-plus"></i> Добавить адрес
                 </button>
             </div>
 
-            <div class="section-content">
-                <table class="editable-table" id="addresses">
-                    <thead>
-                    <tr>
-                        <th>Почтовый индекс</th>
-                        <th>Страна</th>
-                        <th>Регион</th>
-                        <th>Район</th>
-                        <th>Город</th>
-                        <th>Улица</th>
-                        <th>Дом</th>
-                        <th>Строение</th>
-                        <th>График работы адреса доставки</th>
-                        <th>Контакт</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="address : ${client.addresses}">
-                        <td><input type="text"
-                                   name="postalcodes"
-                                   th:value="${address.postalcode}"
-                                   pattern="[0-9]{6}"
-                                   maxlength="6"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                   title="Почтовый индекс должен содержать 6 цифр"
-                                   required></td>
-                        <td><input type="text" name="countries" th:value="${address.country}" required maxlength="50"></td>
-                        <td>
-                            <select name="addressRegionIds" class="form-control" required>
-                                <option value="">Выберите регион</option>
-                                <option th:each="region : ${clientRegions}"
-                                        th:value="${region.id}"
-                                        th:text="${region.name}"
-                                        th:selected="${address.clientsRegion != null && address.clientsRegion.region.id == region.id}">
-                                </option>
-                            </select>
-                        </td>
-                        <td><input type="text" name="rayons" th:value="${address.rayon}"></td>
-                        <td><input type="text" name="cities" th:value="${address.city}" required maxlength="100"></td>
-                        <td><input type="text" name="streets" th:value="${address.street}" required maxlength="100"></td>
-                        <td><input type="text" name="homes" th:value="${address.home}" required maxlength="100"></td>
-                        <td><input type="text" name="roomnumbers" th:value="${address.roomnumber}" required maxlength="100"></td>
-                        <td><textarea name="schedules" th:text="${address.schedule}" maxlength="300"></textarea></td>
-                        <td>
-                            <select name="contactIds">
-                                <option value="">Нет контакта</option>
-                                <option th:each="contact : ${client.contacts}"
-                                        th:value="${contact.id}"
-                                        th:text="${contact.name}"
-                                        th:selected="${address.contact != null && address.contact.id == contact.id}">
-                                </option>
-                            </select>
-                        </td>
-                        <td style="text-align: center;">
-                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(client.addresses)}">
-                        <td colspan="11" class="empty-state">
-                            <i class="fas fa-map-marked-alt"></i>
-                            <p>Адреса не добавлены</p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="section-content">
+                    <div class="table-container">
+                        <table class="editable-table" id="addresses">
+                            <thead>
+                            <tr>
+                                <th>Почтовый индекс</th>
+                                <th>Страна</th>
+                                <th>Регион</th>
+                                <th>Станция</th>
+                                <th>Район</th>
+                                <th>Город</th>
+                                <th>Улица</th>
+                                <th>Дом</th>
+                                <th>Строение</th>
+                                <th>График работы</th>
+                                <th>Особые требования</th>
+                                <th>Контакт</th>
+                                <th>Действия</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="address, stat : ${client.addresses}" 
+                                th:data-address-id="${address.id}"
+                                th:data-region-id="${address.clientsRegion?.region?.id}"
+                                th:data-station-id="${address.station?.id}"
+                                th:data-contact-id="${address.contact?.id}">
+                                <td th:text="${address.postalcode}"></td>
+                                <td th:text="${address.country}"></td>
+                                <td th:text="${address.clientsRegion?.region?.name}"></td>
+                                <td th:text="${address.station?.name}"></td>
+                                <td th:text="${address.rayon}"></td>
+                                <td th:text="${address.city}"></td>
+                                <td th:text="${address.street}"></td>
+                                <td th:text="${address.home}"></td>
+                                <td th:text="${address.roomnumber}"></td>
+                                <td th:text="${address.schedule}"></td>
+                                <td th:text="${address.specialRequirements}"></td>
+                                <td th:text="${address.contact?.name}"></td>
+                                <td>
+                                    <button type="button" class="action-btn"
+                                            onclick="editAddress(this.closest('tr'))">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="action-btn text-danger"
+                                            onclick="deleteAddress(this.closest('tr'))">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(client.addresses)}" class="empty-state">
+                                <td colspan="13">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                    <p>Адреса не добавлены</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
+
         <div class="section">
             <div class="section-header">
                 <h3 class="section-title"><i class="fas fa-address-book"></i> Контакты</h3>
@@ -845,47 +836,49 @@
             </div>
 
             <div class="section-content">
-                <table class="editable-table" id="contacts">
-                    <thead>
-                    <tr>
-                        <th>Тип контакта</th>
-                        <th>Имя</th>
-                        <th>Телефон</th>
-                        <th>Email</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="contact : ${client.contacts}">
-                        <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required maxlength="100"></td>
-                        <td><input type="text" name="contactNames" th:value="${contact.name}" required maxlength="100"></td>
-                        <td>
-                            <input type="text" name="phonenumbers" th:value="${contact.phonenumber}"
-                                   class="phone-input" maxlength="11" required
-                                   pattern="[0-9]{11}"
-                                   title="Номер телефона должен содержать 11 цифр">
-                            <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
-                        </td>
-                        <td>
-                            <input type="email" name="emails" th:value="${contact.email}"
-                                   class="email-input" required
-                                   th:data-contact-id="${contact.id}">
-                            <div class="error-message email-error">Email уже используется</div>
-                        </td>
-                        <td style="text-align: center;">
-                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(client.contacts)}">
-                        <td colspan="5" class="empty-state">
-                            <i class="fas fa-user-tie"></i>
-                            <p>Контакты не добавлены</p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table class="editable-table" id="contacts">
+                        <thead>
+                        <tr>
+                            <th>Тип контакта</th>
+                            <th>Имя</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th>Действия</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="contact, stat : ${client.contacts}" th:data-index="${stat.index}">
+                            <td><input type="text" name="typeContacts" th:value="${contact.contactType}" required maxlength="100"></td>
+                            <td><input type="text" name="contactNames" th:value="${contact.name}" required maxlength="100"></td>
+                            <td>
+                                <input type="text" name="phonenumbers" th:value="${contact.phonenumber}"
+                                       class="phone-input" maxlength="11" required
+                                       pattern="[0-9]{11}"
+                                       title="Номер телефона должен содержать 11 цифр">
+                                <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
+                            </td>
+                            <td>
+                                <input type="email" name="emails" th:value="${contact.email}"
+                                       class="email-input" required
+                                       th:data-contact-id="${contact.id}">
+                                <div class="error-message email-error">Email уже используется</div>
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(client.contacts)}">
+                            <td colspan="5" class="empty-state">
+                                <i class="fas fa-user-tie"></i>
+                                <p>Контакты не добавлены</p>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -898,835 +891,70 @@
             </div>
 
             <div class="section-content">
-                <table class="editable-table" id="users">
-                    <thead>
-                    <tr>
-                        <th>Логин</th>
-                        <th>Имя</th>
-                        <th>Пароль</th>
-                        <th>Email (если админ)</th>
-                        <th>Администратор</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="user, stat : ${client.users}">
-                        <td>
-                            <input type="text" name="usernames" th:value="${user.username}" required
-                                   onblur="validateUsername(this, ${user.id})">
-                            <input type="hidden" name="userIds" th:value="${user.id}">
-                            <div class="invalid-feedback" th:id="'username-feedback-' + ${stat.index}"></div>
-                        </td>
-                        <td><input type="text" name="nameuser" th:value="${user.name}" required></td>
-                        <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
-                        <td>
-                            <input type="email" name="userEmails" th:value="${user.email}"
-                                   th:required="${user.admin}" th:disabled="${!user.admin}"
-                                   th:attr="data-index=${stat.index}, data-user-id=${user.id}"
-                                   class="user-email-input"
-                                   placeholder="Недоступно для заполнения"
-                                   onblur="validateUserEmail(this)">
-                            <div class="error-message email-error">Email уже используется</div>
-                        </td>
-                        <td style="text-align: center;">
-                            <input type="hidden" name="_isAdmins" value="on">
-                            <input type="checkbox" name="isAdmins" th:checked="${user.admin}"
-                                   value="true" onchange="toggleEmailRequired(this, ${stat.index})">
-                        </td>
-                        <td style="text-align: center;">
-                            <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(client.users)}">
-                        <td colspan="6" class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <p>Пользователи не добавлены</p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <div class="table-container">
+                    <table class="editable-table" id="users">
+                        <thead>
+                        <tr>
+                            <th>Логин</th>
+                            <th>Имя</th>
+                            <th>Пароль</th>
+                            <th>Email (если админ)</th>
+                            <th>Администратор</th>
+                            <th>Действия</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="user, stat : ${client.users}" th:data-index="${stat.index}">
+                            <td>
+                                <input type="text" name="usernames" th:value="${user.username}" required
+                                       onblur="validateUsername(this, ${user.id})">
+                                <input type="hidden" name="userIds" th:value="${user.id}">
+                                <div class="invalid-feedback" th:id="'username-feedback-' + ${stat.index}"></div>
+                            </td>
+                            <td><input type="text" name="nameuser" th:value="${user.name}" required></td>
+                            <td><input type="password" name="passwords" placeholder="Оставьте пустым, чтобы не менять"></td>
+                            <td>
+                                <input type="email" name="userEmails" th:value="${user.email}"
+                                       th:required="${user.admin}" th:disabled="${!user.admin}"
+                                       th:attr="data-index=${stat.index}, data-user-id=${user.id}"
+                                       class="user-email-input"
+                                       placeholder="Недоступно для заполнения"
+                                       onblur="validateUserEmail(this)">
+                                <div class="error-message email-error">Email уже используется</div>
+                            </td>
+                            <td style="text-align: center;">
+                                <input type="hidden" name="_isAdmins" value="on">
+                                <input type="checkbox" name="isAdmins" th:checked="${user.admin}"
+                                       value="true" onchange="toggleEmailRequired(this, ${stat.index})">
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(client.users)}">
+                            <td colspan="6" class="empty-state">
+                                <i class="fas fa-users"></i>
+                                <p>Пользователи не добавлены</p>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="action-buttons">
-            <button type="submit" class="btn btn--primary">
-                <i class="fas fa-save"></i> Сохранить изменения
-            </button>
-        </div>
+            <div class="action-buttons">
+                <a th:href="@{/admin/clients}" class="btn btn--secondary">
+                    <i class="fas fa-arrow-left"></i> Назад к списку
+                </a>
+                <button type="submit" class="btn btn--primary">
+                    <i class="fas fa-save"></i> Сохранить изменения
+                </button>
+            </div>
     </form>
 </main>
-
-<script>
-    function openNav() {
-        document.getElementById("sidebar").classList.add("app-sidebar--open");
-    }
-
-    function closeNav() {
-        document.getElementById("sidebar").classList.remove("app-sidebar--open");
-    }
-
-    let selectedRegions = [];
-
-    // Функция для открытия модального окна
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.add("modal--open");
-        if (modalId === 'regionsModal') {
-            // Инициализируем выбранные регионы при открытии модального окна
-            selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
-        }
-    }
-
-    // Функция для закрытия модального окна
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove("modal--open");
-    }
-
-    // Функция для фильтрации регионов
-    function filterRegions() {
-        const searchTerm = document.getElementById('regionSearch').value.toLowerCase();
-        const regionCards = document.querySelectorAll('#regions-list .item-card');
-
-        regionCards.forEach(card => {
-            const regionName = card.querySelector('.item-card__title').textContent.toLowerCase();
-            card.style.display = regionName.includes(searchTerm) ? 'block' : 'none';
-        });
-    }
-
-    // Функция обновления списка выбранных регионов
-    function updateSelectedRegions() {
-        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
-    }
-
-    // Функция сохранения выбранных регионов
-    function saveSelectedRegions() {
-        // Удаляем старые скрытые поля с ID регионов
-        document.querySelectorAll('input[name="regionIds"]').forEach(input => input.remove());
-
-        // Создаем новые скрытые поля для каждого выбранного региона
-        const form = document.querySelector('form');
-        selectedRegions.forEach(regionId => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'regionIds';
-            input.value = regionId;
-            form.appendChild(input);
-        });
-
-        // Обновляем отображение выбранных регионов
-        updateSelectedRegionsDisplay();
-
-        // Закрываем модальное окно
-        closeModal('regionsModal');
-    }
-
-    // Функция обновления отображения выбранных регионов
-    function updateSelectedRegionsDisplay() {
-        const container = document.getElementById('selected-regions-container');
-        if (!container) return;
-
-        if (selectedRegions.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <p>Регионы не выбраны</p>
-                </div>
-            `;
-        } else {
-            let html = '<div class="item-list">';
-            document.querySelectorAll('.region-checkbox:checked').forEach(checkbox => {
-                const regionCard = checkbox.closest('.item-card');
-                const regionName = regionCard.querySelector('.item-card__title').textContent;
-                html += `
-                    <div class="item-card">
-                        <div class="item-card__header">
-                            <h4 class="item-card__title">${regionName}</h4>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-    }
-
-    // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Инициализируем список выбранных регионов
-        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
-    });
-
-    function toggleEmailRequired(checkbox, index) {
-        const row = checkbox.closest('tr');
-        const emailInput = row.querySelector('input[name="userEmails"]');
-        const errorDiv = emailInput.nextElementSibling;
-
-        if (checkbox.checked) {
-            emailInput.required = true;
-            emailInput.disabled = false;
-            emailInput.placeholder = "Введите email администратора";
-            emailInput.value = "";
-            // Добавляем класс для валидации
-            emailInput.classList.add('user-email-input');
-        } else {
-            emailInput.required = false;
-            emailInput.disabled = true;
-            emailInput.placeholder = "Недоступно для заполнения";
-            emailInput.value = "";
-            emailInput.classList.remove('error');
-            errorDiv.style.display = 'none';
-            // Удаляем класс валидации
-            emailInput.classList.remove('user-email-input');
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
-            toggleEmailRequired(checkbox, index);
-
-            checkbox.addEventListener('change', function() {
-                toggleEmailRequired(this, index);
-            });
-        });
-    });
-
-    function validateUsername(input, userId) {
-        const username = input.value;
-        const feedbackId = 'username-feedback-' + Array.from(input.closest('tr').parentNode.children).indexOf(input.closest('tr'));
-        const feedback = document.getElementById(feedbackId);
-
-        if (!username) {
-            input.classList.add('is-invalid');
-            feedback.textContent = 'Имя пользователя обязательно';
-            return;
-        }
-
-        fetch('/api/checkUsername?username=' + encodeURIComponent(username) + (userId ? '&userId=' + userId : ''))
-            .then(response => response.json())
-            .then(data => {
-                if (data.available) {
-                    input.classList.remove('is-invalid');
-                    feedback.textContent = '';
-                } else {
-                    input.classList.add('is-invalid');
-                    feedback.textContent = data.message || 'Пользователь с таким логином уже существует';
-                }
-            })
-            .catch(() => {
-                input.classList.add('is-invalid');
-                feedback.textContent = 'Ошибка проверки имени пользователя';
-            });
-    }
-
-    function validateUserEmail(input) {
-        const userId = input.getAttribute('data-user-id') || '';
-        const email = input.value;
-        const errorDiv = input.nextElementSibling;
-
-        if (!email) {
-            if (input.required) {
-                input.classList.add('error');
-                errorDiv.textContent = 'Email обязателен для администратора';
-                errorDiv.style.display = 'block';
-                return Promise.resolve(false);
-            }
-            return Promise.resolve(true);
-        }
-
-        return fetch('/api/checkUserEmail?email=' + encodeURIComponent(email) +
-                    (userId ? '&userId=' + userId : ''))
-            .then(response => response.json())
-            .then(data => {
-                console.log('User email check response:', data); // Добавляем логирование
-                if (data.available) {
-                    input.classList.remove('error');
-                    errorDiv.style.display = 'none';
-                    return true;
-                } else {
-                    input.classList.add('error');
-                    errorDiv.textContent = data.message || 'Email уже используется';
-                    errorDiv.style.display = 'block';
-                    return false;
-                }
-            })
-            .catch(error => {
-                console.error('Error checking user email:', error); // Добавляем логирование ошибок
-                input.classList.add('error');
-                errorDiv.textContent = 'Ошибка проверки email. Пожалуйста, попробуйте позже.';
-                errorDiv.style.display = 'block';
-                return false;
-            });
-    }
-
-    function validatePassword(password) {
-        // Empty password is allowed in edit form (means no change)
-        if (password === '') return true;
-        return password.length >= 8 && password.length <= 16;
-    }
-
-    function addTableRow(tableId) {
-        const table = document.getElementById(tableId);
-        const tbody = table.querySelector('tbody');
-        const emptyRow = tbody.querySelector('tr.empty-state');
-
-        if (emptyRow) {
-            emptyRow.remove();
-        }
-
-        const newRow = document.createElement('tr');
-
-        if (tableId === 'addresses') {
-            // Получаем список регионов из первого существующего select или из любого select с регионами на странице
-            let regionSelect = document.querySelector('select[name="addressRegionIds"]');
-            if (!regionSelect) {
-                // Если нет существующих select, ищем в модальном окне
-                regionSelect = document.querySelector('#regionsModal select');
-            }
-
-            let regionOptions = '';
-            if (regionSelect) {
-                regionOptions = Array.from(regionSelect.options)
-                    .map(option => `<option value="${option.value}">${option.textContent}</option>`)
-                    .join('');
-            } else {
-                // Если не нашли select, берем из списка доступных регионов
-                regionOptions = Array.from(document.querySelectorAll('#selected-regions-container .item-card'))
-                    .map(card => {
-                        const regionName = card.querySelector('.item-card__title').textContent;
-                        const regionId = card.querySelector('.item-card__title').getAttribute('data-region-id');
-                        return `<option value="${regionId}">${regionName}</option>`;
-                    })
-                    .join('');
-            }
-
-            newRow.innerHTML = `
-                <td><input type="text"
-                           name="postalcodes"
-                           pattern="[0-9]{6}"
-                           maxlength="6"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                           title="Почтовый индекс должен содержать 6 цифр"
-                           required></td>
-                <td><input type="text" name="countries" required></td>
-                <td>
-                    <select name="addressRegionIds" class="form-control" required>
-                        <option value="">Выберите регион</option>
-                        ${regionOptions}
-                    </select>
-                </td>
-                <td><input type="text" name="rayons"></td>
-                <td><input type="text" name="cities" required></td>
-                <td><input type="text" name="streets" required></td>
-                <td><input type="text" name="homes" required></td>
-                <td><input type="text" name="roomnumbers" required></td>
-                <td><textarea name="schedules"></textarea></td>
-                <td>
-                    <select name="contactIds">
-                        <option value="">Нет контакта</option>
-                        ${Array.from(document.querySelectorAll('#contacts tbody tr')).map(tr => {
-                const nameInput = tr.querySelector('input[name="contactNames"]');
-                if (nameInput) {
-                    return `<option value="${tr.dataset.id || ''}">${nameInput.value}</option>`;
-                }
-                return '';
-            }).join('')}
-                    </select>
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-        } else if (tableId === 'contacts') {
-            newRow.innerHTML = `
-                <td><input type="text" name="typeContacts" required></td>
-                <td><input type="text" name="contactNames" required></td>
-                <td>
-                    <input type="text" name="phonenumbers" class="phone-input"
-                           maxlength="11" required pattern="[0-9]{11}"
-                           title="Номер телефона должен содержать 11 цифр">
-                    <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
-                </td>
-                <td>
-                    <input type="email" name="emails" class="email-input" required>
-                    <div class="error-message email-error">Email уже используется</div>
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)"
-                            style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-        } else if (tableId === 'users') {
-            const newIndex = tbody.querySelectorAll('tr:not(.empty-state)').length;
-            newRow.innerHTML = `
-                <td>
-                    <input type="text" name="usernames" required onblur="validateUsername(this)">
-                    <input type="hidden" name="userIds" value="">
-                    <div class="invalid-feedback" id="username-feedback-${newIndex}"></div>
-                </td>
-                <td><input type="text" name="nameuser" required></td>
-                <td>
-                    <input type="password" name="passwords" placeholder="Введите пароль" required>
-                    <div class="error-message password-error">Пароль должен содержать от 8 до 16 символов</div>
-                </td>
-                <td>
-                    <input type="email" name="userEmails" disabled>
-                    <div class="invalid-feedback" id="email-feedback-${newIndex}"></div>
-                </td>
-                <td style="text-align: center;">
-                    <input type="hidden" name="_isAdmins" value="on">
-                    <input type="checkbox" name="isAdmins" value="false" onchange="toggleEmailRequired(this, ${newIndex})">
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-
-            // Add password validation for the new row
-            const passwordInput = newRow.querySelector('input[name="passwords"]');
-            const passwordError = newRow.querySelector('.password-error');
-
-            passwordInput.addEventListener('input', function() {
-                if (!validatePassword(this.value)) {
-                    this.classList.add('error');
-                    passwordError.style.display = 'block';
-                } else {
-                    this.classList.remove('error');
-                    passwordError.style.display = 'none';
-                }
-            });
-        }
-
-        tbody.appendChild(newRow);
-    }
-
-    function removeTableRow(button) {
-        const row = button.closest('tr');
-        const tbody = row.parentElement;
-        const table = tbody.closest('table');
-
-        row.remove();
-
-        if (tbody.querySelectorAll('tr:not(.empty-state)').length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.className = 'empty-state';
-
-            if (table.id === 'addresses') {
-                emptyRow.innerHTML = `
-                    <td colspan="11">
-                        <i class="fas fa-map-marked-alt"></i>
-                        <p>Адреса не добавлены</p>
-                    </td>
-                `;
-            } else if (table.id === 'contacts') {
-                emptyRow.innerHTML = `
-                    <td colspan="5">
-                        <i class="fas fa-user-tie"></i>
-                        <p>Контакты не добавлены</p>
-                    </td>
-                `;
-            } else if (table.id === 'users') {
-                emptyRow.innerHTML = `
-                    <td colspan="6">
-                        <i class="fas fa-users"></i>
-                        <p>Пользователи не добавлены</p>
-                    </td>
-                `;
-            }
-
-            tbody.appendChild(emptyRow);
-        }
-    }
-
-    document.addEventListener('click', function(event) {
-        const sidebar = document.getElementById('sidebar');
-        const menuBtn = document.querySelector('.app-header__menu-btn');
-
-        if (sidebar.classList.contains('app-sidebar--open') &&
-            !sidebar.contains(event.target) &&
-            event.target !== menuBtn &&
-            !menuBtn.contains(event.target)) {
-            closeNav();
-        }
-    });
-
-    // Инициализация состояния email полей при загрузке
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
-            toggleEmailRequired(checkbox, index);
-        });
-    });
-
-    // Add validation for existing password fields
-    document.addEventListener('DOMContentLoaded', function() {
-        // Setup validation for existing password fields
-        document.querySelectorAll('input[name="passwords"]').forEach(input => {
-            const errorDiv = input.nextElementSibling;
-
-            input.addEventListener('input', function() {
-                if (!validatePassword(this.value)) {
-                    this.classList.add('error');
-                    errorDiv.style.display = 'block';
-                } else {
-                    this.classList.remove('error');
-                    errorDiv.style.display = 'none';
-                }
-            });
-        });
-
-        // Add form submit validation
-        const form = document.querySelector('form');
-        if (form) {
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const phoneInputs = document.querySelectorAll('input[name="phonenumbers"]'),
-                      phones = Array.from(phoneInputs).map(input => input.value.trim()),
-                      uniquePhones = new Set(phones.filter(phone => phone !== '')),
-                      hasErrors = false;
-
-                // Проверка на дубликаты
-                const duplicatePhones = phones.filter((phone, index) => 
-                    phone !== '' && phones.indexOf(phone) !== index
-                );
-
-                if (duplicatePhones.length > 0) {
-                    phoneInputs.forEach(input => {
-                        if (duplicatePhones.includes(input.value.trim())) {
-                            markPhoneError(input, 'Этот номер телефона уже используется в форме');
-                        }
-                    });
-                    return false;
-                }
-
-                // Проверка формата и уникальности
-                for (const input of phoneInputs) {
-                    const phone = input.value.trim();
-                    if (phone === '') continue;
-
-                    if (!/^\d{11}$/.test(phone)) {
-                        markPhoneError(input, 'Номер телефона должен содержать ровно 11 цифр');
-                        return false;
-                    }
-
-                    try {
-                        const tr = input.closest('tr'),
-                              contactId = tr ? tr.getAttribute('data-contact-id') : '',
-                              response = await fetch(`/api/checkPhone?phone=${phone}${contactId ? `&contactId=${contactId}` : ''}`),
-                              data = await response.json();
-
-                        if (!data.valid) {
-                            markPhoneError(input, data.message || 'Этот номер телефона уже используется другим контактом');
-                            return false;
-                        } else {
-                            clearPhoneError(input);
-                        }
-                    } catch (error) {
-                        console.error('Ошибка при проверке номера телефона:', error);
-                        return false;
-                    }
-                }
-
-                // Если все проверки пройдены, отправляем форму
-                this.submit();
-            });
-        }
-
-        function markPhoneError(input, message) {
-            input.classList.add('error');
-            const errorDiv = input.nextElementSibling;
-            if (errorDiv && errorDiv.classList.contains('error-message')) {
-                errorDiv.style.display = 'block';
-                errorDiv.textContent = message;
-            }
-        }
-
-        function clearPhoneError(input) {
-            input.classList.remove('error');
-            const errorDiv = input.nextElementSibling;
-            if (errorDiv && errorDiv.classList.contains('error-message')) {
-                errorDiv.style.display = 'none';
-            }
-        }
-    });
-
-    function validateINN(inn) {
-        // Remove any non-digit characters
-        inn = inn.replace(/\D/g, '');
-
-        // Check if length is either 10 or 12
-        if (inn.length !== 10 && inn.length !== 12) {
-            return false;
-        }
-
-        return true;
-    }
-
-    function validateKPP(kpp) {
-        // Remove any non-digit characters
-        kpp = kpp.replace(/\D/g, '');
-
-        // Check if length is exactly 9
-        return kpp.length === 9;
-    }
-
-    function setupValidation() {
-        const innInput = document.getElementById('inn');
-        const kppInput = document.getElementById('kpp');
-        const saveButton = document.querySelector('button[type="submit"]');
-        const innError = document.getElementById('inn-error');
-        const kppError = document.getElementById('kpp-error');
-
-        function validateForm() {
-            let isValid = true;
-
-            // Validate INN
-            if (!validateINN(innInput.value)) {
-                innInput.classList.add('error');
-                innError.style.display = 'block';
-                isValid = false;
-            } else {
-                innInput.classList.remove('error');
-                innError.style.display = 'none';
-            }
-
-            // Validate KPP
-            if (!validateKPP(kppInput.value)) {
-                kppInput.classList.add('error');
-                kppError.style.display = 'block';
-                isValid = false;
-            } else {
-                kppInput.classList.remove('error');
-                kppError.style.display = 'none';
-            }
-
-            // Enable/disable save button
-            saveButton.disabled = !isValid;
-        }
-
-        // Allow only numbers in INN and KPP fields
-        function allowOnlyNumbers(event) {
-            if (!/[0-9]/.test(event.key) && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
-                event.preventDefault();
-            }
-        }
-
-        innInput.addEventListener('keydown', allowOnlyNumbers);
-        kppInput.addEventListener('keydown', allowOnlyNumbers);
-
-        innInput.addEventListener('input', validateForm);
-        kppInput.addEventListener('input', validateForm);
-
-        // Initial validation
-        validateForm();
-    }
-
-    // Run setup when DOM is loaded
-    document.addEventListener('DOMContentLoaded', setupValidation);
-
-    function validatePhoneNumber(phone) {
-        return /^[0-9]{11}$/.test(phone);
-    }
-
-    function validateContactEmail(email, contactId = '') {
-        return fetch('/api/checkContactEmail?email=' + encodeURIComponent(email) +
-                    (contactId ? '&contactId=' + contactId : ''))
-            .then(response => response.json())
-            .then(data => {
-                console.log('Contact email check response:', data); // Добавляем логирование
-                return data.available;
-            })
-            .catch(error => {
-                console.error('Error checking contact email:', error); // Добавляем логирование ошибок
-                return false;
-            });
-    }
-
-    function setupContactValidation() {
-        // Валидация телефонных номеров
-        document.querySelectorAll('.phone-input').forEach(input => {
-            const errorDiv = input.nextElementSibling;
-
-            // Разрешаем только цифры при вводе
-            input.addEventListener('keypress', (e) => {
-                if (!/[0-9]/.test(e.key) || input.value.length >= 11) {
-                    e.preventDefault();
-                }
-            });
-
-            input.addEventListener('input', function() {
-                // Удаляем все нецифровые символы
-                this.value = this.value.replace(/\D/g, '');
-
-                if (!validatePhoneNumber(this.value)) {
-                    this.classList.add('error');
-                    errorDiv.style.display = 'block';
-                } else {
-                    this.classList.remove('error');
-                    errorDiv.style.display = 'none';
-                }
-            });
-        });
-
-        // Валидация email
-        document.querySelectorAll('.email-input').forEach(input => {
-            const errorDiv = input.nextElementSibling;
-            const contactId = input.getAttribute('data-contact-id') || '';
-
-            input.addEventListener('blur', async function() {
-                if (this.value) {
-                    const isAvailable = await validateContactEmail(this.value, contactId);
-                    if (!isAvailable) {
-                        this.classList.add('error');
-                        errorDiv.style.display = 'block';
-                    } else {
-                        this.classList.remove('error');
-                        errorDiv.style.display = 'none';
-                    }
-                }
-            });
-        });
-    }
-
-    // Обновляем обработчик отправки формы
-    document.querySelector('form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        let hasErrors = false;
-
-        // Validate INN
-        const innInput = document.getElementById('inn');
-        const innError = document.getElementById('inn-error');
-        
-        // Проверяем текущее значение ИНН
-        try {
-            const clientId = window.location.pathname.split('/').pop();
-            const response = await fetch(`/api/checkInn?inn=${innInput.value}&clientId=${clientId}`);
-            const data = await response.json();
-            if (!data.valid) {
-                innInput.classList.add('error');
-                innError.style.display = 'block';
-                innError.textContent = data.message || 'Этот ИНН уже используется';
-                innInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                hasErrors = true;
-            }
-        } catch (error) {
-            console.error('Ошибка при проверке ИНН:', error);
-            hasErrors = true;
-        }
-
-        // Validate phone numbers - только проверка на 11 цифр
-        const phoneInputs = document.querySelectorAll('input[name="phonenumbers"]');
-        
-        for (const input of phoneInputs) {
-            const phone = input.value.trim();
-            if (phone === '') continue; // Пропускаем пустые поля
-
-            if (!/^\d{11}$/.test(phone)) {
-                input.classList.add('error');
-                const errorDiv = input.nextElementSibling;
-                if (errorDiv && errorDiv.classList.contains('error-message')) {
-                    errorDiv.style.display = 'block';
-                    errorDiv.textContent = 'Номер телефона должен содержать ровно 11 цифр';
-                }
-                hasErrors = true;
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return; // Прерываем отправку формы
-            } else {
-                input.classList.remove('error');
-                const errorDiv = input.nextElementSibling;
-                if (errorDiv && errorDiv.classList.contains('error-message')) {
-                    errorDiv.style.display = 'none';
-                }
-            }
-        }
-
-        // Если есть ошибки, не отправляем форму
-        if (hasErrors) {
-            return;
-        }
-
-        // Если все проверки пройдены успешно, отправляем форму
-        this.submit();
-    });
-
-    // Инициализация валидации при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        setupContactValidation();
-    });
-
-    // Add input event listeners for phone number fields
-    document.addEventListener('input', function(e) {
-        if (e.target.matches('input[name="phonenumbers"]')) {
-            // Remove any non-digit characters
-            e.target.value = e.target.value.replace(/\D/g, '');
-            
-            // Limit to 11 digits
-            if (e.target.value.length > 11) {
-                e.target.value = e.target.value.slice(0, 11);
-            }
-
-            // Show/hide error message based on length
-            const errorDiv = e.target.nextElementSibling;
-            if (errorDiv && errorDiv.classList.contains('error-message')) {
-                if (e.target.value.length !== 0 && e.target.value.length !== 11) {
-                    e.target.classList.add('error');
-                    errorDiv.style.display = 'block';
-                    errorDiv.textContent = 'Номер телефона должен содержать ровно 11 цифр';
-                } else {
-                    e.target.classList.remove('error');
-                    errorDiv.style.display = 'none';
-                }
-            }
-        }
-    });
-
-    function showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: var(--error);
-            color: white;
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-md);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-        `;
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-
-        setTimeout(() => {
-            errorDiv.style.animation = 'slideOut 0.3s ease-in';
-            setTimeout(() => {
-                errorDiv.remove();
-            }, 300);
-        }, 5000);
-    }
-
-    // Add these styles to your existing styles
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-</script>
 
 <!-- Модальное окно для управления регионами -->
 <div id="regionsModal" class="modal">
@@ -1760,6 +988,9 @@
         </div>
 
         <div class="modal-footer">
+            <button type="button" class="btn btn--secondary" onclick="closeModal('regionsModal')">
+                <i class="fas fa-times"></i> Отмена
+            </button>
             <button type="button" class="btn btn--primary" onclick="saveSelectedRegions()">
                 <i class="fas fa-save"></i> Сохранить
             </button>
@@ -1767,5 +998,858 @@
     </div>
 </div>
 
+<!-- Модальное окно для адресов -->
+<div id="addressModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="addressModalTitle">Добавить адрес</span>
+            </h3>
+            <button class="modal-close" type="button" onclick="closeModal('addressModal')">×</button>
+        </div>
+
+        <div class="modal-body">
+            <form id="addressForm">
+                <input type="hidden" id="addressId" name="addressId" value="">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Почтовый индекс <span class="required">*</span></label>
+                        <input type="text" id="postalcode" class="form-control"
+                               pattern="[0-9]{6}" maxlength="6"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                               title="Почтовый индекс должен содержать 6 цифр"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Страна <span class="required">*</span></label>
+                        <input type="text" id="country" class="form-control" required maxlength="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Регион <span class="required">*</span></label>
+                        <select id="addressRegionId" class="form-control" required>
+                            <option value="">Выберите регион</option>
+                            <option th:each="region : ${clientRegions}"
+                                    th:value="${region.id}"
+                                    th:text="${region.name}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Станция</label>
+                        <select id="addressStationId" class="form-control">
+                            <option value="">Выберите станцию</option>
+                            <option th:each="station : ${clientStations}"
+                                    th:value="${station.id}"
+                                    th:text="${station.name}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Район</label>
+                        <input type="text" id="rayon" class="form-control" maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Город <span class="required">*</span></label>
+                        <input type="text" id="city" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Улица <span class="required">*</span></label>
+                        <input type="text" id="street" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Дом <span class="required">*</span></label>
+                        <input type="text" id="home" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Строение <span class="required">*</span></label>
+                        <input type="text" id="roomnumber" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label class="form-label">График работы адреса доставки</label>
+                        <textarea id="schedule" class="form-control" maxlength="300"></textarea>
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label class="form-label">Особые требования, схема проезда</label>
+                        <textarea id="specialRequirements" class="form-control" maxlength="3000"></textarea>
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label class="form-label">Контакт</label>
+                        <select id="contactId" class="form-control">
+                            <option value="">Нет контакта</option>
+                            <option th:each="contact : ${client.contacts}"
+                                    th:value="${contact.id}"
+                                    th:text="${contact.name}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn--secondary" onclick="closeModal('addressModal')">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+            <button type="button" class="btn btn--primary" onclick="saveAddress()">
+                <i class="fas fa-save"></i> Сохранить
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openNav() {
+        document.getElementById("sidebar").classList.add("app-sidebar--open");
+    }
+
+    function closeNav() {
+        document.getElementById("sidebar").classList.remove("app-sidebar--open");
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add("modal--open");
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove("modal--open");
+    }
+
+    let selectedRegions = [];
+
+    function filterRegions() {
+        const searchTerm = document.getElementById('regionSearch').value.toLowerCase();
+        const regionCards = document.querySelectorAll('#regions-list .item-card');
+
+        regionCards.forEach(card => {
+            const regionName = card.querySelector('.item-card__title').textContent.toLowerCase();
+            card.style.display = regionName.includes(searchTerm) ? 'block' : 'none';
+        });
+    }
+
+    function updateSelectedRegions() {
+        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+
+    function saveSelectedRegions() {
+        // Удаляем старые скрытые поля с ID регионов
+        document.querySelectorAll('input[name="regionIds"]').forEach(input => input.remove());
+
+        // Создаем новые скрытые поля для каждого выбранного региона
+        const form = document.getElementById('clientForm');
+        selectedRegions.forEach(regionId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'regionIds';
+            input.value = regionId;
+            form.appendChild(input);
+        });
+
+        updateSelectedRegionsDisplay();
+        closeModal('regionsModal');
+    }
+
+    function updateSelectedRegionsDisplay() {
+        const container = document.getElementById('selected-regions-container');
+        if (!container) return;
+
+        if (selectedRegions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>Регионы не выбраны</p>
+                </div>
+            `;
+        } else {
+            let html = '<div class="item-list">';
+
+            selectedRegions.forEach(regionId => {
+                const regionName = document.querySelector(`.region-checkbox[value="${regionId}"]`)
+                    .closest('.item-card')
+                    .querySelector('.item-card__title').textContent;
+
+                html += `
+                    <div class="item-card">
+                        <div class="item-card__header">
+                            <h4 class="item-card__title">${regionName}</h4>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+    }
+
+    let currentAddressRow = null;
+
+    function openAddressModal(rowElement) {
+        const modal = document.getElementById('addressModal');
+        const form = document.getElementById('addressForm');
+        const title = document.getElementById('addressModalTitle');
+
+        // Сброс формы
+        form.reset();
+
+        if (rowElement) {
+            // Режим редактирования
+            title.textContent = 'Редактировать адрес';
+            currentAddressRow = rowElement;
+
+            // Заполняем форму данными из строки
+            document.getElementById('addressId').value = rowElement.getAttribute('data-address-id') || '';
+            document.getElementById('postalcode').value = rowElement.cells[0].textContent;
+            document.getElementById('country').value = rowElement.cells[1].textContent;
+
+            // Для выпадающих списков
+            const regionSelect = document.getElementById('addressRegionId');
+            const regionName = rowElement.cells[2].textContent;
+            for (let i = 0; i < regionSelect.options.length; i++) {
+                if (regionSelect.options[i].text === regionName) {
+                    regionSelect.selectedIndex = i;
+                    break;
+                }
+            }
+
+            const stationSelect = document.getElementById('addressStationId');
+            const stationName = rowElement.cells[3].textContent;
+            for (let i = 0; i < stationSelect.options.length; i++) {
+                if (stationSelect.options[i].text === stationName) {
+                    stationSelect.selectedIndex = i;
+                    break;
+                }
+            }
+
+            // Заполняем остальные поля
+            document.getElementById('rayon').value = rowElement.cells[4].textContent;
+            document.getElementById('city').value = rowElement.cells[5].textContent;
+            document.getElementById('street').value = rowElement.cells[6].textContent;
+            document.getElementById('home').value = rowElement.cells[7].textContent;
+            document.getElementById('roomnumber').value = rowElement.cells[8].textContent;
+            document.getElementById('schedule').value = rowElement.cells[9].textContent;
+            document.getElementById('specialRequirements').value = rowElement.cells[10].textContent;
+
+            const contactSelect = document.getElementById('contactId');
+            const contactName = rowElement.cells[11].textContent;
+            for (let i = 0; i < contactSelect.options.length; i++) {
+                if (contactSelect.options[i].text === contactName) {
+                    contactSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        } else {
+            // Режим добавления
+            title.textContent = 'Добавить адрес';
+            currentAddressRow = null;
+            document.getElementById('addressId').value = '';
+        }
+
+        modal.classList.add('modal--open');
+    }
+
+    function editAddress(rowElement) {
+        openAddressModal(rowElement);
+    }
+
+    function saveAddress() {
+        console.log('saveAddress() called');
+        const form = document.getElementById('addressForm');
+        const tbody = document.querySelector('#addresses tbody');
+
+        // Проверка обязательных полей
+        let isValid = true;
+        form.querySelectorAll('[required]').forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('error');
+                isValid = false;
+            } else {
+                field.classList.remove('error');
+            }
+        });
+
+        if (!isValid) {
+            alert('Пожалуйста, заполните все обязательные поля');
+            return;
+        }
+
+        const addressData = {
+            id: document.getElementById('addressId').value,
+            postalcode: document.getElementById('postalcode').value,
+            country: document.getElementById('country').value,
+            region: document.getElementById('addressRegionId').options[document.getElementById('addressRegionId').selectedIndex].text,
+            regionId: document.getElementById('addressRegionId').value,
+            station: document.getElementById('addressStationId').options[document.getElementById('addressStationId').selectedIndex].text,
+            stationId: document.getElementById('addressStationId').value,
+            rayon: document.getElementById('rayon').value,
+            city: document.getElementById('city').value,
+            street: document.getElementById('street').value,
+            home: document.getElementById('home').value,
+            roomnumber: document.getElementById('roomnumber').value,
+            schedule: document.getElementById('schedule').value,
+            specialRequirements: document.getElementById('specialRequirements').value,
+            contact: document.getElementById('contactId').options[document.getElementById('contactId').selectedIndex].text,
+            contactId: document.getElementById('contactId').value
+        };
+
+        if (currentAddressRow) {
+            // Обновляем существующую строку
+            updateAddressRow(currentAddressRow, addressData);
+        } else {
+            // Добавляем новую строку
+            addNewAddressRow(addressData);
+        }
+
+        closeModal('addressModal');
+        prepareAddressInputs(); // Добавьте эту строку
+    }
+
+    function updateAddressRow(row, data) {
+        row.cells[0].textContent = data.postalcode;
+        row.cells[1].textContent = data.country;
+        row.cells[2].textContent = data.region;
+        row.cells[3].textContent = data.station;
+        row.cells[4].textContent = data.rayon;
+        row.cells[5].textContent = data.city;
+        row.cells[6].textContent = data.street;
+        row.cells[7].textContent = data.home;
+        row.cells[8].textContent = data.roomnumber;
+        row.cells[9].textContent = data.schedule;
+        row.cells[10].textContent = data.specialRequirements;
+        row.cells[11].textContent = data.contact;
+
+        // Обновляем data-атрибуты
+        if (data.id) {
+            row.setAttribute('data-address-id', data.id);
+        }
+        if (data.regionId) {
+            row.setAttribute('data-region-id', data.regionId);
+        }
+        if (data.stationId) {
+            row.setAttribute('data-station-id', data.stationId);
+        }
+        if (data.contactId) {
+            row.setAttribute('data-contact-id', data.contactId);
+        }
+    }
+
+    function addNewAddressRow(data) {
+        console.log('addNewAddressRow() called with data:', data);
+        const tbody = document.querySelector('#addresses tbody');
+        const emptyRow = tbody.querySelector('tr.empty-state');
+
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const newRow = document.createElement('tr');
+        if (data.id) {
+            newRow.setAttribute('data-address-id', data.id);
+        }
+        if (data.regionId) {
+            newRow.setAttribute('data-region-id', data.regionId);
+        }
+        if (data.stationId) {
+            newRow.setAttribute('data-station-id', data.stationId);
+        }
+        if (data.contactId) {
+            newRow.setAttribute('data-contact-id', data.contactId);
+        }
+
+        newRow.innerHTML = `
+        <td>${data.postalcode}</td>
+        <td>${data.country}</td>
+        <td>${data.region}</td>
+        <td>${data.station}</td>
+        <td>${data.rayon}</td>
+        <td>${data.city}</td>
+        <td>${data.street}</td>
+        <td>${data.home}</td>
+        <td>${data.roomnumber}</td>
+        <td>${data.schedule}</td>
+        <td>${data.specialRequirements}</td>
+        <td>${data.contact}</td>
+        <td>
+            <button type="button" class="action-btn" onclick="editAddress(this.closest('tr'))">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="action-btn text-danger" onclick="deleteAddress(this.closest('tr'))">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+
+        tbody.appendChild(newRow);
+    }
+
+    function deleteAddress(rowElement) {
+        if (confirm('Вы уверены, что хотите удалить этот адрес?')) {
+            const tbody = rowElement.parentElement;
+            rowElement.remove();
+
+            // Если больше нет строк, добавляем сообщение "Адреса не добавлены"
+            if (tbody.querySelectorAll('tr:not(.empty-state)').length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.className = 'empty-state';
+                emptyRow.innerHTML = `
+                    <td colspan="13">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <p>Адреса не добавлены</p>
+                    </td>
+                `;
+                tbody.appendChild(emptyRow);
+            }
+
+            prepareAddressInputs();
+        }
+    }
+
+    function prepareAddressInputs() {
+        console.log('prepareAddressInputs() called');
+        const form = document.getElementById('clientForm');
+        if (!form) return;
+
+        // Удаляем старые скрытые поля адресов
+        const oldFields = form.querySelectorAll('input[name^="postalcodes"], input[name^="countries"], input[name^="addressRegionIds"], input[name^="addressStationIds"], input[name^="rayons"], input[name^="cities"], input[name^="streets"], input[name^="homes"], input[name^="roomnumbers"], input[name^="schedules"], input[name^="specialRequirements"], input[name^="contactIds"]');
+        oldFields.forEach(field => field.remove());
+
+        // Удаляем старые поля регионов
+        const oldRegionFields = form.querySelectorAll('input[name="regionIds"]');
+        oldRegionFields.forEach(field => field.remove());
+
+        // Добавляем поля для выбранных регионов
+        selectedRegions.forEach(regionId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'regionIds';
+            input.value = regionId;
+            form.appendChild(input);
+        });
+
+        // Собираем все строки адресов (включая новые, которые могут не иметь data-address-id)
+        const rows = document.querySelectorAll('#addresses tbody tr:not(.empty-state)');
+
+        console.log('Found ' + rows.length + ' address rows');
+        rows.forEach((row, index) => {
+            console.log('Processing address row ' + index + ':', row);
+            
+            // Создаем скрытые поля для каждого адреса в формате, который ожидает контроллер
+            const fields = [
+                {name: `postalcodes`, value: row.cells[0].textContent.trim()},
+                {name: `countries`, value: row.cells[1].textContent.trim()},
+                {name: `addressRegionIds`, value: row.getAttribute('data-region-id') || ''},
+                {name: `addressStationIds`, value: row.getAttribute('data-station-id') || ''},
+                {name: `rayons`, value: row.cells[4].textContent.trim()},
+                {name: `cities`, value: row.cells[5].textContent.trim()},
+                {name: `streets`, value: row.cells[6].textContent.trim()},
+                {name: `homes`, value: row.cells[7].textContent.trim()},
+                {name: `roomnumbers`, value: row.cells[8].textContent.trim()},
+                {name: `schedules`, value: row.cells[9].textContent.trim()},
+                {name: `specialRequirements`, value: row.cells[10].textContent.trim()},
+                {name: `contactIds`, value: row.getAttribute('data-contact-id') || ''}
+            ];
+
+            console.log('Address ' + index + ' fields:', fields);
+
+            // Добавляем поля в форму
+            fields.forEach(field => {
+                if (field.value !== undefined && field.value !== null) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = field.name;
+                    input.value = field.value;
+                    form.appendChild(input);
+                    console.log('Added field:', field.name, '=', field.value);
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация при загрузке страницы
+        setupValidation();
+        setupContactValidation();
+
+        // Инициализация чекбоксов администраторов
+        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
+            toggleEmailRequired(checkbox, index);
+            checkbox.addEventListener('change', function() {
+                toggleEmailRequired(this, index);
+            });
+        });
+
+        const mainForm = document.getElementById('clientForm');
+        if (mainForm) {
+            mainForm.addEventListener('submit', function(e) {
+                // Подготавливаем данные адресов
+                prepareAddressInputs();
+
+                // Проверяем только обязательные поля в основной форме
+                const requiredFields = mainForm.querySelectorAll('[required]');
+                let isValid = true;
+
+                requiredFields.forEach(field => {
+                    if (!field.value.trim() && field.closest('table') === null) {
+                        field.classList.add('error');
+                        isValid = false;
+                    }
+                });
+
+                // Проверяем телефонные номера
+                document.querySelectorAll('.phone-input').forEach(input => {
+                    if (!validatePhoneNumber(input.value)) {
+                        input.classList.add('error');
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Пожалуйста, заполните все обязательные поля и проверьте корректность телефонных номеров');
+                }
+            });
+        }
+    });
+
+
+    function addTableRow(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const tbody = table.querySelector('tbody');
+        const emptyRow = tbody.querySelector('tr.empty-state');
+
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const newRow = document.createElement('tr');
+        const newIndex = tbody.querySelectorAll('tr:not(.empty-state)').length;
+        newRow.dataset.index = newIndex;
+
+        if (tableId === 'contacts') {
+            newRow.innerHTML = `
+                <td><input type="text" name="typeContacts" required></td>
+                <td><input type="text" name="contactNames" required></td>
+                <td>
+                    <input type="text" name="phonenumbers" class="phone-input" maxlength="11" required pattern="[0-9]{11}" title="Номер телефона должен содержать 11 цифр">
+                    <div class="error-message phone-error">Номер телефона должен содержать ровно 11 цифр</div>
+                </td>
+                <td>
+                    <input type="email" name="emails" class="email-input" required>
+                    <div class="error-message email-error">Email уже используется</div>
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+        } else if (tableId === 'users') {
+            newRow.innerHTML = `
+                <td>
+                    <input type="text" name="usernames" required onblur="validateUsername(this)">
+                    <input type="hidden" name="userIds" value="">
+                    <div class="invalid-feedback" id="username-feedback-${newIndex}"></div>
+                </td>
+                <td><input type="text" name="nameuser" required></td>
+                <td>
+                    <input type="password" name="passwords" placeholder="Введите пароль">
+                    <div class="error-message password-error">Пароль должен содержать от 8 до 16 символов</div>
+                </td>
+                <td>
+                    <input type="email" name="userEmails" disabled>
+                    <div class="invalid-feedback" id="email-feedback-${newIndex}"></div>
+                </td>
+                <td style="text-align: center;">
+                    <input type="hidden" name="_isAdmins" value="on">
+                    <input type="checkbox" name="isAdmins" value="false" onchange="toggleEmailRequired(this, ${newIndex})">
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn btn--danger" onclick="removeTableRow(this)" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
+            `;
+        }
+
+        tbody.appendChild(newRow);
+        setupContactValidation();
+    }
+
+    function removeTableRow(button) {
+        const row = button.closest('tr');
+        const tbody = row.parentElement;
+        const table = tbody.closest('table');
+
+        row.remove();
+
+        // Обновляем индексы оставшихся строк
+        const rows = tbody.querySelectorAll('tr:not(.empty-state)');
+        rows.forEach((row, idx) => {
+            row.dataset.index = idx;
+        });
+
+        if (tbody.querySelectorAll('tr:not(.empty-state)').length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.className = 'empty-state';
+
+            if (table.id === 'addresses') {
+                emptyRow.innerHTML = `<td colspan="13"><i class="fas fa-map-marked-alt"></i><p>Адреса не добавлены</p></td>`;
+            } else if (table.id === 'contacts') {
+                emptyRow.innerHTML = `<td colspan="5"><i class="fas fa-user-tie"></i><p>Контакты не добавлены</p></td>`;
+            } else if (table.id === 'users') {
+                emptyRow.innerHTML = `<td colspan="6"><i class="fas fa-users"></i><p>Пользователи не добавлены</p></td>`;
+            }
+
+            tbody.appendChild(emptyRow);
+        }
+    }
+
+    function validateINN(inn) {
+        inn = inn.replace(/\D/g, '');
+        return inn.length === 10 || inn.length === 12;
+    }
+
+    function validateKPP(kpp) {
+        kpp = kpp.replace(/\D/g, '');
+        return kpp.length === 9;
+    }
+
+    function validatePhoneNumber(phone) {
+        return /^[0-9]{11}$/.test(phone);
+    }
+
+    function setupValidation() {
+        const innInput = document.getElementById('inn');
+        const kppInput = document.getElementById('kpp');
+        const saveButton = document.querySelector('button[type="submit"]');
+        const innError = document.getElementById('inn-error');
+        const kppError = document.getElementById('kpp-error');
+
+        function validateForm() {
+            let isValid = true;
+
+            if (!validateINN(innInput.value)) {
+                innInput.classList.add('error');
+                innError.style.display = 'block';
+                isValid = false;
+            } else {
+                innInput.classList.remove('error');
+                innError.style.display = 'none';
+            }
+
+            if (!validateKPP(kppInput.value)) {
+                kppInput.classList.add('error');
+                kppError.style.display = 'block';
+                isValid = false;
+            } else {
+                kppInput.classList.remove('error');
+                kppError.style.display = 'none';
+            }
+
+            if (saveButton) {
+                saveButton.disabled = !isValid;
+            }
+        }
+
+        function allowOnlyNumbers(event) {
+            if (!/[0-9]/.test(event.key) && event.key !== 'Backspace' && event.key !== 'Delete' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+                event.preventDefault();
+            }
+        }
+
+        if (innInput) innInput.addEventListener('keydown', allowOnlyNumbers);
+        if (kppInput) kppInput.addEventListener('keydown', allowOnlyNumbers);
+        if (innInput) innInput.addEventListener('input', validateForm);
+        if (kppInput) kppInput.addEventListener('input', validateForm);
+        validateForm();
+    }
+
+    function setupContactValidation() {
+        document.querySelectorAll('.phone-input').forEach(input => {
+            const errorDiv = input.nextElementSibling;
+
+            input.addEventListener('keypress', (e) => {
+                if (!/[0-9]/.test(e.key) || input.value.length >= 11) {
+                    e.preventDefault();
+                }
+            });
+
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+                if (!validatePhoneNumber(this.value)) {
+                    this.classList.add('error');
+                    if (errorDiv) errorDiv.style.display = 'block';
+                } else {
+                    this.classList.remove('error');
+                    if (errorDiv) errorDiv.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    function toggleEmailRequired(checkbox, index) {
+        const row = checkbox.closest('tr');
+        const emailInput = row.querySelector('input[name="userEmails"]');
+        const errorDiv = emailInput.nextElementSibling;
+
+        if (checkbox.checked) {
+            emailInput.required = true;
+            emailInput.disabled = false;
+            emailInput.placeholder = "Введите email администратора";
+            emailInput.classList.add('user-email-input');
+        } else {
+            emailInput.required = false;
+            emailInput.disabled = true;
+            emailInput.placeholder = "Недоступно для заполнения";
+            emailInput.value = "";
+            emailInput.classList.remove('error');
+            if (errorDiv) errorDiv.style.display = 'none';
+            emailInput.classList.remove('user-email-input');
+        }
+    }
+
+    function validateUsername(input, userId) {
+        const username = input.value;
+        const feedbackId = 'username-feedback-' + Array.from(input.closest('tr').parentNode.children).indexOf(input.closest('tr'));
+        const feedback = document.getElementById(feedbackId);
+
+        if (!username) {
+            input.classList.add('is-invalid');
+            if (feedback) feedback.textContent = 'Имя пользователя обязательно';
+            return;
+        }
+
+        fetch('/api/checkUsername?username=' + encodeURIComponent(username) + (userId ? '&userId=' + userId : ''))
+            .then(response => response.json())
+            .then(data => {
+                if (data.available) {
+                    input.classList.remove('is-invalid');
+                    if (feedback) feedback.textContent = '';
+                } else {
+                    input.classList.add('is-invalid');
+                    if (feedback) feedback.textContent = data.message || 'Пользователь с таким логином уже существует';
+                }
+            })
+            .catch(() => {
+                input.classList.add('is-invalid');
+                if (feedback) feedback.textContent = 'Ошибка проверки имени пользователя';
+            });
+    }
+
+    function validateUserEmail(input) {
+        const email = input.value;
+        const userId = input.dataset.userId;
+        const errorDiv = input.nextElementSibling;
+
+        if (!email) {
+            if (input.required) {
+                input.classList.add('error');
+                if (errorDiv) {
+                    errorDiv.textContent = 'Email обязателен для администратора';
+                    errorDiv.style.display = 'block';
+                }
+            }
+            return;
+        }
+
+        fetch('/api/checkEmail?email=' + encodeURIComponent(email) + (userId ? '&userId=' + userId : ''))
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    input.classList.remove('error');
+                    if (errorDiv) errorDiv.style.display = 'none';
+                } else {
+                    input.classList.add('error');
+                    if (errorDiv) {
+                        errorDiv.textContent = data.message || 'Email уже используется';
+                        errorDiv.style.display = 'block';
+                    }
+                }
+            })
+            .catch(() => {
+                input.classList.add('error');
+                if (errorDiv) {
+                    errorDiv.textContent = 'Ошибка проверки email';
+                    errorDiv.style.display = 'block';
+                }
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        selectedRegions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => parseInt(cb.value));
+
+        // Инициализация обработчиков адресов
+        document.querySelectorAll('button[onclick^="openAddressModal"]').forEach(btn => {
+            btn.onclick = function(e) {
+                e.preventDefault();
+                openAddressModal(null);
+            };
+        });
+
+        // Инициализация валидации
+        setupValidation();
+        setupContactValidation();
+
+        // Инициализация чекбоксов администраторов
+        document.querySelectorAll('input[name="isAdmins"]').forEach((checkbox, index) => {
+            toggleEmailRequired(checkbox, index);
+            checkbox.addEventListener('change', function() {
+                toggleEmailRequired(this, index);
+            });
+        });
+
+        // Обработчик отправки формы
+        const mainForm = document.getElementById('clientForm');
+        if (mainForm) {
+            mainForm.addEventListener('submit', function(e) {
+                // Подготавливаем данные адресов
+                prepareAddressInputs();
+
+                // Проверяем только обязательные поля в основной форме
+                const requiredFields = mainForm.querySelectorAll('[required]');
+                let isValid = true;
+
+                requiredFields.forEach(field => {
+                    if (!field.value.trim() && field.closest('table') === null) { // Проверяем только поля вне таблиц
+                        field.classList.add('error');
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Пожалуйста, заполните все обязательные поля в основной форме');
+                }
+            });
+        }
+
+        // Закрытие сайдбара при клике вне его
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const menuBtn = document.querySelector('.app-header__menu-btn');
+
+            if (sidebar && sidebar.classList.contains('app-sidebar--open') &&
+                !sidebar.contains(event.target) &&
+                event.target !== menuBtn &&
+                !menuBtn.contains(event.target)) {
+                closeNav();
+            }
+        });
+    });
+</script>
 </body>
 </html>

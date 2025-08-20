@@ -869,11 +869,16 @@
             </div>
         </div>
 
-        <div th:if="${cart != null and !cart.cartItems.isEmpty()}">
+        <div th:if="${cart != null and !cart.cartItems.isEmpty()}" th:attr="data-cart-type=${isRailwayCart ? 'RAILWAY' : 'AUTO'}">
             <div th:each="truck, stat : ${cart.trucks}" class="truck-block animate-fade">
                 <div class="truck-block__header">
                     <i class="fas fa-truck truck-block__icon"></i>
-                    <span th:text="'Машина' + ' ' +  ${stat.count}"></span>
+                    <span th:if="${isRailwayCart}">
+                        <span th:text="'Вагон' + ' ' +  ${stat.count}"></span>
+                    </span>
+                    <span th:unless="${isRailwayCart}">
+                        <span th:text="'Машина' + ' ' +  ${stat.count}"></span>
+                    </span>
                 </div>
 
                 <div class="product-item" th:each="item : ${truck.items}">
@@ -929,7 +934,7 @@
                 <label for="addressId" class="form-label">Адрес доставки</label>
                 <select id="addressId" name="addressId" class="form-control">
                     <option value="" data-schedule="">Выберите адрес</option>
-                    <option th:each="address : ${client.addresses}"
+                    <option th:each="address : ${addresses}"
                             th:value="${address.id}"
                             th:text="${address.postalcode + ', ' + address.country + ', ' + (address.clientsRegion != null ? address.clientsRegion.region.name : '') + ', ' + address.city + ', ' + address.street + ', ' + address.home + (address.roomnumber != null ? ', ' + address.roomnumber : '')}"
                             th:data-schedule="${address.schedule}">
@@ -980,7 +985,10 @@
                 <!-- Правая часть - машины -->
                 <div class="distribution-target">
                     <div class="trucks-header">
-                        <h4>Машины</h4>
+                        <h4 id="trucksHeader">
+                            <span th:if="${isRailwayCart}">Вагоны</span>
+                            <span th:unless="${isRailwayCart}">Машины</span>
+                        </h4>
                         <button id="autoDistributeBtn" class="btn btn--small auto-distribute-btn">
                             <i class="fas fa-magic"></i> Автораспределение
                         </button>
@@ -989,7 +997,9 @@
                         <!-- Машины будут добавлены через JS -->
                     </div>
                     <button id="addTruckBtn" class="btn btn--small">
-                        <i class="fas fa-plus"></i> Добавить машину
+                        <i class="fas fa-plus"></i> 
+                        <span th:if="${isRailwayCart}">Добавить вагон</span>
+                        <span th:unless="${isRailwayCart}">Добавить машину</span>
                     </button>
                 </div>
             </div>
@@ -1005,6 +1015,9 @@
     </div>
 </div>
 
+<script th:inline="javascript">
+    var quota = [[${activeQuota != null ? activeQuota.allowedVolume : 0}]];
+</script>
 <script>
     // Обработчики сайдбара
     function openNav() {
@@ -1212,6 +1225,7 @@
     document.getElementById('manualDistributionBtn').addEventListener('click', function() {
         const modal = document.getElementById('manualDistributionModal');
         modal.style.display = 'block';
+        updateModalHeaders();
         loadManualDistributionData();
     });
 
@@ -1320,9 +1334,14 @@
         element.className = 'truck';
         element.dataset.truckId = truck.id || Date.now();
 
+        // Определяем тип номенклатуры для правильного заголовка
+        const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+        const isRailway = cartType === 'RAILWAY';
+        const vehicleType = isRailway ? 'Вагон' : 'Машина';
+
         element.innerHTML = `
         <div class="truck-header">
-            <span>Машина ${truckNumber}</span>
+            <span id="truckType-${truckNumber}">${vehicleType} ${truckNumber}</span>
             <i class="fas fa-trash delete-truck"></i>
         </div>
         <div class="truck-products dropzone" data-truck-id="${truck.id || Date.now()}">
@@ -1345,7 +1364,8 @@
     `;
 
         element.querySelector('.delete-truck').addEventListener('click', function() {
-            if (confirm('Удалить эту машину? Товары будут перенесены в доступные.')) {
+            const vehicleTypeText = isRailway ? 'вагон' : 'машину';
+            if (confirm(`Удалить этот ${vehicleTypeText}? Товары будут перенесены в доступные.`)) {
                 const items = element.querySelectorAll('.distribution-item');
                 const allProducts = document.getElementById('allProducts');
 
@@ -1378,8 +1398,32 @@
     function updateTruckNumbers() {
         const trucks = document.querySelectorAll('.truck');
         trucks.forEach((truck, index) => {
-            truck.querySelector('.truck-header span').textContent = `Машина ${index + 1}`;
+            // Проверяем тип номенклатуры из корзины
+            const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+            const truckType = cartType === 'RAILWAY' ? 'Вагон' : 'Машина';
+            truck.querySelector('.truck-header span').textContent = `${truckType} ${index + 1}`;
         });
+    }
+
+    // Обновляем заголовки в модальном окне
+    function updateModalHeaders() {
+        const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+        const isRailway = cartType === 'RAILWAY';
+        
+        // Обновляем заголовок "Машины/Вагоны"
+        const trucksHeader = document.getElementById('trucksHeader');
+        if (trucksHeader) {
+            trucksHeader.textContent = isRailway ? 'Вагоны' : 'Машины';
+        }
+        
+        // Обновляем кнопку "Добавить машину/вагон"
+        const addTruckBtn = document.getElementById('addTruckBtn');
+        if (addTruckBtn) {
+            const icon = addTruckBtn.querySelector('i');
+            addTruckBtn.innerHTML = '';
+            addTruckBtn.appendChild(icon);
+            addTruckBtn.appendChild(document.createTextNode(isRailway ? ' Добавить вагон' : ' Добавить машину'));
+        }
     }
 
     function initDragAndDrop() {
@@ -1479,31 +1523,52 @@
     }
 
     function validateTruckCapacity(dropzone, draggedItem) {
+        const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+        const isRailway = cartType === 'RAILWAY';
+        
         const truckProducts = dropzone.querySelectorAll('.distribution-item');
         let totalItems = 0;
-        let longProductsCount = 0;
+        let max = 16;
+        const vehicleType = isRailway ? 'вагон' : 'машину';
 
-        truckProducts.forEach(item => {
-            const quantity = parseInt(item.querySelector('.quantity-input').value);
-            totalItems += quantity;
-            if (parseFloat(item.dataset.length) === 2.8) {
-                longProductsCount += quantity;
-            }
-        });
-
-        const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
-        const productLength = parseFloat(draggedItem.dataset.length);
-
-        if (productLength === 2.8 || longProductsCount >= 7) {
-            if (totalItems + draggedQuantity > 13) {
-                alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
-                return false;
-            }
+        if (isRailway) {
+            // Логика для ЖД товаров
+            truckProducts.forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                totalItems += quantity;
+            });
+            const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
+            totalItems += draggedQuantity;
+            max = 49; // Максимум 49 пачек для ЖД
         } else {
-            if (totalItems + draggedQuantity > 16) {
-                alert('В машину можно добавить не более 16 пачек');
-                return false;
+            // Логика для авто товаров (существующая)
+            let count25 = 0;
+            let count28 = 0;
+            truckProducts.forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                const length = parseFloat(item.dataset.length);
+                totalItems += quantity;
+                if (length === 2.5 || length === 2.4) count25 += quantity;
+                if (length === 2.8) count28 += quantity;
+            });
+            const draggedQuantity = parseInt(draggedItem.querySelector('.quantity-input').value);
+            const productLength = parseFloat(draggedItem.dataset.length);
+            if (productLength === 2.5 || productLength === 2.4) count25 += draggedQuantity;
+            if (productLength === 2.8) count28 += draggedQuantity;
+            totalItems += draggedQuantity;
+            
+            if (count28 > 0 && count25 > 0) {
+                max = (count28 > 7) ? 13 : 16;
+            } else if (count28 > 0 && count25 === 0) {
+                max = 13;
+            } else if (count25 > 0 && count28 === 0) {
+                max = 16;
             }
+        }
+        
+        if (totalItems > max) {
+            alert(`В ${vehicleType} можно добавить не более ${max} пачек по текущим правилам!`);
+            return false;
         }
         return true;
     }
@@ -1579,12 +1644,27 @@
                 });
             });
 
-            if (longProductsCount >= 7 && totalItems > 13) {
-                alert(`Машина ${truckElement.querySelector('.truck-header span').textContent} содержит ${totalItems} пачек при ${longProductsCount} длинных товарах. Максимум 13 пачек разрешено.`);
-                isValid = false;
-            } else if (totalItems > 16) {
-                alert(`Машина ${truckElement.querySelector('.truck-header span').textContent} содержит ${totalItems} пачек. Максимум 16 пачек разрешено.`);
-                isValid = false;
+            // Валидация в зависимости от типа номенклатуры
+            const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+            const isRailway = cartType === 'RAILWAY';
+            const truckType = isRailway ? 'Вагон' : 'Машина';
+            const truckNumber = truckElement.querySelector('.truck-header span').textContent;
+            
+            if (isRailway) {
+                // Логика для ЖД товаров
+                if (totalItems > 49) {
+                    alert(`${truckNumber} содержит ${totalItems} пачек. Максимум 49 пачек разрешено для ЖД товаров.`);
+                    isValid = false;
+                }
+            } else {
+                // Логика для авто товаров (существующая)
+                if (longProductsCount >= 7 && totalItems > 13) {
+                    alert(`${truckNumber} содержит ${totalItems} пачек при ${longProductsCount} длинных товарах. Максимум 13 пачек разрешено.`);
+                    isValid = false;
+                } else if (totalItems > 16) {
+                    alert(`${truckNumber} содержит ${totalItems} пачек. Максимум 16 пачек разрешено.`);
+                    isValid = false;
+                }
             }
 
             trucks.push(truck);
@@ -1635,28 +1715,197 @@
     function validateTruckQuantity(input) {
         const truckProducts = input.closest('.truck-products');
         const items = truckProducts.querySelectorAll('.distribution-item');
+        const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
 
         let totalItems = 0;
-        let longProductsCount = 0;
+        let max = 16;
 
-        items.forEach(item => {
-            const quantity = parseInt(item.querySelector('.quantity-input').value);
-            totalItems += quantity;
-            if (parseFloat(item.dataset.length) === 2.8) {
-                longProductsCount += quantity;
+        if (cartType === 'RAILWAY') {
+            // Логика для ЖД товаров
+            items.forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                totalItems += quantity;
+            });
+            max = 49;
+        } else {
+            // Логика для авто товаров (существующая)
+            let count25 = 0;
+            let count28 = 0;
+
+            items.forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                const length = parseFloat(item.dataset.length);
+                totalItems += quantity;
+                if (length === 2.5 || length === 2.4) count25 += quantity;
+                if (length === 2.8) count28 += quantity;
+            });
+
+            if (count28 > 0 && count25 > 0) {
+                max = (count28 > 7) ? 13 : 16;
+            } else if (count28 > 0 && count25 === 0) {
+                max = 13;
+            } else if (count25 > 0 && count28 === 0) {
+                max = 16;
             }
-        });
+        }
 
-        if (longProductsCount >= 7 && totalItems > 13) {
-            alert('В машину можно добавить не более 13 пачек, так как есть товары длиной 2.8м');
-            input.value = 1;
-            validateTruckQuantity(input);
-        } else if (totalItems > 16) {
-            alert('В машину можно добавить не более 16 пачек');
+        if (totalItems > max) {
+            const truckType = cartType === 'RAILWAY' ? 'вагон' : 'машину';
+            alert(`В ${truckType} можно добавить не более ${max} пачек по текущим правилам!`);
             input.value = 1;
             validateTruckQuantity(input);
         }
     }
+
+    // Валидация для обычной корзины (кнопки + и -)
+    function validateCartQuantities() {
+        const cartType = document.querySelector('[data-cart-type]')?.dataset.cartType;
+        
+        document.querySelectorAll('.truck-block').forEach(truckBlock => {
+            let total = 0;
+            let max = 16;
+
+            if (cartType === 'RAILWAY') {
+                // Логика для ЖД товаров
+                truckBlock.querySelectorAll('.product-item').forEach(item => {
+                    const quantity = parseInt(item.querySelector('.quantity-control__value').textContent);
+                    total += quantity;
+                });
+                max = 49; // Максимум 49 пачек для ЖД
+            } else {
+                // Логика для авто товаров (существующая)
+                let count25 = 0;
+                let count28 = 0;
+                truckBlock.querySelectorAll('.product-item').forEach(item => {
+                    const quantity = parseInt(item.querySelector('.quantity-control__value').textContent);
+                    const length = parseFloat(item.querySelector('.product-item__spec:last-child span').textContent);
+                    total += quantity;
+                    if (length === 2.5 || length === 2.4) count25 += quantity;
+                    if (length === 2.8) count28 += quantity;
+                });
+                if (count28 > 0 && count25 > 0) {
+                    max = (count28 > 7) ? 13 : 16;
+                } else if (count28 > 0 && count25 === 0) {
+                    max = 13;
+                } else if (count25 > 0 && count28 === 0) {
+                    max = 16;
+                }
+            }
+            
+            if (total > max) {
+                const truckType = cartType === 'RAILWAY' ? 'вагоне' : 'машине';
+                alert(`В ${truckType} не может быть больше ${max} пачек по текущим правилам!`);
+                // Можно реализовать откат последнего действия или блокировку
+            }
+        });
+    }
+
+    // Проверка квоты при изменении количества в корзине
+    function showQuotaNotification(message) {
+        let n = document.getElementById('quota-notification');
+        if (!n) {
+            n = document.createElement('div');
+            n.id = 'quota-notification';
+            n.style.position = 'fixed';
+            n.style.top = '30px';
+            n.style.right = '30px';
+            n.style.background = 'var(--error)';
+            n.style.color = 'white';
+            n.style.padding = '1rem 2rem';
+            n.style.borderRadius = '8px';
+            n.style.zIndex = 9999;
+            n.style.fontWeight = '600';
+            n.style.boxShadow = 'var(--shadow-md)';
+            document.body.appendChild(n);
+        }
+        n.textContent = message;
+        n.style.display = 'block';
+        setTimeout(() => { n.style.display = 'none'; }, 2500);
+    }
+
+    function getCartTotalVolume() {
+        let total = 0;
+        document.querySelectorAll('.product-item').forEach(item => {
+            const quantity = parseInt(item.querySelector('.quantity-control__value').textContent);
+            const volume = parseFloat(item.querySelector('.product-item__spec:nth-child(3) span').textContent);
+            if (!isNaN(quantity) && !isNaN(volume)) {
+                total += quantity * volume;
+            }
+        });
+        return total;
+    }
+
+    // Блокировка увеличения количества если превышена квота
+    function increaseQuantity(btn) {
+        const container = btn.closest('.quantity-control');
+        const valueSpan = container.querySelector('.quantity-control__value');
+        let quantity = parseInt(valueSpan.textContent);
+        const item = btn.closest('.product-item');
+        const volume = parseFloat(item.querySelector('.product-item__spec:nth-child(3) span').textContent);
+        const currentTotal = getCartTotalVolume();
+        if (currentTotal + volume > quota) {
+            showQuotaNotification('Превышен объём по квоте!');
+            return;
+        }
+        valueSpan.textContent = quantity + 1;
+        updateQuantity(container, 1);
+    }
+
+    // Аналогично для ручного распределения (manual distribution)
+    // Внутри перед отправкой запроса:
+    // let total = 0;
+    // document.querySelectorAll('.distribution-item').forEach(item => {
+    //   const quantity = parseInt(item.querySelector('.quantity-input').value);
+    //   const volume = parseFloat(item.dataset.volume); // предполагается, что volume есть в data-атрибуте
+    //   total += quantity * volume;
+    // });
+    // if (total > quota) { showQuotaNotification('Превышен объём по квоте!'); return; }
+
+    // --- Проверка квоты в ручном распределении ---
+    const manualSaveBtn = document.getElementById('saveDistributionBtn');
+    if (manualSaveBtn) {
+        manualSaveBtn.addEventListener('click', function(e) {
+            let total = 0;
+            document.querySelectorAll('.truck-products .distribution-item').forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value);
+                const volume = parseFloat(item.dataset.length);
+                total += quantity * volume;
+            });
+            if (total > quota) {
+                showQuotaNotification('Превышен объём по квоте!');
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+    // --- Блокировка кнопки оформления заказа ---
+    function checkCheckoutButton() {
+        const checkoutBtn = document.querySelector('form button[type="submit"]');
+        if (!checkoutBtn) return;
+        const cartTotal = getCartTotalVolume();
+        if (quota <= 0.01 || cartTotal > quota) {
+            checkoutBtn.disabled = true;
+            checkoutBtn.style.opacity = '0.5';
+            checkoutBtn.style.cursor = 'not-allowed';
+            if (!document.getElementById('checkout-quota-warning')) {
+                const warn = document.createElement('div');
+                warn.id = 'checkout-quota-warning';
+                warn.style.color = 'var(--error)';
+                warn.style.fontWeight = '600';
+                warn.style.margin = '0.5rem 0';
+                warn.textContent = 'Оформление заказа недоступно: превышен объём по квоте или квота отсутствует';
+                checkoutBtn.parentNode.insertBefore(warn, checkoutBtn.nextSibling);
+            }
+        } else {
+            checkoutBtn.disabled = false;
+            checkoutBtn.style.opacity = '1';
+            checkoutBtn.style.cursor = '';
+            const warn = document.getElementById('checkout-quota-warning');
+            if (warn) warn.remove();
+        }
+    }
+    document.addEventListener('DOMContentLoaded', checkCheckoutButton);
+    document.addEventListener('input', checkCheckoutButton);
 </script>
 </body>
 </html>

@@ -118,11 +118,31 @@ public class Cart {
             trucks.clear();
         }
 
-        // Сортируем товары
-        List<CartItem> sortedItems = cartItems.stream()
-                .sorted(Comparator.comparingDouble(item ->
-                        item.getProduct().getLength() == 2.8 ? 0 : 1))
-                .collect(Collectors.toList());
+        // Сортируем товары в зависимости от типа номенклатуры
+        List<CartItem> sortedItems;
+        if (!cartItems.isEmpty()) {
+            NomenclatureType cartType = cartItems.get(0).getProduct().getNomenclatureType();
+            
+            if (cartType == NomenclatureType.RAILWAY) {
+                // Для ЖД товаров сортируем по толщине (9мм и 12мм в начало)
+                sortedItems = cartItems.stream()
+                        .sorted(Comparator.comparingDouble(item -> {
+                            double tolsh = item.getProduct().getTolsh();
+                            if (Math.abs(tolsh - Product.THICKNESS_9MM) < 0.1) return 0;
+                            if (Math.abs(tolsh - Product.THICKNESS_12MM) < 0.1) return 1;
+                            return 2;
+                        }))
+                        .collect(Collectors.toList());
+            } else {
+                // Для авто товаров сортируем по длине (2.8 в начало)
+                sortedItems = cartItems.stream()
+                        .sorted(Comparator.comparingDouble(item ->
+                                item.getProduct().getLength() == 2.8 ? 0 : 1))
+                        .collect(Collectors.toList());
+            }
+        } else {
+            sortedItems = new ArrayList<>();
+        }
 
         CartTruck currentTruck = new CartTruck(this);
         trucks.add(currentTruck);

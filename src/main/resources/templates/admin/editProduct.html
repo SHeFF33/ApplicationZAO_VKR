@@ -842,6 +842,9 @@
     <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
       <i class="fas fa-map-marked-alt"></i> Регионы
     </a>
+    <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+      <i class="fas fa-balance-scale"></i> Квоты
+    </a>
     <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
       <i class="fas fa-comments"></i>
       Обращения клиентов
@@ -894,8 +897,8 @@
       <label for="volume" class="form-label">Объем</label>
       <input type="text" id="volume" name="volume" class="form-control"
              th:value="${product?.volume}" required
-             pattern="^(?!0+\.?0*$)\d{1,7}(\.\d{0,3})?$"
-             title="Введите положительное число не более 10 знаков, с не более чем 3 знаками после запятой"
+             pattern="^(?!0+([\.,])?0*$)\d{1,7}([\.,]\d{0,3})?$"
+             title="Введите положительное число не более 10 знаков, с не более чем 3 знаками после запятой (разделитель — точка или запятая)"
              min="0">
     </div>
 
@@ -920,6 +923,14 @@
     <div class="form-group">
       <label for="description" class="form-label">Описание товара</label>
       <textarea id="description" name="description" class="form-control" required maxlength="2500" th:text="${product.description}"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="nomenclatureType" class="form-label">Тип номенклатуры</label>
+        <select id="nomenclatureType" name="nomenclatureType" class="form-control" required>
+            <option value="AUTO" th:selected="${product.nomenclatureType == T(ru.zaomurom.applicationzao.models.product.NomenclatureType).AUTO}">Авто</option>
+            <option value="RAILWAY" th:selected="${product.nomenclatureType == T(ru.zaomurom.applicationzao.models.product.NomenclatureType).RAILWAY}">ЖД</option>
+        </select>
     </div>
 
     <div class="checkbox-container">
@@ -1009,25 +1020,27 @@
           <div th:if="${!product.sums.empty}" class="table-responsive">
             <table class="price-table">
               <thead>
-                <tr>
-                  <th>Регион</th>
-                  <th>Цена</th>
-                  <th>Период</th>
-                  <th>Действия</th>
-                </tr>
+              <tr>
+                <th>Регион</th>
+                <th>Цена за 1 м³</th>
+                <th>Цена за пачку</th>
+                <th>Период</th>
+                <th>Действия</th>
+              </tr>
               </thead>
               <tbody>
-                <tr th:each="sum : ${product.sums}">
-                  <td th:text="${sum.regionName}"></td>
-                  <td th:text="${#numbers.formatDecimal(sum.summa, 1, 2)} + ' руб.'"></td>
-                  <td th:text="${#dates.format(sum.period, 'dd.MM.yyyy')}"></td>
-                  <td>
-                    <button type="button" class="btn btn--icon btn--danger" 
-                            th:onclick="'deletePrice(' + ${sum.id} + ')'">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </td>
-                </tr>
+              <tr th:each="sum : ${product.sums}">
+                <td th:text="${sum.regionName}"></td>
+                <td th:text="${#numbers.formatDecimal(sum.summa / product.volume, 1, 2)} + ' руб.'"></td>
+                <td th:text="${#numbers.formatDecimal(sum.summa, 1, 2)} + ' руб.'"></td>
+                <td th:text="${#dates.format(sum.period, 'dd.MM.yyyy')}"></td>
+                <td>
+                  <button type="button" class="btn btn--icon btn--danger"
+                          th:onclick="'deletePrice(' + ${sum.id} + ')'">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
               </tbody>
             </table>
           </div>
@@ -1878,6 +1891,30 @@
       manualForm.style.display = 'block';
     }
   }
+
+  function validateNumericInput(input) {
+    // Разрешаем только цифры, точку и запятую
+    input.value = input.value.replace(/[^\d.,]/g, '');
+  }
+
+  // Добавляем обработчик события input для поля объема
+  document.addEventListener('DOMContentLoaded', function() {
+    const volumeInput = document.getElementById('volume');
+    if (volumeInput) {
+      volumeInput.addEventListener('input', function() {
+        validateNumericInput(this);
+      });
+    }
+    // Обработчик submit для формы: заменяем запятую на точку
+    const form = volumeInput && volumeInput.form;
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        if (volumeInput.value.includes(',')) {
+          volumeInput.value = volumeInput.value.replace(',', '.');
+        }
+      });
+    }
+  });
 </script>
 </body>
 </html>

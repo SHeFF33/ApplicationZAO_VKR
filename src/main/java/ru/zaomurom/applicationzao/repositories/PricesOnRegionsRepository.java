@@ -9,4 +9,5 @@ public interface PricesOnRegionsRepository extends JpaRepository<PricesOnRegions
     List<PricesOnRegions> findByRegionId(Long regionId);
     List<PricesOnRegions> findByThickness(Double thickness);
     List<PricesOnRegions> findByRegionIdAndThickness(Long regionId, Double thickness);
+    void deleteByRegionId(Long regionId);
 }

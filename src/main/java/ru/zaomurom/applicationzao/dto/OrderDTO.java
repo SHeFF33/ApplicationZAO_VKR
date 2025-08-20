@@ -12,6 +12,8 @@ public class OrderDTO {
     private Date orderDate;
     private String comment;
     private String status;
+    private String adminComment;
+    private String lastStatusChangeDate;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -31,4 +33,8 @@ public class OrderDTO {
     public void setComment(String comment) { this.comment = comment; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getAdminComment() { return adminComment; }
+    public void setAdminComment(String adminComment) { this.adminComment = adminComment; }
+    public String getLastStatusChangeDate() { return lastStatusChangeDate; }
+    public void setLastStatusChangeDate(String lastStatusChangeDate) { this.lastStatusChangeDate = lastStatusChangeDate; }
 }

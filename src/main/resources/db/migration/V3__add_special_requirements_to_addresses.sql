@@ -1,0 +1,1 @@
+ALTER TABLE addresses ADD COLUMN special_requirements VARCHAR(3000); 

@@ -7,18 +7,21 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.zaomurom.applicationzao.dto.CartDistributionDTO;
 import ru.zaomurom.applicationzao.dto.ManualDistributionRequest;
 import ru.zaomurom.applicationzao.models.DocumentZAO;
+import ru.zaomurom.applicationzao.models.Quota;
+import ru.zaomurom.applicationzao.models.Station;
 import ru.zaomurom.applicationzao.models.client.*;
-import ru.zaomurom.applicationzao.models.order.Order;
-import ru.zaomurom.applicationzao.models.order.OrderDocumentation;
-import ru.zaomurom.applicationzao.models.order.OrderTruck;
-import ru.zaomurom.applicationzao.models.order.TCHOrder;
+import ru.zaomurom.applicationzao.models.order.*;
+import ru.zaomurom.applicationzao.models.prices.Region;
 import ru.zaomurom.applicationzao.models.product.*;
 import ru.zaomurom.applicationzao.repositories.TchOrderRepository;
 import ru.zaomurom.applicationzao.services.*;
 import ru.zaomurom.applicationzao.models.prices.ClientsRegion;
+import org.springframework.security.web.csrf.CsrfToken;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -26,8 +29,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class ClientController {
@@ -74,6 +79,15 @@ public class ClientController {
     @Autowired
     private ClientsRegionService clientsRegionService;
 
+    @Autowired
+    private QuotaService quotaService;
+
+    @Autowired
+    private StationService stationService;
+
+    @Autowired
+    private RegionService regionService;
+
     @GetMapping("/profile")
     public String profile(Model model, Principal principal) {
         String username = principal.getName();
@@ -83,121 +97,177 @@ public class ClientController {
         model.addAttribute("client", client);
         model.addAttribute("addresses", client.getAddresses());
         model.addAttribute("contacts", client.getContacts());
-        model.addAttribute("clientRegions", clientsRegionService.findRegionsByClient(client));
+        
+        // Получаем регионы с дедупликацией
+        List<Region> clientRegions = clientsRegionService.findRegionsByClient(client)
+                .stream()
+                .distinct() // Убираем дубликаты
+                .collect(Collectors.toList());
+        model.addAttribute("clientRegions", clientRegions);
+        
+        model.addAttribute("username", username);
+        model.addAttribute("stations", stationService.findAll());
+
+        // Найти актуальную квоту на сегодня
+        LocalDate today = LocalDate.now();
+        List<Quota> quotas = quotaService.findByClient(client);
+        Quota activeQuota = quotas.stream()
+            .filter(q -> (q.getStartDate() == null || !today.isBefore(q.getStartDate()))
+                      && (q.getEndDate() == null || !today.isAfter(q.getEndDate())))
+            .findFirst()
+            .orElse(null);
+        model.addAttribute("activeQuota", activeQuota);
 
         return "profile";
     }
 
     @PostMapping("/profile/addAddress")
-    public String addAddress(
-            @RequestParam int postalcode,
-            @RequestParam String country,
-            @RequestParam Long regionId,
-            @RequestParam(required = false) String rayon,
-            @RequestParam String city,
-            @RequestParam String street,
-            @RequestParam String home,
-            @RequestParam(required = false) String roomnumber,
-            @RequestParam(required = false) String schedule,
-            @RequestParam(required = false) Long contactId,
-            Principal principal
-    ) {
+    public String addAddress(@RequestParam Integer postalcode,
+                         @RequestParam String country,
+                         @RequestParam Long regionId,
+                         @RequestParam(required = false) Long stationId,
+                         @RequestParam(required = false) String rayon,
+                         @RequestParam String city,
+                         @RequestParam String street,
+                         @RequestParam String home,
+                         @RequestParam(required = false) String roomnumber,
+                         @RequestParam String schedule,
+                         @RequestParam(required = false) String specialRequirements,
+                         @RequestParam(required = false) Long contactId,
+                         Principal principal,
+                         RedirectAttributes redirectAttributes) {
+    try {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
 
-        // Проверяем, что выбранный регион доступен клиенту
-        ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
-        if (clientsRegion == null) {
-            return "redirect:/profile?error=region_not_available";
-        }
-
         Addresses address = new Addresses();
         address.setPostalcode(postalcode);
         address.setCountry(country);
-        address.setClientsRegion(clientsRegion);
         address.setRayon(rayon);
         address.setCity(city);
         address.setStreet(street);
         address.setHome(home);
         address.setRoomnumber(roomnumber);
         address.setSchedule(schedule);
+        address.setSpecialRequirements(specialRequirements);
         address.setClient(client);
 
+        // Установка региона
+        Region region = regionService.findById(regionId).orElse(null);
+        if (region != null) {
+            ClientsRegion clientsRegion = new ClientsRegion();
+            clientsRegion.setClient(client);
+            clientsRegion.setRegion(region);
+            clientsRegionService.save(clientsRegion);
+            address.setClientsRegion(clientsRegion);
+        }
+
+        // Установка станции
+        if (stationId != null) {
+            Station station = stationService.findById(stationId).orElse(null);
+            if (station != null) {
+                address.setStation(station);
+            }
+        }
+
+        // Установка контакта
         if (contactId != null) {
-            Optional<Contacts> contact = contactsService.findById(contactId);
-            contact.ifPresent(address::setContact);
+            Contacts contact = contactsService.findById(contactId).orElse(null);
+            if (contact != null) {
+                address.setContact(contact);
+            }
         }
 
         addressesService.save(address);
-        return "redirect:/profile";
+        redirectAttributes.addFlashAttribute("successMessage", "Адрес успешно добавлен");
+    } catch (Exception e) {
+        redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при добавлении адреса: " + e.getMessage());
     }
+    return "redirect:/profile";
+}
 
-    @PostMapping("/profile/editAddress")
-    @ResponseBody
-    public ResponseEntity<String> editAddress(@RequestBody List<Map<String, String>> addresses, Principal principal) {
+@PostMapping("/profile/editAddress")
+public String editAddress(@RequestParam Long id,
+                          @RequestParam Integer postalcode,
+                          @RequestParam String country,
+                          @RequestParam Long regionId,
+                          @RequestParam(required = false) Long stationId,
+                          @RequestParam(required = false) String rayon,
+                          @RequestParam String city,
+                          @RequestParam String street,
+                          @RequestParam String home,
+                          @RequestParam(required = false) String roomnumber,
+                          @RequestParam String schedule,
+                          @RequestParam(required = false) String specialRequirements,
+                          @RequestParam(required = false) Long contactId,
+                          Principal principal,
+                          RedirectAttributes redirectAttributes) {
+    try {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
 
-        for (Map<String, String> addressData : addresses) {
-            try {
-                Long id = Long.parseLong(addressData.get("id"));
-                Addresses address = addressesService.findById(id).orElseThrow(() -> new RuntimeException("Адрес не найден"));
-
-                if (addressData.containsKey("postalcode")) {
-                    address.setPostalcode(Integer.parseInt(addressData.get("postalcode")));
-                }
-                if (addressData.containsKey("country")) {
-                    address.setCountry(addressData.get("country"));
-                }
-                if (addressData.containsKey("regionId")) {
-                    Long regionId = Long.parseLong(addressData.get("regionId"));
-                    ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
-                    if (clientsRegion == null) {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                .body("Выбранный регион не доступен для данного клиента");
-                    }
-                    address.setClientsRegion(clientsRegion);
-                }
-                if (addressData.containsKey("rayon")) {
-                    address.setRayon(addressData.get("rayon"));
-                }
-                if (addressData.containsKey("city")) {
-                    address.setCity(addressData.get("city"));
-                }
-                if (addressData.containsKey("street")) {
-                    address.setStreet(addressData.get("street"));
-                }
-                if (addressData.containsKey("home")) {
-                    address.setHome(addressData.get("home"));
-                }
-                if (addressData.containsKey("roomnumber")) {
-                    address.setRoomnumber(addressData.get("roomnumber"));
-                }
-                if (addressData.containsKey("schedule")) {
-                    address.setSchedule(addressData.get("schedule"));
-                }
-                if (addressData.containsKey("contactId")) {
-                    String contactIdStr = addressData.get("contactId");
-                    if (!contactIdStr.isEmpty()) {
-                        Long contactId = Long.parseLong(contactIdStr);
-                        Optional<Contacts> contact = contactsService.findById(contactId);
-                        contact.ifPresent(address::setContact);
-                    } else {
-                        address.setContact(null);
-                    }
-                }
-
-                addressesService.save(address);
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Ошибка при обновлении адреса: " + e.getMessage());
+        Optional<Addresses> optionalAddress = addressesService.findById(id);
+        if (optionalAddress.isPresent()) {
+            Addresses address = optionalAddress.get();
+            
+            // Проверяем, что адрес принадлежит текущему клиенту
+            if (!address.getClient().getId().equals(client.getId())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Доступ запрещен");
+                return "redirect:/profile";
             }
-        }
 
-        return ResponseEntity.ok("Адреса обновлены");
+            address.setPostalcode(postalcode);
+            address.setCountry(country);
+            address.setRayon(rayon);
+            address.setCity(city);
+            address.setStreet(street);
+            address.setHome(home);
+            address.setRoomnumber(roomnumber);
+            address.setSchedule(schedule);
+            address.setSpecialRequirements(specialRequirements);
+
+            // Установка региона
+            Region region = regionService.findById(regionId).orElse(null);
+            if (region != null) {
+                ClientsRegion clientsRegion = new ClientsRegion();
+                clientsRegion.setClient(client);
+                clientsRegion.setRegion(region);
+                clientsRegionService.save(clientsRegion);
+                address.setClientsRegion(clientsRegion);
+            }
+
+            // Установка станции
+            if (stationId != null) {
+                Station station = stationService.findById(stationId).orElse(null);
+                if (station != null) {
+                    address.setStation(station);
+                }
+            } else {
+                address.setStation(null);
+            }
+
+            // Установка контакта
+            if (contactId != null) {
+                Contacts contact = contactsService.findById(contactId).orElse(null);
+                if (contact != null) {
+                    address.setContact(contact);
+                }
+            } else {
+                address.setContact(null);
+            }
+
+            addressesService.save(address);
+            redirectAttributes.addFlashAttribute("successMessage", "Адрес успешно обновлен");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Адрес не найден");
+        }
+    } catch (Exception e) {
+        redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении адреса: " + e.getMessage());
     }
+    return "redirect:/profile";
+}
 
     @PostMapping("/profile/editContact")
     @ResponseBody
@@ -323,7 +393,9 @@ public class ClientController {
             model.addAttribute("username", username);
             User user = userService.findByUsername(username);
             Client client = user.getClient();
-            
+            // Передать актуальную квоту
+            Quota activeQuota = quotaService.getActiveQuotaForClient(client, java.time.LocalDate.now());
+            model.addAttribute("activeQuota", activeQuota);
             return "productDetails";
         }
         return "redirect:/products";
@@ -402,6 +474,24 @@ public class ClientController {
         Product product = productService.findById(productId).orElse(null);
 
         if (product != null) {
+            // Проверяем совместимость типов номенклатуры
+            if (!cartService.canAddProductToCart(cart, product)) {
+                String existingType = cartService.getCartNomenclatureType(cart) == NomenclatureType.RAILWAY ? "ЖД" : "Авто";
+                String newType = product.getNomenclatureType() == NomenclatureType.RAILWAY ? "ЖД" : "Авто";
+                return ResponseEntity.badRequest().body(Map.of("error", 
+                    "Нельзя добавить товар типа '" + newType + "' в корзину с товарами типа '" + existingType + "'. " +
+                    "Очистите корзину перед добавлением товаров другого типа."));
+            }
+
+            double requestedVolume = product.getVolume() * quantity;
+            double cartVolume = cart.getCartItems().stream()
+                .mapToDouble(item -> item.getProduct().getVolume() * item.getQuantity())
+                .sum();
+            double totalRequested = cartVolume + requestedVolume;
+            Quota quota = quotaService.getActiveQuotaForClient(client, LocalDate.now());
+            if (quota == null || quota.getAllowedVolume() < totalRequested || quota.getAllowedVolume() <= 0.01) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Недостаточно объёма по квоте для добавления товара в корзину"));
+            }
             if (sumId != null) {
                 Sum sum = productService.findSumById(sumId).orElse(null);
                 if (sum != null) {
@@ -414,29 +504,44 @@ public class ClientController {
             }
             cartService.save(cart);
 
+            // Правильный подсчет заполненных машин/вагонов
             int filledTrucksCount = 0;
-            int remainingItems = quantity;
-
-            int totalItems = cart.getTrucks().stream()
-                    .flatMap(truck -> truck.getItems().stream())
-                    .mapToInt(CartTruckItem::getQuantity)
-                    .sum();
-
-            boolean firstTruckHasLongProducts = cart.getTrucks().stream()
-                    .flatMap(truck -> truck.getItems().stream())
-                    .anyMatch(item -> item.getProduct().getLength() == 2.8);
-
-            int firstTruckCapacity = firstTruckHasLongProducts ? Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
-
-            filledTrucksCount = (int) Math.ceil((double) totalItems / firstTruckCapacity);
+            
+            if (!cart.getTrucks().isEmpty()) {
+                // Подсчитываем количество заполненных машин/вагонов
+                filledTrucksCount = (int) cart.getTrucks().stream()
+                        .filter(truck -> {
+                            int totalItemsInTruck = truck.getItems().stream()
+                                    .mapToInt(CartTruckItem::getQuantity)
+                                    .sum();
+                            
+                            if (product.getNomenclatureType() == NomenclatureType.RAILWAY) {
+                                // Для ЖД товаров: максимум 49 пачек
+                                return totalItemsInTruck >= Product.MAX_ITEMS_RAILWAY;
+                            } else {
+                                // Для авто товаров: проверяем по длине товаров
+                                long longProductsCount = truck.getItems().stream()
+                                        .filter(item -> item.getProduct().getLength() == 2.8)
+                                        .count();
+                                
+                                int maxCapacity = longProductsCount >= 7 ? Product.MAX_ITEMS_LONG : Product.MAX_ITEMS_SHORT;
+                                return totalItemsInTruck >= maxCapacity;
+                            }
+                        })
+                        .count();
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("redirect", "/products");
 
             if (filledTrucksCount > 0) {
-                String message = filledTrucksCount == 0 ?
-                        "Первая грузовая машина заполнена" :
-                        "Количество заполненных грузовых машин: " + filledTrucksCount;
+                // Определяем тип номенклатуры для правильного сообщения
+                String vehicleType = product.getNomenclatureType() == NomenclatureType.RAILWAY ? "вагон" : "грузовой автомобиль";
+                String vehicleTypePlural = product.getNomenclatureType() == NomenclatureType.RAILWAY ? "вагонов" : "грузовых машин";
+                
+                String message = filledTrucksCount == 1 ?
+                        "Первый " + vehicleType + " заполнен" :
+                        "Количество заполненных " + vehicleTypePlural + ": " + filledTrucksCount;
                 response.put("message", message);
             }
 
@@ -448,7 +553,7 @@ public class ClientController {
 
     @GetMapping("/orders")
     @Transactional
-    public String orders(Model model, Principal principal, @RequestParam(required = false) String status) {
+    public String orders(Model model, Principal principal, @RequestParam(required = false) String status, HttpServletRequest request) {
         if (principal == null) {
             return "redirect:/login";
         }
@@ -470,30 +575,152 @@ public class ClientController {
         model.addAttribute("orders", orders);
         model.addAttribute("username", username);
         model.addAttribute("status", status);
+        // Добавить CSRF-токен в модель
+        CsrfToken csrfToken = (CsrfToken) request.getAttribute("_csrf");
+        if (csrfToken != null) {
+            model.addAttribute("_csrf", csrfToken);
+        }
 
         return "orders";
     }
 
 
     @GetMapping("/orderDetails")
-    public String orderDetails(Model model, @RequestParam Long id) {
-        Optional<Order> orderOpt = orderService.findWithTrucksAndTchOrdersById(id);
-
-        if (orderOpt.isPresent()) {
-            Order order = orderOpt.get();
-
-            double totalSum = order.getTchOrders().stream()
-                    .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getPrice())
-                    .sum();
-
-            model.addAttribute("order", order);
-            model.addAttribute("totalSum", totalSum);
-            return "orderDetails";
-        } else {
-            return "error";
+    public String orderDetails(@RequestParam Long id, Model model, Principal principal) {
+        String username = principal.getName();
+        User user = userService.findByUsername(username);
+        Client client = user.getClient();
+        
+        Optional<Order> orderOptional = orderService.findById(id);
+        if (!orderOptional.isPresent()) {
+            return "redirect:/orders";
         }
+        
+        Order order = orderOptional.get();
+        
+        // Проверяем, что заказ принадлежит текущему клиенту
+        if (!order.getClient().getId().equals(client.getId())) {
+            return "redirect:/orders";
+        }
+        
+        // Определяем тип номенклатуры заказа
+        boolean isRailwayOrder = order.getTchOrders().stream()
+                .anyMatch(tchOrder -> tchOrder.getProduct().getNomenclatureType() == NomenclatureType.RAILWAY);
+        
+        // Получаем доступные адреса для редактирования
+        List<Addresses> availableAddresses = cartService.getAvailableAddressesForOrder(client, order);
+        
+        model.addAttribute("order", order);
+        model.addAttribute("isRailwayOrder", isRailwayOrder);
+        model.addAttribute("availableAddresses", availableAddresses);
+        model.addAttribute("allAddresses", client.getAddresses());
+        
+        // Найти актуальную квоту на сегодня
+        LocalDate today = LocalDate.now();
+        List<Quota> quotas = quotaService.findByClient(client);
+        Quota activeQuota = quotas.stream()
+            .filter(q -> (q.getStartDate() == null || !today.isBefore(q.getStartDate()))
+                      && (q.getEndDate() == null || !today.isAfter(q.getEndDate())))
+            .findFirst()
+            .orElse(null);
+        model.addAttribute("activeQuota", activeQuota);
+        
+        // Сохраняем оригинальные количества для проверки квоты
+        Map<Long, Integer> originalQuantities = new HashMap<>();
+        for (TCHOrder tchOrder : order.getTchOrders()) {
+            originalQuantities.put(tchOrder.getId(), tchOrder.getQuantity());
+        }
+        model.addAttribute("originalQuantities", originalQuantities);
+        
+        // Рассчитываем общую сумму заказа
+        double totalSum = order.getTchOrders().stream()
+                .mapToDouble(tchOrder -> tchOrder.getQuantity() * tchOrder.getPrice())
+                .sum();
+        model.addAttribute("totalSum", totalSum);
+        
+        return "orderDetails";
     }
 
+    @PostMapping("/orderDetails/updateAddress")
+    @ResponseBody
+    public ResponseEntity<?> updateOrderAddress(@RequestParam Long orderId, 
+                                               @RequestParam Long newAddressId,
+                                               Principal principal) {
+        try {
+            String username = principal.getName();
+            User user = userService.findByUsername(username);
+            Client client = user.getClient();
+            
+            Optional<Order> orderOptional = orderService.findById(orderId);
+            if (!orderOptional.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Заказ не найден"));
+            }
+            
+            Order order = orderOptional.get();
+            
+            // Проверяем, что заказ принадлежит текущему клиенту
+            if (!order.getClient().getId().equals(client.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Доступ запрещен"));
+            }
+            
+            // Проверяем, что адрес принадлежит клиенту
+            Optional<Addresses> addressOptional = addressesService.findById(newAddressId);
+            if (!addressOptional.isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Адрес не найден"));
+            }
+            
+            Addresses newAddress = addressOptional.get();
+            if (!newAddress.getClient().getId().equals(client.getId())) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Адрес не принадлежит вам"));
+            }
+            
+            // Проверяем совместимость адреса с типом товаров в заказе
+            boolean isRailwayOrder = order.getTchOrders().stream()
+                    .anyMatch(tchOrder -> tchOrder.getProduct().getNomenclatureType() == NomenclatureType.RAILWAY);
+            
+            if (isRailwayOrder && newAddress.getStation() == null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, 
+                    "message", "Для ЖД товаров нужен адрес со станцией"));
+            }
+            
+            if (!isRailwayOrder && newAddress.getStation() != null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, 
+                    "message", "Для авто товаров нужен адрес без станции"));
+            }
+            
+            // Сохраняем старый адрес для уведомления
+            Addresses oldAddress = order.getDeliveryAddress();
+            
+            // Обновляем адрес заказа
+            order.setDeliveryAddress(newAddress);
+            orderService.save(order);
+            
+            // Отправляем уведомление админам
+            String clientName = client.getName();
+            String orderNumber = order.getId().toString();
+            String orderDate = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(order.getOrderDate());
+            
+            String notificationMessage = String.format(
+                "Здравствуйте! Клиент %s внес изменения в заказ №%s от %s.", 
+                clientName, orderNumber, orderDate
+            );
+            
+            // Отправляем уведомление всем админам
+            List<String> adminEmails = userService.findAllAdmins().stream()
+                    .map(User::getEmail)
+                    .filter(email -> email != null && !email.isEmpty())
+                    .collect(Collectors.toList());
+            
+            if (!adminEmails.isEmpty()) {
+                emailService.sendOrderAddressChangeNotificationAsync(order, notificationMessage, adminEmails);
+            }
+            
+            return ResponseEntity.ok(Map.of("success", true, "message", "Адрес заказа успешно обновлен"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Ошибка при обновлении адреса: " + e.getMessage()));
+        }
+    }
 
     @GetMapping("/orders/{orderId}/document/{docId}")
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long docId) {
@@ -627,10 +854,15 @@ public class ClientController {
             model.addAttribute("username", username);
             model.addAttribute("client", client);
             model.addAttribute("cartService", cartService);
+            model.addAttribute("isRailwayCart", cartService.getCartNomenclatureType(cart) == NomenclatureType.RAILWAY);
 
-            // Передача графика доставки
-            List<Addresses> addresses = addressesService.findByClientId(client.getId());
+            // Передача графика доставки с учетом типа номенклатуры
+            List<Addresses> addresses = cartService.getAvailableAddressesForCart(client, cart);
             model.addAttribute("addresses", addresses);
+
+            // Передать актуальную квоту
+            Quota activeQuota = quotaService.getActiveQuotaForClient(client, java.time.LocalDate.now());
+            model.addAttribute("activeQuota", activeQuota);
 
             return "cart";
         } catch (Exception e) {
@@ -652,9 +884,15 @@ public class ClientController {
             return "cart";
         }
 
-        List<Addresses> addresses = addressesService.findByClientId(client.getId());
+        List<Addresses> addresses = cartService.getAvailableAddressesForCart(client, cart);
         if (addresses == null || addresses.isEmpty()) {
-            model.addAttribute("error", "Нет адресов доставки. Пожалуйста, добавьте адрес перед оформлением заказа.");
+            String errorMessage = "Нет подходящих адресов доставки для выбранных товаров. ";
+            if (cartService.getCartNomenclatureType(cart) == NomenclatureType.RAILWAY) {
+                errorMessage += "Для ЖД товаров нужны адреса со станциями.";
+            } else {
+                errorMessage += "Для авто товаров нужны адреса без станций.";
+            }
+            model.addAttribute("error", errorMessage);
             return "cart";
         }
 
@@ -691,6 +929,8 @@ public class ClientController {
         model.addAttribute("selectedAddress", selectedAddress);
         model.addAttribute("totalSum", totalSum);
         model.addAttribute("comment", comment);
+        model.addAttribute("cartService", cartService);
+        model.addAttribute("isRailwayOrder", cartService.getCartNomenclatureType(cart) == NomenclatureType.RAILWAY);
 
         return "confirmOrder";
     }
@@ -699,7 +939,9 @@ public class ClientController {
     @PostMapping("/cart/confirmOrder")
     @Transactional
     public String confirmOrder(@RequestParam Long addressId, @RequestParam String deliveryDate,
-                               @RequestParam String comment, Principal principal, Model model) {
+                               @RequestParam String comment, 
+                               @RequestParam(required = false) MultipartFile railwayDocument,
+                               Principal principal, Model model) {
         String username = principal.getName();
         User user = userService.findByUsername(username);
         Client client = user.getClient();
@@ -707,6 +949,41 @@ public class ClientController {
 
         if (cart == null || cart.getCartItems().isEmpty()) {
             model.addAttribute("error", "Ваша корзина пуста.");
+            return "cart";
+        }
+
+        // Проверяем необходимость документа для ЖД заказов
+        NomenclatureType cartType = cartService.getCartNomenclatureType(cart);
+        if (cartType == NomenclatureType.RAILWAY) {
+            if (railwayDocument == null || railwayDocument.isEmpty()) {
+                model.addAttribute("error", "Для ЖД заказов обязательно требуется прикрепить документ.");
+                return "cart";
+            }
+            
+            // Проверяем размер файла (до 10 МБ)
+            if (railwayDocument.getSize() > 10 * 1024 * 1024) {
+                model.addAttribute("error", "Размер документа не должен превышать 10 МБ.");
+                return "cart";
+            }
+            
+            // Проверяем тип файла
+            String fileName = railwayDocument.getOriginalFilename();
+            if (fileName != null) {
+                String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+                if (!Arrays.asList("pdf", "doc", "docx", "xls", "xlsx").contains(extension)) {
+                    model.addAttribute("error", "Допустимые форматы документов: PDF, DOC, DOCX, XLS, XLSX.");
+                    return "cart";
+                }
+            }
+        }
+
+        // Проверка квоты перед оформлением заказа
+        double cartVolume = cart.getCartItems().stream()
+            .mapToDouble(item -> item.getProduct().getVolume() * item.getQuantity())
+            .sum();
+        Quota quota = quotaService.getActiveQuotaForClient(client, LocalDate.now());
+        if (quota == null || quota.getAllowedVolume() < cartVolume || quota.getAllowedVolume() <= 0.01) {
+            model.addAttribute("error", "Недостаточно объёма по квоте для оформления заказа");
             return "cart";
         }
 
@@ -759,6 +1036,30 @@ public class ClientController {
             order.setTchOrders(tchOrders);
             order.setTrucks(orderTrucks);
             
+            // Сохраняем документ для ЖД заказов
+            if (cartType == NomenclatureType.RAILWAY && railwayDocument != null && !railwayDocument.isEmpty()) {
+                try {
+                    String fileName = railwayDocument.getOriginalFilename();
+                    String documentPath = "railway_documents/" + System.currentTimeMillis() + "_" + fileName;
+                    
+                    // Создаем директорию если не существует
+                    java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "railway_documents");
+                    if (!java.nio.file.Files.exists(uploadDir)) {
+                        java.nio.file.Files.createDirectories(uploadDir);
+                    }
+                    
+                    // Сохраняем файл
+                    java.nio.file.Path filePath = uploadDir.resolve(System.currentTimeMillis() + "_" + fileName);
+                    java.nio.file.Files.copy(railwayDocument.getInputStream(), filePath);
+                    
+                    order.setRailwayDocument(filePath.toString());
+                    order.setRailwayDocumentName(fileName);
+                } catch (Exception e) {
+                    model.addAttribute("error", "Ошибка при сохранении документа: " + e.getMessage());
+                    return "cart";
+                }
+            }
+            
             // Сохраняем заказ
             orderService.save(order);
             orderService.addStatusHistory(order, "В обработке", user);
@@ -789,6 +1090,9 @@ public class ClientController {
         cart.getCartItems().clear();
         cart.getTrucks().clear();
         cartService.save(cart);
+
+        // После оформления заказа уменьшить квоту
+        quotaService.decreaseQuotaVolume(client, cartVolume);
 
         return "redirect:/orders";
     }
@@ -938,6 +1242,17 @@ public class ClientController {
             return ResponseEntity.badRequest().body("Корзина пуста");
         }
 
+        double requestedVolume = request.getTrucks().stream()
+            .flatMap(truck -> truck.getItems().stream())
+            .mapToDouble(item -> {
+                Product product = productService.findById(item.getProductId()).orElse(null);
+                return product != null ? product.getVolume() * item.getQuantity() : 0;
+            })
+            .sum();
+        Quota quota = quotaService.getActiveQuotaForClient(client, LocalDate.now());
+        if (quota == null || quota.getAllowedVolume() < requestedVolume || quota.getAllowedVolume() <= 0.01) {
+            return ResponseEntity.badRequest().body("Недостаточно объёма по квоте для распределения товаров");
+        }
         cartService.applyManualDistribution(cart, request);
         return ResponseEntity.ok().build();
     }
@@ -1035,5 +1350,152 @@ public class ClientController {
         response.put("exists", existsInContacts || existsInUsers);
         return ResponseEntity.ok(response);
     }
+    @PostMapping("/orders/updateTchOrderQuantity")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> updateTchOrderQuantity(
+            @RequestBody Map<String, Object> payload,
+            Principal principal) {
+        Long tchOrderId = Long.valueOf(payload.get("tchOrderId").toString());
+        int newQuantity = Integer.parseInt(payload.get("newQuantity").toString());
+
+        try {
+            String username = principal.getName();
+            User user = userService.findByUsername(username);
+            TCHOrder tchOrder = tchOrderRepository.findById(tchOrderId)
+                    .orElseThrow(() -> new RuntimeException("TCHOrder not found"));
+
+            Order order = tchOrder.getOrder();
+
+            // Проверяем, что заказ принадлежит текущему пользователю
+            if (!order.getClient().equals(user.getClient())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Not authorized");
+            }
+
+            // Проверяем допустимые статусы для редактирования
+            List<String> allowedStatuses = Arrays.asList(
+                    "В обработке",
+                    "Принят",
+                    "Оплачен. В работе",
+                    "Оплачен. В ожидании",
+                    "Назначена погрузка"
+            );
+
+            if (!allowedStatuses.contains(order.getStatus())) {
+                return ResponseEntity.badRequest().body("Редактирование невозможно для текущего статуса заказа");
+            }
+
+            // Проверяем ограничения по количеству
+            OrderTruck truck = tchOrder.getTruck();
+            List<TCHOrder> truckOrders = truck.getTchOrders();
+
+            // Определяем тип номенклатуры заказа
+            NomenclatureType orderType = tchOrder.getProduct().getNomenclatureType();
+            int totalItems = 0;
+            int max = 16;
+            String vehicleType = "машине";
+
+            if (orderType == NomenclatureType.RAILWAY) {
+                // Логика для ЖД товаров
+                vehicleType = "вагоне";
+                for (TCHOrder item : truckOrders) {
+                    if (item.getId().equals(tchOrderId)) {
+                        continue;
+                    }
+                    totalItems += item.getQuantity();
+                }
+                totalItems += newQuantity;
+                max = 49; // Максимум 49 пачек для ЖД
+            } else {
+                // Логика для авто товаров (существующая)
+                int count25 = 0;
+                int count28 = 0;
+                for (TCHOrder item : truckOrders) {
+                    if (item.getId().equals(tchOrderId)) {
+                        continue;
+                    }
+                    if (item.getProduct().getLength() == 2.5 || item.getProduct().getLength() == 2.4) {
+                        count25 += item.getQuantity();
+                    }
+                    if (item.getProduct().getLength() == 2.8) {
+                        count28 += item.getQuantity();
+                    }
+                }
+                // Добавляем новое количество
+                if (tchOrder.getProduct().getLength() == 2.5 || tchOrder.getProduct().getLength() == 2.4) {
+                    count25 += newQuantity;
+                }
+                if (tchOrder.getProduct().getLength() == 2.8) {
+                    count28 += newQuantity;
+                }
+                totalItems = count25 + count28;
+                if (count28 > 0 && count25 > 0) {
+                    max = (count28 > 7) ? 13 : 16;
+                } else if (count28 > 0 && count25 == 0) {
+                    max = 13;
+                } else if (count25 > 0 && count28 == 0) {
+                    max = 16;
+                }
+            }
+            
+            if (totalItems > max) {
+                return ResponseEntity.badRequest().body(
+                        "В " + vehicleType + " не может быть больше " + max + " пачек по текущим правилам!");
+            }
+
+            // --- Квота: учесть разницу ---
+            int oldQuantity = tchOrder.getQuantity();
+            double productVolume = tchOrder.getProduct().getVolume();
+            double diff = (newQuantity - oldQuantity) * productVolume;
+            Quota quota = quotaService.getActiveQuotaForClient(order.getClient(), java.time.LocalDate.now());
+            if (diff > 0) {
+                // Увеличение — уменьшить квоту
+                if (quota == null || quota.getAllowedVolume() < diff || quota.getAllowedVolume() <= 0.01) {
+                    return ResponseEntity.badRequest().body("Недостаточно объёма по квоте для увеличения количества");
+                }
+                quota.setAllowedVolume(Math.max(0, quota.getAllowedVolume() - diff));
+                quotaService.save(quota);
+            } else if (diff < 0) {
+                // Уменьшение — вернуть в квоту
+                if (quota != null) {
+                    quota.setAllowedVolume(quota.getAllowedVolume() + Math.abs(diff));
+                    quotaService.save(quota);
+                }
+            }
+            // ---
+
+            // Обновляем количество
+            tchOrder.setQuantity(newQuantity);
+            tchOrderRepository.save(tchOrder);
+            
+            // Отправляем уведомление админам об изменении количества
+            String clientName = user.getClient().getName();
+            String orderNumber = order.getId().toString();
+            String orderDate = new java.text.SimpleDateFormat("dd.MM.yyyy HH:mm").format(order.getOrderDate());
+            String notificationMessage = String.format(
+                "Здравствуйте! Клиент %s внес изменения в заказ №%s от %s.", 
+                clientName, orderNumber, orderDate
+            );
+            
+            List<String> adminEmails = userService.findAllAdmins().stream()
+                    .map(User::getEmail)
+                    .filter(email -> email != null && !email.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+            
+            if (!adminEmails.isEmpty()) {
+                emailService.sendOrderAddressChangeNotificationAsync(order, notificationMessage, adminEmails);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Количество успешно обновлено"
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }
 

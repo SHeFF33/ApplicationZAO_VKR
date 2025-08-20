@@ -299,7 +299,7 @@
       <h1 class="order-section__title">Подтверждение заказа</h1>
     </div>
 
-    <form th:action="@{/cart/confirmOrder}" method="post">
+    <form th:action="@{/cart/confirmOrder}" method="post" enctype="multipart/form-data">
       <input type="hidden" name="addressId" th:value="${addressId}" />
       <input type="hidden" name="deliveryDate" th:value="${deliveryDate}" />
       <input type="hidden" name="comment" th:value="${comment}" />
@@ -325,12 +325,30 @@
         </div>
       </div>
 
+      <!-- Поле для загрузки документа ЖД заказов -->
+      <div th:if="${isRailwayOrder}" class="order-info">
+        <h3 class="order-info__title">Документ для ЖД заказа (обязательно):</h3>
+        <div class="order-info__content">
+          <div class="file-upload">
+            <input type="file" name="railwayDocument" accept=".pdf,.doc,.docx,.xls,.xlsx" required 
+                   style="padding: 10px; border: 2px dashed #ccc; border-radius: 8px; width: 100%; margin-bottom: 10px;" />
+            <p style="font-size: 0.9rem; color: #666; margin: 0;">
+              Допустимые форматы: PDF, DOC, DOCX, XLS, XLSX. Максимальный размер: 10 МБ.
+            </p>
+          </div>
+        </div>
+      </div>
+
 
       <div class="order-info">
         <h3 class="order-info__title">Товары в заказе:</h3>
 
         <div th:each="truck, stat : ${cart.trucks}" style="margin-bottom: 2.5rem;">
-          <h4 style="margin-bottom: 1.25rem; font-size: 1.3rem;">Машина <span th:text="${stat.count}"></span></h4>
+          <h4 style="margin-bottom: 1.25rem; font-size: 1.3rem;">
+            <span th:if="${isRailwayOrder}">Вагон</span>
+            <span th:unless="${isRailwayOrder}">Машина</span>
+            <span th:text="${stat.count}"></span>
+          </h4>
           <table class="truck-table">
             <thead>
             <tr>

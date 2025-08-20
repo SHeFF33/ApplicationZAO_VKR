@@ -157,35 +157,80 @@
             color: var(--primary-dark);
         }
 
-        /* Search */
-        .search-bar {
-            position: relative;
+        /* Filters */
+        .filters-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 2rem;
+            gap: 1rem;
         }
 
-        .search-bar__input {
-            width: 100%;
-            padding: 0.875rem 1rem 0.875rem 3rem;
-            font-size: 1rem;
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            background-color: var(--surface);
-            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            flex: 1;
             box-shadow: var(--shadow-sm);
         }
 
-        .search-bar__input:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        .search-bar__icon {
+            color: var(--text-secondary);
+            margin-right: 0.75rem;
         }
 
-        .search-bar__icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
+        .search-bar__input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .search-bar__input::placeholder {
             color: var(--text-secondary);
+        }
+
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background-color: var(--surface);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .filter-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+        }
+
+        .filter-select:hover {
+            border-color: var(--primary-light);
         }
 
         /* Button */
@@ -364,6 +409,9 @@
         <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
             <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
+        <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+            <i class="fas fa-balance-scale"></i> Квоты
+        </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
             Обращения клиентов
@@ -384,10 +432,22 @@
         </a>
     </div>
 
-    <div class="search-bar">
-        <i class="fas fa-search search-bar__icon"></i>
-        <input type="text" class="search-bar__input" placeholder="Поиск товаров..."
-               oninput="searchProducts(this.value)" id="searchInput">
+    <div class="filters-container">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label for="nomenclatureFilter" class="filter-label">Тип номенклатуры:</label>
+                <select id="nomenclatureFilter" class="filter-select" onchange="filterByNomenclature(this.value)">
+                    <option value="">Все типы</option>
+                    <option value="AUTO">Авто</option>
+                    <option value="RAILWAY">ЖД</option>
+                </select>
+            </div>
+        </div>
+        <div class="search-bar">
+            <i class="fas fa-search search-bar__icon"></i>
+            <input type="text" class="search-bar__input" placeholder="Поиск товаров..."
+                   oninput="searchProducts(this.value)" id="searchInput">
+        </div>
     </div>
 
     <div id="productContainer">
@@ -403,7 +463,8 @@
 
         <div th:if="${products != null and not products.empty}" class="products-grid" id="productGrid">
             <div th:each="product : ${products}" class="product-card"
-                 th:onclick="'window.location.href=\'' + @{/admin/editProduct/{id}(id=${product.id})} + '\''">
+                 th:onclick="'window.location.href=\'' + @{/admin/editProduct/{id}(id=${product.id})} + '\''"
+                 th:data-nomenclature-type="${product.nomenclatureType}">
                 <div class="product-card__image-container">
                     <div th:if="${#lists.isEmpty(product.images)}" class="product-card__no-image">
                         <i class="fas fa-image"></i> Фото не добавлено
@@ -440,12 +501,14 @@
         document.getElementById("sidebar").classList.remove("app-sidebar--open");
     }
 
+    let currentNomenclatureFilter = '';
+
     function searchProducts(query) {
         query = query.trim().toLowerCase();
         const productContainer = document.getElementById('productContainer');
 
-        if (query === "") {
-            // Если запрос пустой, возвращаем исходное состояние
+        // Если запрос пустой и фильтр по номенклатуре не установлен, возвращаем исходное состояние
+        if (query === "" && currentNomenclatureFilter === "") {
             if (originalProducts) {
                 productContainer.innerHTML = '<div class="products-grid" id="productGrid">' + originalProducts + '</div>';
                 productsGrid = document.getElementById('productGrid');
@@ -457,13 +520,29 @@
         let filteredProducts = '';
         let hasResults = false;
 
-        document.querySelectorAll('.product-card').forEach(card => {
+        // Получаем все карточки товаров из исходного состояния
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = originalProducts || '';
+        const allCards = tempDiv.querySelectorAll('.product-card');
+
+        allCards.forEach(card => {
             const title = card.querySelector('.product-card__title').textContent.toLowerCase();
             const sort = card.querySelector('.product-card__spec:nth-of-type(1) span').textContent.toLowerCase();
             const tolsh = parseFloat(card.querySelector('.product-card__spec:nth-of-type(2) span').textContent);
             const length = card.querySelector('.product-card__spec:nth-of-type(3) span').textContent.toLowerCase();
+            const nomenclatureType = card.getAttribute('data-nomenclature-type');
 
-            if (title.includes(query) || sort.includes(query) || (tolsh && !isNaN(tolsh) && tolsh.toString().includes(query)) || length.includes(query)) {
+            // Проверяем фильтр по номенклатуре
+            const matchesNomenclature = currentNomenclatureFilter === '' || nomenclatureType === currentNomenclatureFilter;
+            
+            // Проверяем поисковый запрос
+            const matchesSearch = query === "" || 
+                title.includes(query) || 
+                sort.includes(query) || 
+                (tolsh && !isNaN(tolsh) && tolsh.toString().includes(query)) || 
+                length.includes(query);
+
+            if (matchesNomenclature && matchesSearch) {
                 filteredProducts += card.outerHTML;
                 hasResults = true;
             }
@@ -479,9 +558,16 @@
                         <i class="fas fa-search"></i>
                     </div>
                     <h3 class="empty-state__title">Товары не найдены</h3>
+                    <p class="empty-state__description">Попробуйте изменить параметры поиска</p>
                 </div>
             `;
         }
+    }
+
+    function filterByNomenclature(nomenclatureType) {
+        currentNomenclatureFilter = nomenclatureType;
+        const searchQuery = document.getElementById('searchInput').value;
+        searchProducts(searchQuery);
     }
 
     document.addEventListener('click', function(event) {

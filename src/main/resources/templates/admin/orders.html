@@ -381,6 +381,9 @@
         <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
             <i class="fas fa-map-marked-alt"></i> Регионы
         </a>
+        <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+            <i class="fas fa-balance-scale"></i> Квоты
+        </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
             Обращения клиентов
@@ -444,6 +447,7 @@
         <table class="table">
             <thead>
             <tr>
+                <th>Номер заказа</th>
                 <th>Контрагент</th>
                 <th>Дата заказа</th>
                 <th>Дата доставки</th>
@@ -454,6 +458,7 @@
             </thead>
             <tbody>
             <tr th:each="order : ${orders}" th:onclick="'window.location.href = \'' + @{/admin/orders/{id}(id=${order.id})} + '\''">
+                <td th:text="${order.id}"></td>
                 <td th:text="${order.client.name}"></td>
                 <td th:text="${order.formattedOrderDate}"></td>
                 <td th:text="${order.formattedDeliveryDate}"></td>
@@ -461,8 +466,8 @@
                     <span th:text="${order.deliveryAddress.postalcode} + ', ' + ${order.deliveryAddress.city} + ', ' + ${order.deliveryAddress.street} + ', ' + ${order.deliveryAddress.home}"></span>
                 </td>
                 <td>
-            <span th:if="${order.documentations.?[documentType.name == 'Счет'].size() > 0}"
-                  th:text="${order.documentations.?[documentType.name == 'Счет'][0].docnumber}"></span>
+            <span th:if="${order.documentations.?[documentType.name == 'Счет на оплату'].size() > 0}"
+                  th:text="${order.documentations.?[documentType.name == 'Счет на оплату'][0].docnumber}"></span>
                 </td>
                 <td>
                         <span th:switch="${order.status}" class="status-badge">

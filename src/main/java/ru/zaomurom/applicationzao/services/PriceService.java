@@ -24,4 +24,5 @@ public class PriceService {
     public Optional<Price> findById(Long id) {
         return priceRepository.findById(id);
     }
+
 }

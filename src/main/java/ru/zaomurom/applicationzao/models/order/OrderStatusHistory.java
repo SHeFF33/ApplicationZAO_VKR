@@ -75,7 +75,7 @@ public class OrderStatusHistory {
     }
 
     public String getFormattedChangeDate() {
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
         return formatter.format(changeDate);
     }
 }

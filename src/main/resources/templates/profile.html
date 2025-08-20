@@ -473,6 +473,42 @@
         .table-responsive {
             overflow-x: auto;
         }
+
+        /* Новый блок информации по расчетам */
+        .calculation-info {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .calculation-info__title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-dark);
+        }
+        .calculation-info__grid {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .calculation-info__item {
+            min-width: 250px;
+            margin-bottom: 0.5rem;
+        }
+        .calculation-info__label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        .calculation-info__value {
+            color: var(--primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -554,24 +590,48 @@
                         <div class="client-info__label">Фактический адрес:</div>
                         <div class="client-info__value" th:text="${client.factaddress}"></div>
                     </div>
-                    <div class="client-info__item">
-                        <div class="client-info__label">Денег на счету:</div>
-                        <div class="client-info__value" th:text="${client.sum1} ?: 'Не указана'"></div>
+                </div>
+                <!-- Информация по расчетам (заголовок и блок) -->
+                <h2 class="client-info__title">Информация по расчетам</h2>
+                <div class="calculation-info" style="margin: 0 0 1.5rem 0; padding: 0; border: none; background: none; box-shadow: none;">
+                    <div class="calculation-info__grid" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <div class="calculation-info__item" style="min-width: 250px; margin-bottom: 0.5rem;">
+                            <div class="calculation-info__label">Денег на счету:</div>
+                            <div class="client-info__value" id="sum1-value" th:text="${client.sum1} ?: 'Не указана'"></div>
+                        </div>
+                        <div class="calculation-info__item" style="min-width: 250px; margin-bottom: 0.5rem;">
+                            <div class="calculation-info__label">В том числе свободные:</div>
+                            <div class="client-info__value" id="sum2-value" th:text="${client.sum2} ?: 'Не указана'"></div>
+                        </div>
                     </div>
-                    <div class="client-info__item">
-                        <div class="client-info__label">В том числе свободные:</div>
-                        <div class="client-info__value" th:text="${client.sum2} ?: 'Не указана'"></div>
+                </div>
+                <!-- Список регионов на всю ширину -->
+                <div class="client-info__item" style="grid-column: 1/-1;">
+                    <h2 class="client-info__title">Доступные регионы</h2>
+                    <div class="client-info__value" style="width: 100%;">
+                        <div class="regions-list" style="flex-wrap: wrap; display: flex; width: 100%;">
+                            <span th:each="region : ${clientRegions}"
+                                  th:text="${region.name}"
+                                  class="region-tag"
+                                  th:attr="data-id=${region.id}">
+                            </span>
+                        </div>
                     </div>
-                    <div class="client-info__item">
-                        <div class="client-info__label">Доступные регионы:</div>
-                        <div class="client-info__value">
-                            <div class="regions-list">
-                                <span th:each="region : ${clientRegions}"
-                                      th:text="${region.name}"
-                                      class="region-tag"
-                                      th:attr="data-id=${region.id}">
-                                </span>
+                </div>
+                <div class="client-info__item" style="grid-column: 1/-1;">
+                    <h2 class="client-info__title">Доступный объём для заказа</h2>
+                    <div class="calculation-info" style="margin: 0 0 1.5rem 0; padding: 1rem; border: none; background: #f7faf7; box-shadow: none;">
+                        <div th:if="${activeQuota != null}">
+                            <div class="calculation-info__label">Период действия квоты:</div>
+                            <div class="calculation-info__value" th:text="${#temporals.format(activeQuota.startDate, 'dd.MM.yyyy')} + ' - ' + ${#temporals.format(activeQuota.endDate, 'dd.MM.yyyy')}"></div>
+                            <div class="calculation-info__label">Доступный объём:</div>
+                            <div class="calculation-info__value" th:if="${activeQuota.allowedVolume > 0.01}" th:text="${#numbers.formatDecimal(activeQuota.allowedVolume, 1, 2)} + ' м³'"></div>
+                            <div class="calculation-info__value" th:if="${activeQuota.allowedVolume <= 0.01}">
+                                <span style="color: var(--error); font-weight: 600;">Объём заканчивается</span>
                             </div>
+                        </div>
+                        <div th:if="${activeQuota == null}">
+                            <span style="color: var(--error); font-weight: 600;">Нет доступного объёма для заказа</span>
                         </div>
                     </div>
                 </div>
@@ -592,6 +652,7 @@
                             <th>Индекс</th>
                             <th>Страна</th>
                             <th>Регион</th>
+                            <th>Станция</th>
                             <th>Район</th>
                             <th>Город</th>
                             <th>Улица</th>
@@ -602,10 +663,11 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}, data-schedule=${address.schedule}">
+                        <tr th:each="address : ${addresses}" th:attr="data-id=${address.id}, data-schedule=${address.schedule}, data-specialrequirements=${address.specialRequirements}">
                             <td th:text="${address.postalcode}"></td>
                             <td th:text="${address.country}"></td>
                             <td th:text="${address.clientsRegion != null ? address.clientsRegion.region.name : ''}"></td>
+                            <td th:text="${address.station?.name} ?: 'Не указана'"></td>
                             <td th:text="${address.rayon}"></td>
                             <td th:text="${address.city}"></td>
                             <td th:text="${address.street}"></td>
@@ -701,6 +763,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="stationId" class="form-label">Станция:</label>
+                    <select id="stationId" name="stationId" class="form-control">
+                        <option value="">Выберите станцию</option>
+                        <option th:each="station : ${stations}"
+                                th:value="${station.id}"
+                                th:text="${station.name}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label for="rayon" class="form-label">Район:</label>
                     <input type="text" id="rayon" name="rayon" class="form-control">
                 </div>
@@ -728,6 +801,11 @@
                 <div class="form-group">
                     <label for="schedule" class="form-label">График работы адреса доставки:</label>
                     <textarea id="schedule" name="schedule" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="specialRequirements" class="form-label">Особые требования, схема проезда:</label>
+                    <textarea id="specialRequirements" name="specialRequirements" class="form-control" rows="3" maxlength="3000"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -825,6 +903,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="editStationId" class="form-label">Станция:</label>
+                    <select id="editStationId" name="stationId" class="form-control">
+                        <option value="">Выберите станцию</option>
+                        <option th:each="station : ${stations}"
+                                th:value="${station.id}"
+                                th:text="${station.name}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label for="editRayon" class="form-label">Район:</label>
                     <input type="text" id="editRayon" name="rayon" class="form-control">
                 </div>
@@ -852,6 +941,11 @@
                 <div class="form-group">
                     <label for="editSchedule" class="form-label">График работы адреса доставки:</label>
                     <textarea id="editSchedule" name="schedule" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="editSpecialRequirements" class="form-label">Особые требования, схема проезда:</label>
+                    <textarea id="editSpecialRequirements" name="specialRequirements" class="form-control" rows="3" maxlength="3000"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -1045,12 +1139,10 @@
         const addressId = button.getAttribute('data-id');
         const row = button.closest('tr');
 
-        // Заполняем форму данными из строки таблицы
         document.getElementById('editAddressId').value = addressId;
         document.getElementById('editPostalcode').value = row.cells[0].textContent;
         document.getElementById('editCountry').value = row.cells[1].textContent;
 
-        // Находим и устанавливаем выбранный регион
         const regionSelect = document.getElementById('editRegionId');
         const regionCell = row.cells[2];
         const regionName = regionCell.textContent.trim();
@@ -1070,6 +1162,10 @@
 
         const schedule = row.getAttribute('data-schedule');
         document.getElementById('editSchedule').value = schedule || '';
+
+        // Вот исправленная строка для specialRequirements
+        const specialRequirements = row.getAttribute('data-specialrequirements');
+        document.getElementById('editSpecialRequirements').value = specialRequirements || '';
 
         // Устанавливаем выбранный контакт
         const contactName = row.cells[8].textContent;
@@ -1117,6 +1213,7 @@
             home: formData.get('home'),
             roomnumber: formData.get('roomnumber'),
             schedule: formData.get('schedule'),
+            specialRequirements: formData.get('specialRequirements'),
             contactId: formData.get('contactId')
         };
 
@@ -1217,105 +1314,50 @@
         });
     });
 
-    function addTableRow(tableId) {
-        const tbody = document.getElementById(tableId);
-        const newRow = document.createElement('tr');
-
-        if (tableId === 'addresses') {
-            const regions = Array.from(document.querySelectorAll('.region-tag')).map(tag => ({
-                id: tag.getAttribute('data-id'),
-                name: tag.textContent.trim()
-            }));
-
-            newRow.innerHTML = `
-                <td><input type="text" name="postalcodes" required></td>
-                <td><input type="text" name="countries" required></td>
-                <td>
-                    <select name="addressRegionIds" class="form-control" required>
-                        <option value="">Выберите регион</option>
-                        ${regions.map(region =>
-                `<option value="${region.id}">${region.name}</option>`
-            ).join('')}
-                    </select>
-                </td>
-                <td><input type="text" name="rayons"></td>
-                <td><input type="text" name="cities" required></td>
-                <td><input type="text" name="streets" required></td>
-                <td><input type="text" name="homes" required></td>
-                <td><input type="text" name="roomnumbers" required></td>
-                <td><textarea name="schedules"></textarea></td>
-                <td>
-                    <select name="contactIds">
-                        <option value="">Нет контакта</option>
-                        ${Array.from(document.querySelectorAll('select[name="contactIds"] option')).map(option =>
-                option.value ? `<option value="${option.value}">${option.textContent}</option>` : ''
-            ).join('')}
-                    </select>
-                </td>
-            `;
-        }
-        tbody.appendChild(newRow);
-    }
-
     function showError(message) {
         alert(message);
     }
 
     // Валидация полей адреса
     function validateAddressFields(form) {
-        // Почтовый индекс: только цифры, не более 6
+        // Почтовый индекс: только цифры, ровно 6 (оставляем без изменений)
         const postalcode = form.querySelector('input[name="postalcode"]').value;
         if (!/^\d{6}$/.test(postalcode)) {
             showError('Почтовый индекс должен содержать ровно 6 цифр');
             return false;
         }
 
-        // Страна: только буквы и дефис, не более 50 символов
-        const country = form.querySelector('input[name="country"]').value;
-        if (!/^[а-яА-ЯёЁa-zA-Z-]{1,50}$/.test(country)) {
-            showError('Название страны должно содержать только буквы и дефис, не более 50 символов');
-            return false;
+        // Остальные поля: только проверка длины (убраны ограничения по символам)
+        const fields = [
+            { name: 'country', maxLength: 50, label: 'Страна' },
+            { name: 'rayon', maxLength: 50, label: 'Район', optional: true },
+            { name: 'city', maxLength: 50, label: 'Город/Поселение' },
+            { name: 'street', maxLength: 50, label: 'Улица' },
+            { name: 'home', maxLength: 50, label: 'Дом' },
+            { name: 'roomnumber', maxLength: 50, label: 'Строение', optional: true }
+        ];
+
+        for (const field of fields) {
+            const value = form.querySelector(`input[name="${field.name}"]`).value;
+            if (!field.optional || value) {
+                if (value.length > field.maxLength) {
+                    showError(`${field.label} не должна превышать ${field.maxLength} символов`);
+                    return false;
+                }
+            }
         }
 
-        // Район: только буквы и дефис, не более 50 символов
-        const rayon = form.querySelector('input[name="rayon"]').value;
-        if (rayon && !/^[а-яА-ЯёЁa-zA-Z-]{1,50}$/.test(rayon)) {
-            showError('Название района должно содержать только буквы и дефис, не более 50 символов');
-            return false;
-        }
-
-        // Город/поселение: буквы, цифры и дефис, не более 50 символов
-        const city = form.querySelector('input[name="city"]').value;
-        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(city)) {
-            showError('Название города/поселения должно содержать только буквы, цифры и дефис, не более 50 символов');
-            return false;
-        }
-
-        // Улица: буквы, цифры и дефис, не более 50 символов
-        const street = form.querySelector('input[name="street"]').value;
-        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(street)) {
-            showError('Название улицы должно содержать только буквы, цифры и дефис, не более 50 символов');
-            return false;
-        }
-
-        // Дом: буквы, цифры и дефис, не более 50 символов
-        const home = form.querySelector('input[name="home"]').value;
-        if (!/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(home)) {
-            showError('Номер дома должен содержать только буквы, цифры и дефис, не более 50 символов');
-            return false;
-        }
-
-        // Строение: буквы, цифры и дефис, не более 50 символов (если заполнено)
-        const roomnumber = form.querySelector('input[name="roomnumber"]').value;
-        if (roomnumber && !/^[а-яА-ЯёЁa-zA-Z0-9-]{1,50}$/.test(roomnumber)) {
-            showError('Номер строения должен содержать только буквы, цифры и дефис, не более 50 символов');
-            return false;
-        }
-
-        // График работы: не более 250 символов
         const schedule = form.querySelector('textarea[name="schedule"]').value;
         if (schedule.length > 250) {
             showError('График работы не должен превышать 250 символов');
+            return false;
+        }
+
+        return true;
+
+        const specialRequirements = form.querySelector('textarea[name="specialRequirements"]').value;
+        if (specialRequirements.length > 3000) {
+            showError('Особые требования не должны превышать 3000 символов');
             return false;
         }
 
@@ -1395,25 +1437,32 @@
             });
         });
 
-        // Добавляем валидацию при вводе для полей с ограничением на буквы и дефис
-        const letterOnlyInputs = document.querySelectorAll('input[name="country"], input[name="rayon"]');
-        letterOnlyInputs.forEach(input => {
+        // Остальные поля - только ограничение длины (убраны ограничения по символам)
+        const addressInputs = document.querySelectorAll(`
+        input[name="country"],
+        input[name="rayon"],
+        input[name="city"],
+        input[name="street"],
+        input[name="home"],
+        input[name="roomnumber"]
+    `);
+        addressInputs.forEach(input => {
             input.addEventListener('input', function() {
-                this.value = this.value.replace(/[^а-яА-ЯёЁa-zA-Z-]/g, '').slice(0, 50);
+                this.value = this.value.slice(0, 50);
             });
         });
 
-        // Добавляем валидацию при вводе для полей с буквами, цифрами и дефисом
-        const alphanumericInputs = document.querySelectorAll('input[name="city"], input[name="street"], input[name="home"], input[name="roomnumber"]');
-        alphanumericInputs.forEach(input => {
-            input.addEventListener('input', function() {
-                this.value = this.value.replace(/[^а-яА-ЯёЁa-zA-Z0-9-]/g, '').slice(0, 50);
-            });
-        });
-
-        // Добавляем валидацию при вводе для графика работы
         const scheduleTextareas = document.querySelectorAll('textarea[name="schedule"]');
         scheduleTextareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                if (this.value.length > 250) {
+                    this.value = this.value.slice(0, 250);
+                }
+            });
+        });
+
+        const specialRequirementsTextareas = document.querySelectorAll('textarea[name="specialRequirements"]');
+        specialRequirementsTextareas.forEach(textarea => {
             textarea.addEventListener('input', function() {
                 if (this.value.length > 250) {
                     this.value = this.value.slice(0, 250);
@@ -1430,6 +1479,31 @@
                 }
             });
         });
+    });
+
+    // Форматирование чисел для блока информации по расчетам
+    document.addEventListener('DOMContentLoaded', function() {
+        function formatMoney(value) {
+            if (value === null || value === undefined || value === '' || isNaN(value)) return 'Не указана';
+            let number = Number(value);
+            if (!isFinite(number)) return 'Не указана';
+            // Округляем до 2 знаков после запятой
+            let parts = number.toFixed(2).split('.');
+            // Форматируем целую часть с пробелами
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            // Заменяем точку на запятую
+            return parts[0] + ',' + parts[1] + ' руб.';
+        }
+        var sum1Elem = document.getElementById('sum1-value');
+        var sum2Elem = document.getElementById('sum2-value');
+        if (sum1Elem) {
+            var raw1 = sum1Elem.textContent.trim().replace(/\s/g, '');
+            sum1Elem.textContent = formatMoney(raw1);
+        }
+        if (sum2Elem) {
+            var raw2 = sum2Elem.textContent.trim().replace(/\s/g, '');
+            sum2Elem.textContent = formatMoney(raw2);
+        }
     });
 </script>
 </body>

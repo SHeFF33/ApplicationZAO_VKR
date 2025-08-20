@@ -3,6 +3,8 @@ package ru.zaomurom.applicationzao.dto;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 public class AddressesDTO {
@@ -11,6 +13,22 @@ public class AddressesDTO {
     private String country;
     private String rayon;
     private String city;
+    private String street;
+    private String home;
+    private String roomnumber;
+    private String schedule;
+    private String specialRequirements; // Особые требования, схема проезда
+    private Long contactId;
+    private String contactName;
+    private RegionDTO region;
+
+    public RegionDTO getRegion() {
+        return region;
+    }
+
+    public void setRegion(RegionDTO region) {
+        this.region = region;
+    }
 
     public Long getId() {
         return id;
@@ -84,6 +102,14 @@ public class AddressesDTO {
         this.schedule = schedule;
     }
 
+    public String getSpecialRequirements() {
+        return specialRequirements;
+    }
+
+    public void setSpecialRequirements(String specialRequirements) {
+        this.specialRequirements = specialRequirements;
+    }
+
     public Long getContactId() {
         return contactId;
     }
@@ -100,10 +126,5 @@ public class AddressesDTO {
         this.contactName = contactName;
     }
 
-    private String street;
-    private String home;
-    private String roomnumber;
-    private String schedule;
-    private Long contactId;
-    private String contactName;
+
 }

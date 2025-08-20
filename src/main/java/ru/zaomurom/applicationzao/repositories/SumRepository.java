@@ -11,4 +11,6 @@ public interface SumRepository extends JpaRepository<Sum, Long> {
     List<Sum> findByProductId(Long productId);
     void deleteByProductId(Long productId);
     Optional<Sum> findByProductAndRegionName(Product product, String regionName);
+    void deleteByPricesOnRegionsJDId(Long pricesOnRegionsJDId);
+    void deleteByPricesOnRegionsId(Long pricesOnRegionsId);
 }

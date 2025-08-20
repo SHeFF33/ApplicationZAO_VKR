@@ -3,6 +3,7 @@ package ru.zaomurom.applicationzao.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.zaomurom.applicationzao.models.client.Addresses;
+import ru.zaomurom.applicationzao.models.client.Client;
 import ru.zaomurom.applicationzao.repositories.AddressesRepository;
 
 import java.util.List;
@@ -26,7 +27,16 @@ public class AddressesService {
         return addressesRepository.findByClientId(clientId);
     }
 
+    public List<Addresses> findByClientIdWithRegions(Long clientId) {
+        return addressesRepository.findByClientIdWithRegions(clientId);
+    }
+
     public Optional<Addresses> findById(Long id) {
         return addressesRepository.findById(id);
+    }
+
+    public void deleteByClient(Client client) {
+        List<Addresses> addresses = addressesRepository.findByClient(client);
+        addressesRepository.deleteAll(addresses);
     }
 }

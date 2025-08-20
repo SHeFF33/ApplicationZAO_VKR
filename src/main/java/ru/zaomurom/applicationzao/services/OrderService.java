@@ -1,5 +1,11 @@
 package ru.zaomurom.applicationzao.services;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Sort;
@@ -27,6 +33,9 @@ import java.util.ArrayList;
 
 @Service
 public class OrderService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
@@ -106,17 +115,33 @@ public class OrderService {
         orderStatusHistoryRepository.save(history);
     }
 
-    public List<OrderStatusHistory> findStatusHistoryByFilters(String status, LocalDateTime startDate, LocalDateTime endDate) {
+    public List<OrderStatusHistory> findStatusHistoryByFilters(Long orderId, Long clientId, String status,
+                                                               LocalDateTime startDate, LocalDateTime endDate) {
         Specification<OrderStatusHistory> spec = Specification.where(null);
 
+        if (orderId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("order").get("id"), orderId));
+        }
+
+        if (clientId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("order").get("client").get("id"), clientId));
+        }
+
         if (status != null && !status.isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("status"), status));
         }
+
         if (startDate != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("changeDate"), startDate));
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("changeDate"), startDate));
         }
+
         if (endDate != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("changeDate"), endDate));
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("changeDate"), endDate));
         }
 
         return orderStatusHistoryRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "changeDate"));

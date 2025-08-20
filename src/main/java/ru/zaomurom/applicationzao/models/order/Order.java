@@ -36,6 +36,9 @@ public class Order {
 
     private String status;
 
+    @Column(length = 3000, name = "admin_comment")
+    private String adminComment;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TCHOrder> tchOrders;
 
@@ -50,6 +53,13 @@ public class Order {
 
     @Column(name = "related_orders_info")
     private String relatedOrdersInfo;
+
+    // Поле для документа ЖД заказов
+    @Column(name = "railway_document")
+    private String railwayDocument;
+
+    @Column(name = "railway_document_name")
+    private String railwayDocumentName;
 
     public Order() {}
 
@@ -149,13 +159,20 @@ public class Order {
         this.comment = comment;
     }
 
+    public String getAdminComment() {
+        return adminComment;
+    }
+    public void setAdminComment(String adminComment) {
+        this.adminComment = adminComment;
+    }
+
     public String getFormattedOrderDate() {
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
         return formatter.format(orderDate);
     }
 
     public String getFormattedDeliveryDate() {
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd.MM.yyyy");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
         return formatter.format(deliveryDate);
     }
 
@@ -165,5 +182,21 @@ public class Order {
 
     public void setRelatedOrdersInfo(String relatedOrdersInfo) {
         this.relatedOrdersInfo = relatedOrdersInfo;
+    }
+
+    public String getRailwayDocument() {
+        return railwayDocument;
+    }
+
+    public void setRailwayDocument(String railwayDocument) {
+        this.railwayDocument = railwayDocument;
+    }
+
+    public String getRailwayDocumentName() {
+        return railwayDocumentName;
+    }
+
+    public void setRailwayDocumentName(String railwayDocumentName) {
+        this.railwayDocumentName = railwayDocumentName;
     }
 }

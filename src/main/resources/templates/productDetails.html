@@ -606,6 +606,10 @@
             <span class="product-details__spec-value" th:text="${product.sort}"></span>
           </div>
           <div class="product-details__spec">
+            <span class="product-details__spec-label">Тип номенклатуры:</span>
+            <span class="product-details__spec-value" th:text="${product.nomenclatureType == T(ru.zaomurom.applicationzao.models.product.NomenclatureType).AUTO ? 'Авто' : 'ЖД'}"></span>
+          </div>
+          <div class="product-details__spec">
             <span class="product-details__spec-label">Толщина:</span>
             <span class="product-details__spec-value" th:text="${#numbers.formatDecimal(product.tolsh, 1, 2)}"></span>
           </div>
@@ -633,9 +637,20 @@
             </button>
           </div>
 
-          <button type="submit" class="btn">
-            <i class="fas fa-cart-plus"></i> Добавить в корзину
-          </button>
+          <div th:if="${activeQuota == null or activeQuota.allowedVolume <= 0.01}">
+            <div style="color: var(--error); font-weight: 600; margin: 1rem 0;">Нет доступного объёма по квоте для заказа этого товара</div>
+            <button type="submit" class="btn" disabled style="opacity:0.5; cursor:not-allowed;">
+              <i class="fas fa-cart-plus"></i> Добавить в корзину
+            </button>
+          </div>
+          <div th:if="${activeQuota != null and activeQuota.allowedVolume > 0.01}">
+            <button type="submit" class="btn" id="addToCartBtn">
+              <i class="fas fa-cart-plus"></i> Добавить в корзину
+            </button>
+            <div style="margin-top:0.5rem; color:var(--primary-dark); font-size:0.95rem;">
+              Доступно по квоте: <span th:text="${#numbers.formatDecimal(activeQuota.allowedVolume, 1, 2)}"></span> м³
+            </div>
+          </div>
         </form>
 
         <div class="product-details__price">
@@ -723,11 +738,15 @@
             .then(data => {
               if (data.message) {
                 showNotification(data.message);
+              } else if (data.error) {
+                showNotification(data.error);
               }
 
               setTimeout(() => {
-                window.location.href = data.redirect;
-              }, data.message ? 3000 : 0);
+                if (data.redirect && data.redirect !== 'undefined') {
+                  window.location.href = data.redirect;
+                }
+              }, (data.message || data.error) ? 3000 : 0);
             })
             .catch(error => {
               console.error('Error:', error);
@@ -808,6 +827,37 @@
       closeNav();
     }
   });
+
+  // Блокировка кнопки если объём превышает квоту
+  const quota = /*[[${activeQuota != null ? activeQuota.allowedVolume : 0}]]*/ 0;
+  const productVolume = /*[[${product.volume}]]*/ 0;
+  const addToCartBtn = document.getElementById('addToCartBtn');
+  const quantityInput = document.getElementById('quantityInput');
+  if (addToCartBtn && quantityInput) {
+    quantityInput.addEventListener('input', function() {
+      const requested = parseFloat(this.value) * productVolume;
+      if (requested > quota) {
+        addToCartBtn.disabled = true;
+        addToCartBtn.style.opacity = '0.5';
+        addToCartBtn.style.cursor = 'not-allowed';
+        if (!document.getElementById('quota-warning')) {
+          const warn = document.createElement('div');
+          warn.id = 'quota-warning';
+          warn.style.color = 'var(--error)';
+          warn.style.fontWeight = '600';
+          warn.style.margin = '0.5rem 0';
+          warn.textContent = 'Недостаточно объёма по квоте для такого количества товара';
+          addToCartBtn.parentNode.insertBefore(warn, addToCartBtn.nextSibling);
+        }
+      } else {
+        addToCartBtn.disabled = false;
+        addToCartBtn.style.opacity = '1';
+        addToCartBtn.style.cursor = '';
+        const warn = document.getElementById('quota-warning');
+        if (warn) warn.remove();
+      }
+    });
+  }
 </script>
 </body>
 </html>

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Заказы | ЗАО Муром</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -529,6 +531,120 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Modal styles for address editing */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal__content {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 1.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal__title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .modal__close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .modal__close:hover {
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+
+        .modal__body {
+            padding: 1.5rem;
+        }
+
+        .modal__footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1rem 1.5rem 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        .form-help {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .form-help i {
+            margin-right: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -644,7 +760,7 @@
                             <div th:if="${order.documentations}">
                                 <div th:each="doc : ${order.documentations}">
                                     <div th:if="${doc.documentType.name == 'Счет'}" class="order-card__detail">
-                                        <div class="order-card__detail-label">Номер счета</div>
+                                        <div class="order-card__detail-label">Счет на оплату</div>
                                         <div class="order-card__detail-value" th:text="${doc.docnumber}"></div>
                                     </div>
                                 </div>
@@ -677,6 +793,7 @@
     </div>
 </div>
 
+<script src="/js/orderDetails.js"></script>
 <script>
     function openNav() {
         document.getElementById("sidebar").classList.add("app-sidebar--open");
@@ -700,6 +817,103 @@
 
     function closeModal(modalId) {
         document.getElementById(modalId).classList.remove('modal--open');
+    }
+
+    // Функции для редактирования адреса (загружаются из orderDetails.html)
+    function openAddressEditModal() {
+        console.log('Opening address edit modal...');
+        const modal = document.getElementById('addressEditModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            console.log('Modal opened successfully');
+            
+            // Добавляем обработчик клика вне модального окна
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeAddressEditModal();
+                }
+            });
+        } else {
+            console.error('Modal element not found!');
+        }
+    }
+
+    function closeAddressEditModal() {
+        const modal = document.getElementById('addressEditModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function updateOrderAddress() {
+        console.log('Updating order address...');
+        const newAddressId = document.getElementById('newAddressId').value;
+        
+        // Получаем ID заказа из URL или из модального окна
+        let orderId = null;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('orderId')) {
+            orderId = urlParams.get('orderId');
+        } else {
+            // Пытаемся получить из загруженного контента
+            const orderTitle = document.querySelector('.order-details__title');
+            if (orderTitle) {
+                const match = orderTitle.textContent.match(/Заказ №(\d+)/);
+                if (match) {
+                    orderId = match[1];
+                }
+            }
+        }
+        
+        console.log('New address ID:', newAddressId);
+        console.log('Order ID:', orderId);
+        
+        if (!newAddressId) {
+            alert('Пожалуйста, выберите новый адрес доставки');
+            return;
+        }
+        
+        if (!orderId) {
+            alert('Ошибка: не удалось определить ID заказа');
+            return;
+        }
+
+        // Показываем индикатор загрузки
+        const saveBtn = document.querySelector('#addressEditModal .btn:last-child');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+        saveBtn.disabled = true;
+
+        fetch('/orderDetails/updateAddress', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+            },
+            body: `orderId=${orderId}&newAddressId=${newAddressId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Адрес заказа успешно обновлен');
+                closeAddressEditModal();
+                // Перезагружаем детали заказа
+                openOrderDetailsModal(orderId);
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при обновлении адреса');
+        })
+        .finally(() => {
+            // Восстанавливаем кнопку
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        });
     }
 
     function repeatOrder(orderId) {

@@ -1,50 +1,52 @@
     package ru.zaomurom.applicationzao.controllers;
 
-    import jakarta.mail.MessagingException;
+    import org.apache.poi.hssf.usermodel.HSSFWorkbook;
     import org.apache.poi.ss.usermodel.*;
     import org.apache.poi.xssf.usermodel.XSSFWorkbook;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.format.annotation.DateTimeFormat;
     import org.springframework.http.*;
-    import org.springframework.orm.ObjectOptimisticLockingFailureException;
-    import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.ContentDisposition;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
     import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
     import org.springframework.ui.Model;
     import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
     import org.springframework.web.servlet.mvc.support.RedirectAttributes;
     import ru.zaomurom.applicationzao.models.DocumentZAO;
+    import ru.zaomurom.applicationzao.models.Station;
+    import ru.zaomurom.applicationzao.models.Quota;
     import ru.zaomurom.applicationzao.models.client.*;
     import ru.zaomurom.applicationzao.models.order.*;
     import ru.zaomurom.applicationzao.models.prices.ClientsRegion;
-    import ru.zaomurom.applicationzao.models.prices.PricesOnRegions;
-    import ru.zaomurom.applicationzao.models.prices.Region;
-    import ru.zaomurom.applicationzao.models.product.Documentation;
-    import ru.zaomurom.applicationzao.models.product.Product;
-    import ru.zaomurom.applicationzao.models.product.ProductImage;
-    import ru.zaomurom.applicationzao.models.product.Sum;
+import ru.zaomurom.applicationzao.models.prices.PricesOnRegions;
+import ru.zaomurom.applicationzao.models.prices.PricesOnRegionsJD;
+import ru.zaomurom.applicationzao.models.prices.Region;
+    import ru.zaomurom.applicationzao.models.product.*;
     import ru.zaomurom.applicationzao.repositories.OrderTruckRepository;
+    import ru.zaomurom.applicationzao.repositories.SumRepository;
     import ru.zaomurom.applicationzao.services.*;
 
-    import java.io.ByteArrayOutputStream;
     import java.io.IOException;
     import java.nio.charset.StandardCharsets;
     import java.security.Principal;
-    import java.text.ParseException;
     import java.text.SimpleDateFormat;
     import java.time.LocalDateTime;
     import java.time.format.DateTimeFormatter;
     import java.util.*;
+    import java.util.concurrent.atomic.AtomicInteger;
     import java.util.stream.Collectors;
+    import java.util.Arrays;
+    import java.time.LocalDate;
 
     import org.apache.poi.ss.usermodel.Workbook;
     import org.apache.poi.ss.usermodel.Sheet;
     import org.apache.poi.ss.usermodel.Cell;
-    import org.apache.poi.xssf.usermodel.XSSFWorkbook;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
 
-    @Controller
+    @Controller("adminController")
     public class AdminController {
         private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
@@ -80,6 +82,17 @@
         private ClientsRegionService clientsRegionService;
         @Autowired
         private PricesOnRegionsService pricesOnRegionsService;
+        @Autowired
+        private PricesOnRegionsJDService pricesOnRegionsJDService;
+        @Autowired
+        private AddressesService addressesService;
+        @Autowired
+        private StationService stationService;
+        
+        @Autowired
+        private SumRepository sumRepository;
+        @Autowired
+        private QuotaService quotaService;
 
         @GetMapping("/admin/dashboard")
         public String dashboard(Model model) {
@@ -121,6 +134,7 @@
             model.addAttribute("contacts", new ArrayList<>());
             model.addAttribute("prices", priceService.findAll());
             model.addAttribute("regions", regionService.findAll());
+            model.addAttribute("stations", stationService.findAll());
             return "admin/addClient";
         }
 
@@ -142,6 +156,9 @@
                 @RequestParam(required = false) List<String> homes,
                 @RequestParam(required = false) List<String> roomnumbers,
                 @RequestParam(required = false) List<String> schedules,
+                @RequestParam(required = false) List<String> specialRequirements,
+                @RequestParam(required = false) List<Long> regionIdsForAddresses,
+                @RequestParam(required = false) List<Long> stationIds,
                 @RequestParam(required = false) List<String> typeContacts,
                 @RequestParam(required = false) List<String> contactNames,
                 @RequestParam(required = false) List<String> phonenumbers,
@@ -217,35 +234,46 @@
                 }
             }
 
-            List<Addresses> addressesList = new ArrayList<>();
+            // Добавление адресов
             if (postalcodes != null && !postalcodes.isEmpty()) {
                 for (int i = 0; i < postalcodes.size(); i++) {
-                    Addresses address = new Addresses();
-                    address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
-                    address.setCountry(countries.get(i));
-                    Region region = regionService.findById(regionIds.get(i)).orElse(null);
-                    if (region == null) {
-                        logger.warn("Region not found for ID: {}", regionIds.get(i));
-                        redirectAttributes.addFlashAttribute("errorMessage",
-                                "Регион с ID " + regionIds.get(i) + " не найден");
-                        return "redirect:/admin/addClient";
+                    if (postalcodes.get(i) != null && !postalcodes.get(i).trim().isEmpty()) {
+                        Addresses address = new Addresses();
+                        address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
+                        address.setCountry(countries.get(i));
+                        address.setRayon(rayons.get(i));
+                        address.setCity(cities.get(i));
+                        address.setStreet(streets.get(i));
+                        address.setHome(homes.get(i));
+                        address.setRoomnumber(roomnumbers.get(i));
+                        address.setSchedule(schedules.get(i));
+                        address.setSpecialRequirements(specialRequirements.get(i));
+                        address.setClient(client);
+                        
+                        // Установка региона
+                        if (regionIdsForAddresses != null && i < regionIdsForAddresses.size() && regionIdsForAddresses.get(i) != null) {
+                            Region region = regionService.findById(regionIdsForAddresses.get(i)).orElse(null);
+                            if (region != null) {
+                                ClientsRegion clientsRegion = new ClientsRegion();
+                                clientsRegion.setClient(client);
+                                clientsRegion.setRegion(region);
+                                clientsRegionService.save(clientsRegion);
+                                address.setClientsRegion(clientsRegion);
+                            }
+                        }
+                        
+                        // Установка станции
+                        if (stationIds != null && i < stationIds.size() && stationIds.get(i) != null) {
+                            Station station = stationService.findById(stationIds.get(i)).orElse(null);
+                            if (station != null) {
+                                address.setStation(station);
+                            }
+                        }
+                        
+                        addressesService.save(address);
                     }
-                    ClientsRegion clientsRegion = new ClientsRegion();
-                    clientsRegion.setRegion(region);
-                    clientsRegion.setClient(client);
-                    clientsRegionService.save(clientsRegion);
-                    address.setClientsRegion(clientsRegion);
-                    address.setRayon(rayons.get(i));
-                    address.setCity(cities.get(i));
-                    address.setStreet(streets.get(i));
-                    address.setHome(homes.get(i));
-                    address.setRoomnumber(roomnumbers.get(i));
-                    address.setSchedule(schedules != null && i < schedules.size() ? schedules.get(i) : null);
-                    address.setClient(client);
-                    addressesList.add(address);
                 }
             }
-            client.setAddresses(addressesList);
 
             List<Contacts> contactsList = new ArrayList<>();
             if (contactNames != null && !contactNames.isEmpty()) {
@@ -312,17 +340,21 @@
                 List<ClientsRegion> clientsRegions = clientsRegionService.findByClient(client);
                 List<Region> clientRegions = clientsRegions.stream()
                         .map(ClientsRegion::getRegion)
+                        .distinct() // Убираем дубликаты
                         .collect(Collectors.toList());
 
                 model.addAttribute("client", client);
                 model.addAttribute("regions", allRegions);
                 model.addAttribute("clientRegions", clientRegions);
+                model.addAttribute("stations", stationService.findAll());
+                model.addAttribute("clientStations", stationService.findAll());
                 return "admin/editClient";
             }
             return "redirect:/admin/clients";
         }
 
         @PostMapping("/admin/editClient/{id}")
+        @Transactional
         public String editClient(
                 @PathVariable Long id,
                 @RequestParam String name,
@@ -336,12 +368,14 @@
                 @RequestParam(required = false) List<String> countries,
                 @RequestParam(required = false) List<Long> regionIds,
                 @RequestParam(required = false) List<Long> addressRegionIds,
+                @RequestParam(required = false) List<Long> addressStationIds,
                 @RequestParam(required = false) List<String> rayons,
                 @RequestParam(required = false) List<String> cities,
                 @RequestParam(required = false) List<String> streets,
                 @RequestParam(required = false) List<String> homes,
                 @RequestParam(required = false) List<String> roomnumbers,
                 @RequestParam(required = false) List<String> schedules,
+                @RequestParam(required = false) List<String> specialRequirements,
                 @RequestParam(required = false) List<String> typeContacts,
                 @RequestParam(required = false) List<String> contactNames,
                 @RequestParam(required = false) List<String> phonenumbers,
@@ -350,12 +384,24 @@
                 @RequestParam(required = false) List<String> passwords,
                 @RequestParam(required = false) List<String> isAdmins,
                 @RequestParam(required = false) List<String> nameuser,
+                @RequestParam(required = false) List<String> userEmails,
                 @RequestParam(required = false) List<Long> contactIds,
                 @RequestParam(required = false) List<Long> userIds,
-                @RequestParam(required = false) List<String> userEmails,
                 RedirectAttributes redirectAttributes) {
 
             logger.debug("Starting editClient method for client ID: {}", id);
+            logger.debug("Received parameters:");
+            logger.debug("  postalcodes: {}", postalcodes);
+            logger.debug("  countries: {}", countries);
+            logger.debug("  regionIds: {}", regionIds);
+            logger.debug("  addressRegionIds: {}", addressRegionIds);
+            logger.debug("  rayons: {}", rayons);
+            logger.debug("  cities: {}", cities);
+            logger.debug("  streets: {}", streets);
+            logger.debug("  homes: {}", homes);
+            logger.debug("  roomnumbers: {}", roomnumbers);
+            logger.debug("  schedules: {}", schedules);
+            logger.debug("  specialRequirements: {}", specialRequirements);
             
             Optional<Client> optionalClient = clientService.findById(id);
             if (!optionalClient.isPresent()) {
@@ -391,76 +437,53 @@
                 }
             }
 
-            // Обновляем адреса
+            // Обновление адресов
             if (postalcodes != null && !postalcodes.isEmpty()) {
-                logger.debug("Processing {} addresses", postalcodes.size());
-                List<Addresses> existingAddresses = client.getAddresses();
-                List<Addresses> updatedAddresses = new ArrayList<>();
+                // Удаляем старые адреса
+                addressesService.deleteByClient(client);
                 
+                // Добавляем новые адреса
                 for (int i = 0; i < postalcodes.size(); i++) {
-                    try {
-                        Addresses address;
-                        // Пытаемся найти существующий адрес
-                        if (i < existingAddresses.size()) {
-                            address = existingAddresses.get(i);
-                        } else {
-                            address = new Addresses();
-                        }
-
-                        String postalCode = postalcodes.get(i).trim();
-                        if (!postalCode.matches("\\d{6}")) {
-                            redirectAttributes.addFlashAttribute("errorMessage", 
-                                "Почтовый индекс должен содержать 6 цифр");
-                            return "redirect:/admin/editClient/" + id;
-                        }
-                        address.setPostalcode(Integer.parseInt(postalCode));
+                    if (postalcodes.get(i) != null && !postalcodes.get(i).trim().isEmpty()) {
+                        Addresses address = new Addresses();
+                        address.setPostalcode(Integer.parseInt(postalcodes.get(i)));
                         address.setCountry(countries.get(i));
-                        
-                        // Проверяем и устанавливаем регион
-                        Long regionId = addressRegionIds.get(i);
-                        logger.debug("Processing address {} with region ID: {}", i, regionId);
-                        
-                        ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
-                        if (clientsRegion == null) {
-                            logger.error("Region not found for client {} and region ID {}", client.getId(), regionId);
-                            redirectAttributes.addFlashAttribute("errorMessage", 
-                                "Выбранный регион не доступен для данного клиента");
-                            return "redirect:/admin/editClient/" + id;
-                        }
-                        
-                        address.setClientsRegion(clientsRegion);
                         address.setRayon(rayons.get(i));
                         address.setCity(cities.get(i));
                         address.setStreet(streets.get(i));
                         address.setHome(homes.get(i));
                         address.setRoomnumber(roomnumbers.get(i));
                         address.setSchedule(schedules.get(i));
+                        address.setSpecialRequirements(specialRequirements.get(i));
                         address.setClient(client);
-
-                        // Устанавливаем контакт, если он указан
-                        if (contactIds != null && i < contactIds.size()) {
-                            Long contactId = contactIds.get(i);
-                            if (contactId != null) {
-                                Optional<Contacts> contact = contactsService.findById(contactId);
-                                contact.ifPresent(address::setContact);
+                        
+                        // Установка региона
+                        if (addressRegionIds != null && i < addressRegionIds.size() && addressRegionIds.get(i) != null) {
+                            Region region = regionService.findById(addressRegionIds.get(i)).orElse(null);
+                            if (region != null) {
+                                ClientsRegion clientsRegion = new ClientsRegion();
+                                clientsRegion.setClient(client);
+                                clientsRegion.setRegion(region);
+                                clientsRegionService.save(clientsRegion);
+                                address.setClientsRegion(clientsRegion);
                             }
                         }
-
-                        updatedAddresses.add(address);
-                        logger.debug("Successfully processed address {}", i);
                         
-                    } catch (Exception e) {
-                        logger.error("Error processing address {}: {}", i, e.getMessage());
-                        redirectAttributes.addFlashAttribute("errorMessage", 
-                            "Ошибка при обработке адреса: " + e.getMessage());
-                        return "redirect:/admin/editClient/" + id;
+                        // Установка станции
+                        if (addressStationIds != null && i < addressStationIds.size() && addressStationIds.get(i) != null) {
+                            Station station = stationService.findById(addressStationIds.get(i)).orElse(null);
+                            if (station != null) {
+                                address.setStation(station);
+                            }
+                        }
+                        
+                        addressesService.save(address);
                     }
                 }
-                
-                // Обновляем список адресов
-                client.getAddresses().clear();
-                client.getAddresses().addAll(updatedAddresses);
-                logger.debug("Updated addresses list size: {}", updatedAddresses.size());
+            } else {
+                // Если адресов нет, очищаем список
+                logger.debug("No addresses provided, clearing address list");
+                client.setAddresses(new ArrayList<>());
             }
 
             List<Contacts> existingContacts = client.getContacts();
@@ -510,8 +533,10 @@
             }
 
             try {
-                clientService.save(client);
-                logger.debug("Successfully saved client {}", id);
+                // Сохраняем клиента (каскадное сохранение должно обработать адреса)
+                client = clientService.save(client);
+                
+                logger.debug("Successfully saved client {} with {} addresses", id, client.getAddresses().size());
                 redirectAttributes.addFlashAttribute("successMessage", "Изменения клиента успешно сохранены");
                 return "redirect:/admin/clientDetails/" + id;
             } catch (Exception e) {
@@ -629,16 +654,24 @@
             Optional<Client> optionalClient = clientService.findById(id);
             if (optionalClient.isPresent()) {
                 Client client = optionalClient.get();
+                List<ClientsRegion> clientsRegions = clientsRegionService.findByClient(client);
+                List<Region> clientRegions = clientsRegions.stream()
+                        .map(ClientsRegion::getRegion)
+                        .distinct() // Убираем дубликаты
+                        .collect(Collectors.toList());
+
                 model.addAttribute("client", client);
+                model.addAttribute("clientRegions", clientRegions);
+                model.addAttribute("stations", stationService.findAll());
                 return "admin/clientDetails";
-            } else {
-                return "redirect:/admin/clients";
             }
+            return "redirect:/admin/clients";
         }
 
         @PostMapping("/admin/addProduct")
-        public String addProduct(@ModelAttribute Product product, RedirectAttributes redirectAttributes) {
+        public String addProduct(@ModelAttribute Product product, @RequestParam("nomenclatureType") String nomenclatureType, RedirectAttributes redirectAttributes) {
             try {
+                product.setNomenclatureType(ru.zaomurom.applicationzao.models.product.NomenclatureType.valueOf(nomenclatureType));
                 Product savedProduct = productService.save(product);
                 redirectAttributes.addFlashAttribute("successMessage", "Товар успешно добавлен");
                 return "redirect:/admin/products";
@@ -721,13 +754,44 @@
                     redirectAttributes.addFlashAttribute("successMessage", "Цены успешно рассчитаны");
                 } else {
                     // Ручное добавление цены
-                    Sum sum = new Sum();
+                    // Ищем существующую цену для этого продукта и региона
+                    Optional<Sum> existingSum = sumRepository.findByProductAndRegionName(product, regionName);
+                    
+                    Sum  sum;
+                    if (existingSum.isPresent()) {
+                        // Обновляем существующую цену
+                        sum = existingSum.get();
+                        redirectAttributes.addFlashAttribute("successMessage", "Цена успешно обновлена");
+                    } else {
+                        // Создаем новую цену
+                        sum = new Sum();
+                        sum.setProduct(product);
+                        sum.setRegionName(regionName);
+                        redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
+                    }
+                    
                     sum.setSumma(summa);
                     sum.setPeriod(java.sql.Date.valueOf(period));
-                    sum.setProduct(product);
-                    sum.setRegionName(regionName);
+                    
+                    // Определяем тип номенклатуры и устанавливаем соответствующую связь с прайсами
+                    boolean isRailway = NomenclatureType.RAILWAY.equals(product.getNomenclatureType());
+                    if (isRailway) {
+                        // Для ЖД номенклатуры ищем соответствующий ЖД прайс
+                        List<PricesOnRegionsJD> jdPrices = pricesOnRegionsJDService.findByThickness(Double.valueOf(product.getTolsh()));
+                        if (!jdPrices.isEmpty()) {
+                            // Берем первый найденный прайс для данной толщины
+                            sum.setPricesOnRegionsJD(jdPrices.get(0));
+                        }
+                    } else {
+                        // Для Авто номенклатуры ищем соответствующий Авто прайс
+                        List<PricesOnRegions> autoPrices = pricesOnRegionsService.findByThickness(Double.valueOf(product.getTolsh()));
+                        if (!autoPrices.isEmpty()) {
+                            // Берем первый найденный прайс для данной толщины
+                            sum.setPricesOnRegions(autoPrices.get(0));
+                        }
+                    }
+                    
                     sumService.save(sum);
-                    redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
                 }
                 productService.updateProductVisibility(productId);
             } catch (Exception e) {
@@ -802,6 +866,14 @@
 
                 model.addAttribute("order", order);
                 model.addAttribute("documentTypes", documentTypes);
+                
+                // Определяем тип номенклатуры заказа
+                boolean isRailwayOrder = false;
+                if (!order.getTchOrders().isEmpty()) {
+                    isRailwayOrder = order.getTchOrders().get(0).getProduct().getNomenclatureType() == NomenclatureType.RAILWAY;
+                }
+                model.addAttribute("isRailwayOrder", isRailwayOrder);
+                
                 return "admin/orderDetails";
             }
             return "error";
@@ -811,21 +883,46 @@
         public String updateOrderStatus(
                 @RequestParam Long orderId,
                 @RequestParam String status,
+                @RequestParam(name = "adminComment", required = false) String adminComment,
                 RedirectAttributes redirectAttributes,
                 Principal principal) {
 
             Order order = orderService.findById(orderId).orElse(null);
             if (order != null) {
+                String previousStatus = order.getStatus();
                 order.setStatus(status);
+                // Ограничим длину комментария на всякий случай
+                if (adminComment != null && adminComment.length() > 3000) {
+                    adminComment = adminComment.substring(0, 3000);
+                }
+                order.setAdminComment(adminComment);
                 orderService.save(order);
                 User user = userService.findByUsername(principal.getName());
                 orderService.addStatusHistory(order, status, user);
+
+                // Если статус изменён на "Аннулирован", вернуть объём в квоту клиента
+                if ("Аннулирован".equalsIgnoreCase(status) && (previousStatus == null || !"Аннулирован".equalsIgnoreCase(previousStatus))) {
+                    double orderVolume = order.getTchOrders().stream()
+                            .mapToDouble(t -> t.getVolume() * t.getQuantity())
+                            .sum();
+                    if (orderVolume > 0) {
+                        quotaService.increaseQuotaVolume(order.getClient(), orderVolume);
+                    }
+                } else if (previousStatus != null && "Аннулирован".equalsIgnoreCase(previousStatus) && !"Аннулирован".equalsIgnoreCase(status)) {
+                    // Возврат из аннулированного состояния — заново списать объём из квоты
+                    double orderVolume = order.getTchOrders().stream()
+                            .mapToDouble(t -> t.getVolume() * t.getQuantity())
+                            .sum();
+                    if (orderVolume > 0) {
+                        quotaService.decreaseQuotaVolumeFlexible(order.getClient(), orderVolume);
+                    }
+                }
 
                 // Асинхронная отправка уведомлений
                 List<String> emailAddresses = orderService.collectOrderEmailAddresses(order);
                 emailService.sendOrderStatusUpdateEmailAsync(order, status, emailAddresses);
 
-                redirectAttributes.addFlashAttribute("successMessage", "Статус заказа успешно обновлен.");
+                redirectAttributes.addFlashAttribute("successMessage", "Статус заказа и комментарий успешно обновлены.");
             }
             return "redirect:/admin/orders/" + orderId;
         }
@@ -866,13 +963,18 @@
 
         @GetMapping("/admin/orderStatusHistory")
         public String orderStatusHistory(
+                @RequestParam(required = false) Long orderId,
+                @RequestParam(required = false) Long clientId,
                 @RequestParam(required = false) String status,
                 @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime startDate,
                 @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime endDate,
                 Model model) {
 
-            List<OrderStatusHistory> history = orderService.findStatusHistoryByFilters(status, startDate, endDate);
+            List<OrderStatusHistory> history = orderService.findStatusHistoryByFilters(orderId, clientId, status, startDate, endDate);
             model.addAttribute("history", history);
+            model.addAttribute("clients", clientService.findAll());
+            model.addAttribute("orderId", orderId);
+            model.addAttribute("clientId", clientId);
             model.addAttribute("status", status);
             model.addAttribute("startDate", startDate != null ? startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")) : null);
             model.addAttribute("endDate", endDate != null ? endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")) : null);
@@ -895,7 +997,7 @@
         @GetMapping("/admin/documentTypes")
         public String documentTypes(Model model) {
             model.addAttribute("documentTypes", documentTypeService.findAll());
-            model.addAttribute("prices", priceService.findAll());
+            model.addAttribute("stations", stationService.findAll());
             return "admin/documentTypes";
         }
 
@@ -933,6 +1035,34 @@
                 return new ResponseEntity<>(doc.getBytes(), headers, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        }
+
+        @GetMapping("/admin/orders/{id}/railway-document")
+        public ResponseEntity<byte[]> downloadRailwayDocument(@PathVariable Long id) {
+            try {
+                Order order = orderService.findById(id).orElse(null);
+                if (order == null || order.getRailwayDocument() == null) {
+                    return ResponseEntity.notFound().build();
+                }
+
+                java.nio.file.Path filePath = java.nio.file.Paths.get(order.getRailwayDocument());
+                if (!java.nio.file.Files.exists(filePath)) {
+                    return ResponseEntity.notFound().build();
+                }
+
+                byte[] fileContent = java.nio.file.Files.readAllBytes(filePath);
+                String fileName = order.getRailwayDocumentName();
+                String mimeType = determineMimeType(fileName);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType(mimeType));
+                headers.setContentDispositionFormData("attachment", fileName);
+
+                return new ResponseEntity<>(fileContent, headers, HttpStatus.OK);
+            } catch (Exception e) {
+                logger.error("Error downloading railway document for order {}: {}", id, e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
         }
 
@@ -1087,6 +1217,7 @@
                 @RequestParam int quantity,
                 @RequestParam String description,
                 @RequestParam(required = false, defaultValue = "false") boolean visible,
+                @RequestParam("nomenclatureType") String nomenclatureType,
                 RedirectAttributes redirectAttributes) {
 
             Product product = productService.findById(id).orElseThrow();
@@ -1097,6 +1228,7 @@
             product.setLength(length);
             product.setQuantity(quantity);
             product.setDescription(description);
+            product.setNomenclatureType(ru.zaomurom.applicationzao.models.product.NomenclatureType.valueOf(nomenclatureType));
             if (product.isReadyForDisplay()) {
                 product.setVisible(visible);
             } else {
@@ -1245,16 +1377,27 @@
                     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
                     Date periodDate = dateFormat.parse(period);
 
-                    Sum sum = new Sum();
+                    // Ищем существующую цену для этого продукта и региона
+                    Optional<Sum> existingSum = sumRepository.findByProductAndRegionName(product, regionName);
+                    
+                    Sum sum;
+                    if (existingSum.isPresent()) {
+                        // Обновляем существующую цену
+                        sum = existingSum.get();
+                        redirectAttributes.addFlashAttribute("successMessage", "Цена успешно обновлена");
+                    } else {
+                        // Создаем новую цену
+                        sum = new Sum();
+                        sum.setProduct(product);
+                        sum.setRegionName(regionName);
+                        redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
+                    }
+                    
                     sum.setSumma(summa);
                     sum.setPeriod(periodDate);
-                    sum.setProduct(product);
-                    sum.setRegionName(regionName);
                     
                     sumService.save(sum);
                     productService.updateProductVisibility(productId);
-                    
-                    redirectAttributes.addFlashAttribute("successMessage", "Цена успешно добавлена");
                 }
             } catch (Exception e) {
                 redirectAttributes.addFlashAttribute("errorMessage", 
@@ -1270,6 +1413,7 @@
             model.addAttribute("regions", regionService.findAll());
             model.addAttribute("clientsRegions", clientsRegionService.findAll());
             model.addAttribute("pricesOnRegions", pricesOnRegionsService.findByFilters(regionId, thickness));
+            model.addAttribute("pricesOnRegionsJD", pricesOnRegionsJDService.findByFilters(regionId, thickness));
             model.addAttribute("clients", clientService.findAll());
             model.addAttribute("selectedRegionId", regionId);
             model.addAttribute("selectedThickness", thickness);
@@ -1355,97 +1499,300 @@
             return "redirect:/admin/regions";
         }
 
+        @PostMapping("/admin/addPricesOnRegionsJD")
+        public String addPricesOnRegionsJD(@RequestParam Long regionId, @RequestParam Double thickness,
+                                         @RequestParam Double pricePerSquareMeter, RedirectAttributes redirectAttributes) {
+            Region region = regionService.findById(regionId).orElse(null);
+            if (region == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Регион не найден");
+                return "redirect:/admin/regions";
+            }
+            PricesOnRegionsJD pricesOnRegionsJD = new PricesOnRegionsJD();
+            pricesOnRegionsJD.setRegion(region);
+            pricesOnRegionsJD.setThickness(thickness);
+            pricesOnRegionsJD.setPricePerSquareMeter(pricePerSquareMeter);
+            pricesOnRegionsJDService.save(pricesOnRegionsJD);
+            redirectAttributes.addFlashAttribute("successMessage", "Прайс ЖД по региону успешно добавлен");
+            return "redirect:/admin/regions";
+        }
+
+        @PostMapping("/admin/deletePricesOnRegionsJD/{id}")
+        public String deletePricesOnRegionsJD(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+            try {
+                pricesOnRegionsJDService.deleteById(id);
+                redirectAttributes.addFlashAttribute("successMessage", "Прайс ЖД по региону успешно удален");
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении прайса ЖД по региону: " + e.getMessage());
+            }
+            return "redirect:/admin/regions";
+        }
+
         @PostMapping("/admin/importPricesOnRegions")
-        public String importPricesOnRegions(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-            List<String> errorMessages = new ArrayList<>();
-            List<String> successMessages = new ArrayList<>();
-            int rowNum = 0;
-            int processedRows = 0;
-
-            try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+        public String importPricesOnRegions(@RequestParam("file") MultipartFile file,
+                                            RedirectAttributes redirectAttributes) {
+            try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
                 Sheet sheet = workbook.getSheetAt(0);
+                int processedRegions = 0;
+                int updatedPrices = 0;
 
-                // Пропускаем заголовок
-                Iterator<Row> rowIterator = sheet.iterator();
-                if (rowIterator.hasNext()) {
-                    rowIterator.next(); // Пропускаем первую строку (заголовки)
-                }
+                // Получаем все существующие толщины из номенклатур
+                final Set<Double> existingThicknesses = productService.findAll().stream()
+                        .map(Product::getTolsh)
+                        .collect(Collectors.toSet());
 
-                // Проходим по всем строкам
-                while (rowIterator.hasNext()) {
-                    Row row = rowIterator.next();
-                    rowNum++;
+                logger.info("Существующие толщины в номенклатурах: {}", existingThicknesses);
 
-                    try {
-                        // Читаем данные из строки
-                        Cell thicknessCell = row.getCell(0);
-                        Cell regionNameCell = row.getCell(1);
-                        Cell priceCell = row.getCell(2);
+                // Основная обработка
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
 
-                        // Проверяем, что ячейки не пустые
-                        if (thicknessCell == null || regionNameCell == null || priceCell == null) {
-                            errorMessages.add("Строка " + rowNum + ": пустые ячейки");
-                            continue;
+                    String regionName = getCellStringValue(row.getCell(0));
+                    if (regionName == null || regionName.trim().isEmpty()) {
+                        logger.warn("Пустое название региона в строке {}", i+1);
+                        continue;
+                    }
+
+                    // Находим или создаем регион
+                    Region region = regionService.findByName(regionName.trim())
+                            .orElseGet(() -> {
+                                Region newRegion = new Region(regionName.trim());
+                                return regionService.save(newRegion);
+                            });
+                    processedRegions++;
+
+                    // Обработка цен для 6 мм
+                    if (existingThicknesses.contains(6.0)) {
+                        if (processPriceCell(row.getCell(1), region, 6.0)) {
+                            updatedPrices++;
                         }
+                    }
 
-                        Double thickness = thicknessCell.getNumericCellValue();
-                        String regionName = regionNameCell.getStringCellValue().trim();
-                        Double pricePerSquareMeter = priceCell.getNumericCellValue();
-
-                        // Находим или создаем регион
-                        Region region;
-                        if (regionService.existsByName(regionName)) {
-                            region = regionService.findAll().stream()
-                                    .filter(r -> r.getName().equals(regionName))
-                                    .findFirst()
-                                    .orElseThrow();
-                        } else {
-                            region = new Region(regionName);
-                            region = regionService.save(region);
-                            successMessages.add("Создан новый регион: " + regionName);
+                    // Обработка цен для 8 мм
+                    if (existingThicknesses.contains(8.0)) {
+                        if (processPriceCell(row.getCell(2), region, 8.0)) {
+                            updatedPrices++;
                         }
+                    }
 
-                        // Ищем существующую запись цены для этого региона и толщины
-                        List<PricesOnRegions> existingPrices = pricesOnRegionsService.findByFilters(region.getId(), thickness);
-                        PricesOnRegions price;
-
-                        if (!existingPrices.isEmpty()) {
-                            // Обновляем существующую запись
-                            price = existingPrices.get(0);
-                            price.setPricePerSquareMeter(pricePerSquareMeter);
-                        } else {
-                            // Создаем новую запись
-                            price = new PricesOnRegions();
-                            price.setRegion(region);
-                            price.setThickness(thickness);
-                            price.setPricePerSquareMeter(pricePerSquareMeter);
+                    // Обработка цен для 9-22 мм
+                    if (row.getCell(3) != null && row.getCell(3).getCellType() != CellType.BLANK) {
+                        try {
+                            int price = (int) Math.round(row.getCell(3).getNumericCellValue());
+                            for (double thickness = 9.0; thickness <= 22.0; thickness++) {
+                                if (existingThicknesses.contains(thickness)) {
+                                    updatePrice(region, thickness, price);
+                                    updatedPrices++;
+                                }
+                            }
+                        } catch (Exception e) {
+                            logger.error("Ошибка обработки цены (9-22 мм) в строке {}: {}", i+1, e.getMessage());
                         }
-
-                        pricesOnRegionsService.save(price);
-                        processedRows++;
-
-                    } catch (Exception e) {
-                        errorMessages.add("Ошибка в строке " + rowNum + ": " + e.getMessage());
                     }
                 }
 
-                if (processedRows > 0) {
-                    successMessages.add("Успешно обработано строк: " + processedRows);
-                }
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Успешно обработано: %d регионов, %d цен",
+                                processedRegions, updatedPrices));
 
             } catch (Exception e) {
-                errorMessages.add("Ошибка при обработке файла: " + e.getMessage());
-            }
-
-            if (!errorMessages.isEmpty()) {
-                redirectAttributes.addFlashAttribute("errorMessages", errorMessages);
-            }
-            if (!successMessages.isEmpty()) {
-                redirectAttributes.addFlashAttribute("successMessages", successMessages);
+                logger.error("Ошибка импорта", e);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Ошибка импорта: " + e.getMessage());
             }
 
             return "redirect:/admin/regions";
         }
+
+        @PostMapping("/admin/importPricesOnRegionsJD")
+        public String importPricesOnRegionsJD(@RequestParam("file") MultipartFile file,
+                                            RedirectAttributes redirectAttributes) {
+            try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+                Sheet sheet = workbook.getSheetAt(0);
+                int processedRegions = 0;
+                int updatedPrices = 0;
+
+                // Получаем все существующие толщины из номенклатур типа ЖД
+                List<Product> allProducts = productService.findAll();
+                logger.info("Всего продуктов в базе: {}", allProducts.size());
+                
+                List<Product> railwayProducts = allProducts.stream()
+                        .filter(product -> NomenclatureType.RAILWAY.equals(product.getNomenclatureType()))
+                        .collect(Collectors.toList());
+                logger.info("Продуктов типа RAILWAY: {}", railwayProducts.size());
+                
+                final Set<Double> existingThicknesses = railwayProducts.stream()
+                        .map(Product::getTolsh)
+                        .collect(Collectors.toSet());
+
+                logger.info("Существующие толщины в ЖД номенклатурах: {}", existingThicknesses);
+                
+                // Если нет продуктов с типом RAILWAY, используем стандартные толщины
+                if (existingThicknesses.isEmpty()) {
+                    logger.warn("Не найдено продуктов типа RAILWAY. Используем стандартные толщины для импорта.");
+                    existingThicknesses.addAll(Arrays.asList(6.0, 8.0, 9.0, 10.0, 12.0, 15.0, 18.0, 20.0, 22.0));
+                }
+
+                // Основная обработка
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+
+                    String regionName = getCellStringValue(row.getCell(0));
+                    if (regionName == null || regionName.trim().isEmpty()) {
+                        logger.warn("Пустое название региона в строке {}", i+1);
+                        continue;
+                    }
+
+                    // Проверяем тип номенклатуры в 5-й колонке (индекс 4)
+                    String nomenclatureType = getCellStringValue(row.getCell(4));
+                    if (nomenclatureType == null || !"ЖД".equals(nomenclatureType.trim())) {
+                        logger.warn("Пропускаем строку {} - тип номенклатуры не ЖД: {}", i+1, nomenclatureType);
+                        continue;
+                    }
+
+                    // Находим или создаем регион
+                    Region region = regionService.findByName(regionName.trim())
+                            .orElseGet(() -> {
+                                Region newRegion = new Region(regionName.trim());
+                                return regionService.save(newRegion);
+                            });
+                    processedRegions++;
+
+                    // Обработка цен для 6 мм
+                    if (existingThicknesses.contains(6.0)) {
+                        if (processPriceCellJD(row.getCell(1), region, 6.0)) {
+                            updatedPrices++;
+                        }
+                    }
+
+                    // Обработка цен для 8 мм
+                    if (existingThicknesses.contains(8.0)) {
+                        if (processPriceCellJD(row.getCell(2), region, 8.0)) {
+                            updatedPrices++;
+                        }
+                    }
+
+                    // Обработка цен для 9-22 мм
+                    if (row.getCell(3) != null && row.getCell(3).getCellType() != CellType.BLANK) {
+                        try {
+                            int price = (int) Math.round(row.getCell(3).getNumericCellValue());
+                            for (double thickness = 9.0; thickness <= 22.0; thickness++) {
+                                if (existingThicknesses.contains(thickness)) {
+                                    updatePriceJD(region, thickness, price);
+                                    updatedPrices++;
+                                }
+                            }
+                        } catch (Exception e) {
+                            logger.error("Ошибка обработки цены (9-22 мм) в строке {}: {}", i+1, e.getMessage());
+                        }
+                    }
+                }
+
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Успешно обработано ЖД прайсов: %d регионов, %d цен",
+                                processedRegions, updatedPrices));
+
+            } catch (Exception e) {
+                logger.error("Ошибка импорта ЖД прайсов", e);
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Ошибка импорта ЖД прайсов: " + e.getMessage());
+            }
+
+            return "redirect:/admin/regions";
+        }
+
+        // Вспомогательный метод для получения строкового значения из ячейки
+        private String getCellStringValue(Cell cell) {
+            if (cell == null) {
+                return null;
+            }
+
+            switch (cell.getCellType()) {
+                case STRING:
+                    return cell.getStringCellValue();
+                case NUMERIC:
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        return cell.getDateCellValue().toString();
+                    }
+                    return String.valueOf((int) cell.getNumericCellValue());
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                case FORMULA:
+                    return cell.getCellFormula();
+                default:
+                    return null;
+            }
+        }
+
+        private boolean processPriceCell(Cell cell, Region region, double thickness) {
+            if (cell == null || cell.getCellType() == CellType.BLANK) {
+                return false;
+            }
+
+            try {
+                int price = (int) Math.round(cell.getNumericCellValue());
+                updatePrice(region, thickness, price);
+                return true;
+            } catch (Exception e) {
+                logger.error("Ошибка обработки цены для толщины {}: {}", thickness, e.getMessage());
+                return false;
+            }
+        }
+
+        private void updatePrice(Region region, double thickness, double price) {
+            Optional<PricesOnRegions> existingPrice = pricesOnRegionsService
+                    .findByRegionAndThickness(region.getId(), thickness)
+                    .stream()
+                    .findFirst();
+
+            if (existingPrice.isPresent()) {
+                PricesOnRegions priceObj = existingPrice.get();
+                priceObj.setPricePerSquareMeter(price);
+                pricesOnRegionsService.save(priceObj);
+            } else {
+                PricesOnRegions newPrice = new PricesOnRegions();
+                newPrice.setRegion(region);
+                newPrice.setThickness(thickness);
+                newPrice.setPricePerSquareMeter(price);
+                pricesOnRegionsService.save(newPrice);
+            }
+        }
+
+        private boolean processPriceCellJD(Cell cell, Region region, double thickness) {
+            if (cell == null || cell.getCellType() == CellType.BLANK) {
+                return false;
+            }
+
+            try {
+                int price = (int) Math.round(cell.getNumericCellValue());
+                updatePriceJD(region, thickness, price);
+                return true;
+            } catch (Exception e) {
+                logger.error("Ошибка обработки ЖД цены для толщины {}: {}", thickness, e.getMessage());
+                return false;
+            }
+        }
+
+        private void updatePriceJD(Region region, double thickness, double price) {
+            Optional<PricesOnRegionsJD> existingPrice = pricesOnRegionsJDService
+                    .findByRegionAndThickness(region.getId(), thickness)
+                    .stream()
+                    .findFirst();
+
+            if (existingPrice.isPresent()) {
+                PricesOnRegionsJD priceObj = existingPrice.get();
+                priceObj.setPricePerSquareMeter(price);
+                pricesOnRegionsJDService.save(priceObj);
+            } else {
+                PricesOnRegionsJD newPrice = new PricesOnRegionsJD();
+                newPrice.setRegion(region);
+                newPrice.setThickness(thickness);
+                newPrice.setPricePerSquareMeter(price);
+                pricesOnRegionsJDService.save(newPrice);
+            }
+        }
+
         @GetMapping("/admin/regions/data")
         @ResponseBody
         public List<Region> getAllRegions() {
@@ -1464,6 +1811,7 @@
                 @RequestParam String home,
                 @RequestParam String roomnumber,
                 @RequestParam(required = false) String schedule,
+                @RequestParam(required = false) String specialRequirements, // Добавлено новое поле
                 @RequestParam(required = false) Long contactId,
                 RedirectAttributes redirectAttributes) {
 
@@ -1493,6 +1841,7 @@
                 address.setHome(home);
                 address.setRoomnumber(roomnumber);
                 address.setSchedule(schedule != null ? schedule : "");
+                address.setSpecialRequirements(specialRequirements != null ? specialRequirements : "");
                 address.setClient(client);
 
                 // Установка региона
@@ -1545,6 +1894,7 @@
                 @RequestParam String home,
                 @RequestParam String roomnumber,
                 @RequestParam(required = false) String schedule,
+                @RequestParam(required = false) String specialRequirements,
                 @RequestParam(required = false) Long contactId,
                 RedirectAttributes redirectAttributes) {
 
@@ -1583,6 +1933,7 @@
                 address.setHome(home);
                 address.setRoomnumber(roomnumber);
                 address.setSchedule(schedule != null ? schedule : "");
+                address.setSpecialRequirements(specialRequirements != null ? specialRequirements : "");
 
                 // Установка региона
                 ClientsRegion clientsRegion = clientsRegionService.findByClientAndRegionId(client, regionId);
@@ -1632,5 +1983,141 @@
                 documentTypeService.save(documentType);
             }
             return "redirect:/admin/documentTypes";
+        }
+
+        @PostMapping("/admin/addStation")
+        public String addStation(@RequestParam String name, RedirectAttributes redirectAttributes) {
+            if (stationService.existsByName(name)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Станция с таким названием уже существует");
+                return "redirect:/admin/documentTypes";
+            }
+            Station station = new Station(name);
+            stationService.save(station);
+            redirectAttributes.addFlashAttribute("successMessage", "Станция успешно добавлена");
+            return "redirect:/admin/documentTypes";
+        }
+
+        @PostMapping("/admin/deleteStation")
+        public String deleteStation(@RequestParam Long stationId, RedirectAttributes redirectAttributes) {
+            try {
+                stationService.deleteById(stationId);
+                redirectAttributes.addFlashAttribute("successMessage", "Станция успешно удалена");
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при удалении станции: " + e.getMessage());
+            }
+            return "redirect:/admin/documentTypes";
+        }
+
+        @PostMapping("/admin/updateStation")
+        public String updateStation(@RequestParam Long id, @RequestParam String name, RedirectAttributes redirectAttributes) {
+            try {
+                Optional<Station> existingStation = stationService.findById(id);
+                if (!existingStation.isPresent()) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Станция не найдена");
+                    return "redirect:/admin/documentTypes";
+                }
+
+                Station station = existingStation.get();
+                String newName = name.trim();
+                
+                // Проверяем, что новое имя не конфликтует с существующими станциями
+                if (!newName.equals(station.getName()) && stationService.existsByName(newName)) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Станция с таким названием уже существует");
+                    return "redirect:/admin/documentTypes";
+                }
+
+                station.setName(newName);
+                stationService.save(station);
+                redirectAttributes.addFlashAttribute("successMessage", "Станция успешно обновлена");
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении станции: " + e.getMessage());
+            }
+            return "redirect:/admin/documentTypes";
+        }
+
+        @PostMapping("/admin/importStations")
+        public String importStations(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+            try {
+                if (file.isEmpty()) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Файл не выбран");
+                    return "redirect:/admin/documentTypes";
+                }
+
+                Workbook workbook;
+                if (file.getOriginalFilename().endsWith(".xlsx")) {
+                    workbook = new XSSFWorkbook(file.getInputStream());
+                } else {
+                    workbook = new HSSFWorkbook(file.getInputStream());
+                }
+
+                Sheet sheet = workbook.getSheetAt(0);
+                int addedCount = 0;
+                int skippedCount = 0;
+
+                // Начинаем с первой строки (пропускаем заголовок)
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+
+                    Cell cell = row.getCell(0); // Первая колонка - название станции
+                    if (cell == null || cell.getCellType() == CellType.BLANK) continue;
+
+                    String stationName = getCellStringValue(cell).trim();
+                    if (stationName.isEmpty()) continue;
+
+                    // Проверяем, существует ли станция с таким именем
+                    if (!stationService.existsByName(stationName)) {
+                        Station station = new Station(stationName);
+                        stationService.save(station);
+                        addedCount++;
+                    } else {
+                        skippedCount++;
+                    }
+                }
+
+                workbook.close();
+                
+                String message = String.format("Импорт завершен. Добавлено: %d, пропущено: %d", addedCount, skippedCount);
+                redirectAttributes.addFlashAttribute("successMessage", message);
+                
+            } catch (Exception e) {
+                logger.error("Ошибка при импорте станций: {}", e.getMessage());
+                redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при импорте: " + e.getMessage());
+            }
+            
+            return "redirect:/admin/documentTypes";
+        }
+
+        // Методы для работы с квотами
+        @GetMapping("/admin/quotas")
+        public String listQuotas(Model model) {
+            List<Quota> quotas = quotaService.findAll();
+            List<Client> clients = clientService.findAll();
+            model.addAttribute("quotas", quotas);
+            model.addAttribute("clients", clients);
+            return "admin/quotas";
+        }
+
+        @PostMapping("/admin/quotas/add")
+        public String addQuota(@RequestParam Long clientId,
+                               @RequestParam String startDate,
+                               @RequestParam String endDate,
+                               @RequestParam double allowedVolume) {
+            Client client = clientService.findById(clientId).orElseThrow();
+            Quota quota = new Quota(LocalDate.parse(startDate), LocalDate.parse(endDate), client, allowedVolume);
+            quotaService.save(quota);
+            return "redirect:/admin/quotas";
+        }
+
+        @PostMapping("/admin/quotas/addVolume")
+        public String addVolume(@RequestParam Long quotaId, @RequestParam double additionalVolume) {
+            quotaService.addVolume(quotaId, additionalVolume);
+            return "redirect:/admin/quotas";
+        }
+
+        @PostMapping("/admin/quotas/delete")
+        public String deleteQuota(@RequestParam Long quotaId) {
+            quotaService.deleteById(quotaId);
+            return "redirect:/admin/quotas";
         }
     }

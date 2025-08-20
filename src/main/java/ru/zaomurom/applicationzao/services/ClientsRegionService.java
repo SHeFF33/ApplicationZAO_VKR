@@ -42,6 +42,7 @@ public class ClientsRegionService {
         return clientsRegionRepository.findByClient(client)
                 .stream()
                 .map(ClientsRegion::getRegion)
+                .distinct() // Убираем дубликаты
                 .collect(Collectors.toList());
     }
 

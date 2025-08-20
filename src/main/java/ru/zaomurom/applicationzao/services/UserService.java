@@ -19,7 +19,7 @@ public class UserService implements UserDetailsService {
     private UserRepository userRepository;
 
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsername(username).orElse(null);
     }
 
     public User findByEmail(String email) {
@@ -44,11 +44,15 @@ public class UserService implements UserDetailsService {
         return userRepository.existsByEmail(email);
     }
 
+    public List<User> findAllAdmins() {
+        return userRepository.findByIsAdminTrue();
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = findByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found");
+            throw new UsernameNotFoundException("User not found with username: " + username);
         }
         List<GrantedAuthority> authorities = new ArrayList<>();
         if (user.isAdmin()) {

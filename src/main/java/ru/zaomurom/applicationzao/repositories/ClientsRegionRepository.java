@@ -13,10 +13,15 @@ import java.util.List;
 public interface ClientsRegionRepository extends JpaRepository<ClientsRegion, Long> {
     List<ClientsRegion> findByClient(Client client);
 
+    List<ClientsRegion> findByClientId(Long clientId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM ClientsRegion cr WHERE cr.client = :client")
     void deleteByClient(@Param("client") Client client);
 
     ClientsRegion findByClientAndRegion_Id(Client client, Long regionId);
+    
+    void deleteByRegionId(Long regionId);
+
 }

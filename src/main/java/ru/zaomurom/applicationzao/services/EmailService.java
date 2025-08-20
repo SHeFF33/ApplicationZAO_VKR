@@ -71,26 +71,44 @@ public class EmailService {
 
     @Async("asyncExecutor")
     public void sendOrderStatusUpdateEmailAsync(Order order, String newStatus, List<String> emailAddresses) {
-        logger.info("Начало асинхронной отправки уведомлений о статусе заказа");
-        
-        if (emailAddresses.isEmpty()) {
-            logger.warn("Не найдены email адреса для отправки уведомлений");
-            return;
-        }
+        try {
+            String subject = "Обновление статуса заказа №" + order.getId();
+            String message = String.format(
+                "Здравствуйте!\n\n" +
+                "Статус вашего заказа №%d был изменен на \"%s\".\n\n" +
+                "Дата заказа: %s\n" +
+                "Клиент: %s\n\n" +
+                "С уважением,\nКоманда поддержки",
+                order.getId(),
+                newStatus,
+                new SimpleDateFormat("dd.MM.yyyy HH:mm").format(order.getOrderDate()),
+                order.getClient().getName()
+            );
 
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        
-        for (String email : emailAddresses) {
-            try {
-                logger.info("Отправка уведомления о статусе заказа на адрес: {}", email);
-                futures.add(sendOrderStatusUpdateEmail(email, order, newStatus));
-            } catch (Exception e) {
-                logger.error("Ошибка при отправке уведомления на адрес {}: {}", email, e.getMessage(), e);
+            for (String email : emailAddresses) {
+                if (email != null && !email.trim().isEmpty()) {
+                    sendEmail(email, subject, message);
+                }
             }
+        } catch (Exception e) {
+            logger.error("Error sending order status update email: {}", e.getMessage(), e);
         }
+    }
 
-        // Ждем завершения всех отправок
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    @Async
+    public void sendOrderAddressChangeNotificationAsync(Order order, String notificationMessage, List<String> adminEmails) {
+        try {
+            String subject = "Изменение в заказе №" + order.getId();
+            String message = notificationMessage;
+
+            for (String email : adminEmails) {
+                if (email != null && !email.trim().isEmpty()) {
+                    sendEmail(email, subject, message);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error sending order address change notification: {}", e.getMessage(), e);
+        }
     }
 
     @Async("asyncExecutor")

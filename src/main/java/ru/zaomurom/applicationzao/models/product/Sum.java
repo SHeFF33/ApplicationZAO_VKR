@@ -2,6 +2,7 @@ package ru.zaomurom.applicationzao.models.product;
 
 import jakarta.persistence.*;
 import ru.zaomurom.applicationzao.models.prices.PricesOnRegions;
+import ru.zaomurom.applicationzao.models.prices.PricesOnRegionsJD;
 
 import java.util.Date;
 
@@ -22,6 +23,10 @@ public class Sum {
     @ManyToOne
     @JoinColumn(name = "prices_on_regions_id")
     private PricesOnRegions pricesOnRegions;
+
+    @ManyToOne
+    @JoinColumn(name = "prices_on_regions_jd_id")
+    private PricesOnRegionsJD pricesOnRegionsJD;
 
     // Конструкторы, геттеры и сеттеры
     public Sum() {}
@@ -70,6 +75,14 @@ public class Sum {
 
     public void setPricesOnRegions(PricesOnRegions pricesOnRegions) {
         this.pricesOnRegions = pricesOnRegions;
+    }
+
+    public PricesOnRegionsJD getPricesOnRegionsJD() {
+        return pricesOnRegionsJD;
+    }
+
+    public void setPricesOnRegionsJD(PricesOnRegionsJD pricesOnRegionsJD) {
+        this.pricesOnRegionsJD = pricesOnRegionsJD;
     }
 
     public String getRegionName() {

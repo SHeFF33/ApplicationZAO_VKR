@@ -9,6 +9,7 @@ import ru.zaomurom.applicationzao.models.client.Addresses;
 import ru.zaomurom.applicationzao.models.client.Client;
 import ru.zaomurom.applicationzao.models.product.*;
 import ru.zaomurom.applicationzao.repositories.*;
+import ru.zaomurom.applicationzao.models.order.Order;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -234,20 +235,50 @@ public class CartService {
     }
 
     private int calculateAvailableSpace(CartTruck truck) {
-        long longProductsCount = truck.getItems().stream()
-                .filter(item -> item.getProduct().getLength() == 2.8)
-                .count();
+        if (truck.getItems().isEmpty()) {
+            // Если грузовик пустой, определяем тип номенклатуры по корзине
+            Cart cart = truck.getCart();
+            if (cart != null && !cart.getCartItems().isEmpty()) {
+                NomenclatureType cartType = getCartNomenclatureType(cart);
+                if (cartType == NomenclatureType.RAILWAY) {
+                    return Product.MAX_ITEMS_RAILWAY; // 49 для ЖД
+                }
+            }
+            return Product.MAX_ITEMS_SHORT; // 16 для авто по умолчанию
+        }
+        
+        // Определяем тип номенклатуры по первому товару в грузовике
+        NomenclatureType firstProductType = truck.getItems().get(0).getProduct().getNomenclatureType();
+        
+        if (firstProductType == NomenclatureType.RAILWAY) {
+            // Логика для ЖД товаров
+            return calculateRailwayAvailableSpace(truck);
+        } else {
+            // Логика для авто товаров (существующая)
+            long longProductsCount = truck.getItems().stream()
+                    .filter(item -> item.getProduct().getLength() == 2.8)
+                    .count();
 
+            int totalItems = truck.getItems().stream()
+                    .mapToInt(CartTruckItem::getQuantity)
+                    .sum();
+
+            // Определяем максимальное количество для этой машины
+            if (longProductsCount >= 6) {
+                return Product.MAX_ITEMS_LONG - totalItems; // 13
+            } else {
+                return Product.MAX_ITEMS_SHORT - totalItems; // 16
+            }
+        }
+    }
+    
+    private int calculateRailwayAvailableSpace(CartTruck truck) {
         int totalItems = truck.getItems().stream()
                 .mapToInt(CartTruckItem::getQuantity)
                 .sum();
-
-        // Определяем максимальное количество для этой машины
-        if (longProductsCount >= 6) {
-            return 13 - totalItems; // MAX_ITEMS_LONG
-        } else {
-            return 16 - totalItems; // MAX_ITEMS_SHORT
-        }
+        
+        // Для ЖД товаров всегда максимум 49 пачек
+        return Product.MAX_ITEMS_RAILWAY - totalItems; // 49
     }
 
     private void addItemToTruck(CartTruck truck, CartItem cartItem, int quantity) {
@@ -367,6 +398,62 @@ public class CartService {
 
         public void setSumId(Long sumId) {
             this.sumId = sumId;
+        }
+    }
+
+    // Проверка совместимости типов номенклатуры
+    public boolean canAddProductToCart(Cart cart, Product product) {
+        if (cart.getCartItems().isEmpty()) {
+            return true; // Корзина пустая, можно добавить любой товар
+        }
+
+        // Получаем тип первого товара в корзине
+        NomenclatureType existingType = cart.getCartItems().get(0).getProduct().getNomenclatureType();
+        
+        // Проверяем совместимость
+        return existingType == product.getNomenclatureType();
+    }
+
+    // Получение типа номенклатуры корзины
+    public NomenclatureType getCartNomenclatureType(Cart cart) {
+        if (cart.getCartItems().isEmpty()) {
+            return null;
+        }
+        return cart.getCartItems().get(0).getProduct().getNomenclatureType();
+    }
+
+    // Получение доступных адресов в зависимости от типа номенклатуры
+    public List<Addresses> getAvailableAddressesForCart(Client client, Cart cart) {
+        NomenclatureType cartType = getCartNomenclatureType(cart);
+        
+        if (cartType == NomenclatureType.RAILWAY) {
+            // Для ЖД товаров - только адреса со станциями
+            return client.getAddresses().stream()
+                    .filter(address -> address.getStation() != null)
+                    .collect(Collectors.toList());
+        } else {
+            // Для авто товаров - только адреса без станций
+            return client.getAddresses().stream()
+                    .filter(address -> address.getStation() == null)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    public List<Addresses> getAvailableAddressesForOrder(Client client, Order order) {
+        // Определяем тип номенклатуры заказа
+        boolean isRailwayOrder = order.getTchOrders().stream()
+                .anyMatch(tchOrder -> tchOrder.getProduct().getNomenclatureType() == NomenclatureType.RAILWAY);
+        
+        if (isRailwayOrder) {
+            // Для ЖД товаров - только адреса со станциями
+            return client.getAddresses().stream()
+                    .filter(address -> address.getStation() != null)
+                    .collect(Collectors.toList());
+        } else {
+            // Для авто товаров - только адреса без станций
+            return client.getAddresses().stream()
+                    .filter(address -> address.getStation() == null)
+                    .collect(Collectors.toList());
         }
     }
 }

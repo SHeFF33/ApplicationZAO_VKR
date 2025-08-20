@@ -432,6 +432,9 @@
     <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
       <i class="fas fa-map-marked-alt"></i> Регионы
     </a>
+    <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+      <i class="fas fa-balance-scale"></i> Квоты
+    </a>
     <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
       <i class="fas fa-comments"></i>
       Обращения клиентов
@@ -465,32 +468,53 @@
         <div class="info-label">ИНН</div>
         <div class="info-value" th:text="${client.inn}"></div>
       </div>
-
       <div class="info-group">
         <div class="info-label">КПП</div>
         <div class="info-value" th:text="${client.kpp}"></div>
       </div>
-
       <div class="info-group">
         <div class="info-label">Юридический адрес</div>
         <div class="info-value" th:text="${client.uraddress}"></div>
       </div>
-
       <div class="info-group">
         <div class="info-label">Фактический адрес</div>
         <div class="info-value" th:text="${client.factaddress}"></div>
       </div>
-
+    </div>
+    <!-- Информация по расчетам -->
+    <h2 class="info-card__title" style="font-size:1.25rem; font-weight:600; color:var(--primary-dark); margin-top:2rem;"><i class="fas fa-ruble-sign"></i> Информация по расчетам</h2>
+    <div class="info-grid">
       <div class="info-group">
         <div class="info-label">Денег на счету</div>
-        <div class="info-value" th:text="${client.sum1} ?: 'Не указана'"></div>
+        <div class="info-value" id="sum1-value" th:text="${client.sum1} ?: 'Не указана'"></div>
       </div>
-
       <div class="info-group">
         <div class="info-label">В том числе свободные</div>
-        <div class="info-value" th:text="${client.sum2} ?: 'Не указана'"></div>
+        <div class="info-value" id="sum2-value" th:text="${client.sum2} ?: 'Не указана'"></div>
       </div>
     </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        function formatMoney(value) {
+          if (value === null || value === undefined || value === '' || isNaN(value)) return 'Не указана';
+          let number = Number(value);
+          if (!isFinite(number)) return 'Не указана';
+          let parts = number.toFixed(2).split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+          return parts[0] + ',' + parts[1] + ' руб.';
+        }
+        var sum1Elem = document.getElementById('sum1-value');
+        var sum2Elem = document.getElementById('sum2-value');
+        if (sum1Elem) {
+          var raw1 = sum1Elem.textContent.trim().replace(/\s/g, '');
+          sum1Elem.textContent = formatMoney(raw1);
+        }
+        if (sum2Elem) {
+          var raw2 = sum2Elem.textContent.trim().replace(/\s/g, '');
+          sum2Elem.textContent = formatMoney(raw2);
+        }
+      });
+    </script>
   </div>
 
   <div class="section">
@@ -508,12 +532,14 @@
             <th>Почтовый индекс</th>
             <th>Страна</th>
             <th>Регион</th>
+            <th>Станция</th>
             <th>Район</th>
             <th>Город</th>
             <th>Улица</th>
             <th>Дом</th>
             <th>Строение</th>
             <th>График работы адреса доставки</th>
+            <th>Особые требования, схема проезда</th>
             <th>Контакт</th>
           </tr>
           </thead>
@@ -522,16 +548,18 @@
             <td th:text="${address.postalcode}"></td>
             <td th:text="${address.country}"></td>
             <td th:text="${address.clientsRegion != null ? address.clientsRegion.region.name : ''}"></td>
+            <td th:text="${address.station?.name} ?: 'Не указана'"></td>
             <td th:text="${address.rayon}"></td>
             <td th:text="${address.city}"></td>
             <td th:text="${address.street}"></td>
             <td th:text="${address.home}"></td>
             <td th:text="${address.roomnumber}"></td>
             <td th:text="${address.schedule} ?: 'Не указано'"></td>
+            <td th:text="${address.specialRequirements} ?: 'Не указано'"></td>
             <td th:text="${address.contact?.name} ?: 'Не указан'"></td>
           </tr>
           <tr th:if="${#lists.isEmpty(client.addresses)}">
-            <td colspan="9" class="empty-state">
+            <td colspan="12" class="empty-state">
               <i class="fas fa-map-marked-alt"></i>
               <p>Адреса не добавлены</p>
             </td>
@@ -615,6 +643,20 @@
           </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <h3 class="section-title"><i class="fas fa-map-marked-alt"></i> Доступные регионы</h3>
+    </div>
+    <div class="section-content">
+      <div th:if="${#lists.isEmpty(clientRegions)}" class="empty-state">
+        <i class="fas fa-map-marker-alt"></i>
+        <p>Регионы не выбраны</p>
+      </div>
+      <div th:unless="${#lists.isEmpty(clientRegions)}" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        <span th:each="region : ${clientRegions}" th:text="${region.name}" class="badge badge--primary" style="font-size:1rem; padding:0.5rem 1rem;"></span>
       </div>
     </div>
   </div>

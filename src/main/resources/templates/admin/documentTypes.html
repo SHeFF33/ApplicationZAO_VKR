@@ -258,6 +258,12 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .card__actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
     .card__title {
       font-size: 1.25rem;
       font-weight: 600;
@@ -385,6 +391,78 @@
       font-size: 0.875rem;
     }
 
+    /* Filters styles */
+    .filters-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+
+            .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 1rem;
+            flex: 1;
+            box-shadow: var(--shadow-sm);
+        }
+
+    .search-bar__icon {
+        color: var(--text-secondary);
+        margin-right: 0.75rem;
+    }
+
+    .search-bar__input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+    }
+
+    .search-bar__input::placeholder {
+        color: var(--text-secondary);
+    }
+
+    .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .filter-select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--surface);
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        cursor: pointer;
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .filter-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+    }
+
     /* Responsive styles */
     @media (max-width: 768px) {
       .app-container {
@@ -475,12 +553,23 @@
       <h2 class="card__title">
         <i class="fas fa-file-alt"></i> Типы документов
       </h2>
-      <button class="btn btn--primary" onclick="openModal('addDocumentTypeModal')">
-        <i class="fas fa-plus"></i> Добавить тип документа
-      </button>
+      <div class="card__actions">
+        <button class="btn btn--primary" onclick="openModal('addDocumentTypeModal')">
+          <i class="fas fa-plus"></i> Добавить тип документа
+        </button>
+      </div>
     </div>
 
     <div class="table-container">
+      <!-- Добавляем фильтр -->
+      <div class="filters-container">
+        <div class="search-bar">
+          <i class="fas fa-search search-bar__icon"></i>
+          <input type="text" class="search-bar__input" placeholder="Поиск типов документов..."
+                 oninput="searchDocumentTypes(this.value)" id="documentTypeSearchInput">
+        </div>
+      </div>
+
       <table class="data-table">
         <thead>
         <tr>
@@ -489,7 +578,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="type : ${documentTypes}">
+        <tr th:each="type : ${documentTypes}" class="document-type-row" th:data-name="${type.name}">
           <td th:text="${type.name}"></td>
           <td>
             <div class="action-buttons">
@@ -505,6 +594,58 @@
           <td colspan="2" class="empty-state">
             <i class="fas fa-file-alt"></i>
             <p>Типы документов не добавлены</p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stations Section -->
+  <div class="card">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-train"></i> Станции
+      </h2>
+      <div class="card__actions">
+        <button class="btn btn--secondary" onclick="openModal('importStationsModal')">
+          <i class="fas fa-file-excel"></i> Импорт из Excel
+        </button>
+        <button class="btn btn--primary" onclick="openModal('addStationModal')">
+          <i class="fas fa-plus"></i> Добавить станцию
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Название</th>
+          <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="station : ${stations}">
+          <td th:text="${station.name}"></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn--primary edit-station" 
+                      th:data-id="${station.id}" 
+                      th:data-name="${station.name}">
+                <i class="fas fa-edit"></i> Изменить
+              </button>
+              <button class="btn btn--danger delete-station" 
+                      th:data-id="${station.id}">
+                <i class="fas fa-trash"></i> Удалить
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(stations)}">
+          <td colspan="2" class="empty-state">
+            <i class="fas fa-train"></i>
+            <p>Станции не добавлены</p>
           </td>
         </tr>
         </tbody>
@@ -562,6 +703,86 @@
   </div>
 </div>
 
+<!-- Add Station Modal -->
+<div id="addStationModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('addStationModal')">&times;</button>
+    <h3 class="modal-title">
+      <i class="fas fa-plus"></i> Добавить станцию
+    </h3>
+    <form id="addStationForm" th:action="@{/admin/addStation}" method="post">
+      <div class="form-group">
+        <label for="stationName" class="form-label">Название станции</label>
+        <input type="text" id="stationName" name="name" class="form-control" required maxlength="255"/>
+      </div>
+      <div class="action-buttons">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button type="button" class="btn btn--secondary" onclick="closeModal('addStationModal')">
+          <i class="fas fa-times"></i> Отмена
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Station Modal -->
+<div id="editStationModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('editStationModal')">&times;</button>
+    <h3 class="modal-title">
+      <i class="fas fa-edit"></i> Изменить станцию
+    </h3>
+    <form id="editStationForm" th:action="@{/admin/updateStation}" method="post">
+      <input type="hidden" id="editStationId" name="id" />
+      <div class="form-group">
+        <label for="editStationName" class="form-label">Название станции</label>
+        <input type="text" id="editStationName" name="name" class="form-control" required maxlength="255"/>
+      </div>
+      <div class="action-buttons">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+        <button type="button" class="btn btn--secondary" onclick="closeModal('editStationModal')">
+          <i class="fas fa-times"></i> Отмена
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Import Stations Modal -->
+<div id="importStationsModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal('importStationsModal')">&times;</button>
+    <h3 class="modal-title">
+      <i class="fas fa-file-excel"></i> Импорт станций из Excel
+    </h3>
+    <form id="importStationsForm" th:action="@{/admin/importStations}" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="stationsFile" class="form-label">Выберите Excel файл</label>
+        <input type="file" id="stationsFile" name="file" class="form-control" accept=".xlsx,.xls" required/>
+        <small class="form-text">Файл должен содержать колонку "Название" со списком станций</small>
+      </div>
+      <div class="alert alert--info">
+        <i class="fas fa-info-circle"></i>
+        <span>
+          Повторяющиеся станции будут пропущены. Добавлены будут только новые станции.
+        </span>
+      </div>
+      <div class="action-buttons">
+        <button type="submit" class="btn btn--primary">
+          <i class="fas fa-upload"></i> Импортировать
+        </button>
+        <button type="button" class="btn btn--secondary" onclick="closeModal('importStationsModal')">
+          <i class="fas fa-times"></i> Отмена
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   function openNav() {
     document.getElementById("sidebar").classList.add("app-sidebar--open");
@@ -597,6 +818,12 @@
     openModal('editDocumentTypeModal');
   }
 
+  function openEditStationModal(id, name) {
+    document.getElementById('editStationId').value = id;
+    document.getElementById('editStationName').value = name;
+    openModal('editStationModal');
+  }
+
   // Добавляем обработчики для кнопок редактирования
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.edit-document-type').forEach(button => {
@@ -606,12 +833,85 @@
         openEditModal(id, name);
       });
     });
+
+    // Обработчики для станций
+    document.querySelectorAll('.edit-station').forEach(button => {
+      button.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const name = this.getAttribute('data-name');
+        openEditStationModal(id, name);
+      });
+    });
+
+    document.querySelectorAll('.delete-station').forEach(button => {
+      button.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        if (confirm('Вы уверены, что хотите удалить эту станцию?')) {
+          // Создаем форму для удаления
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/admin/deleteStation';
+          
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'stationId';
+          input.value = id;
+          
+          form.appendChild(input);
+          document.body.appendChild(form);
+          form.submit();
+        }
+      });
+    });
   });
 
   // Закрытие модальных окон при клике вне их области
   window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
       event.target.style.display = "none";
+    }
+  }
+
+  function searchDocumentTypes(query) {
+    const rows = document.querySelectorAll('.document-type-row');
+    let visibleCount = 0;
+    
+    // Если запрос пустой, показываем все строки
+    if (query === '') {
+      rows.forEach(row => {
+        row.style.display = '';
+        visibleCount++;
+      });
+      
+      // Скрываем сообщение "не найдено"
+      const emptyRow = document.querySelector('.document-type-row + tr[th\\:if]');
+      if (emptyRow) {
+        emptyRow.style.display = 'none';
+      }
+      return;
+    }
+    
+    rows.forEach(row => {
+      const nameElement = row.querySelector('td:first-child');
+      const name = nameElement.textContent.toLowerCase();
+      
+      if (name.includes(query.toLowerCase())) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    // Показываем сообщение, если ничего не найдено
+    const emptyRow = document.querySelector('.document-type-row + tr[th\\:if]');
+    if (emptyRow) {
+      if (visibleCount === 0 && query !== '') {
+        emptyRow.style.display = '';
+        emptyRow.querySelector('td').innerHTML = '<i class="fas fa-search"></i><p>Типы документов не найдены</p>';
+      } else {
+        emptyRow.style.display = 'none';
+      }
     }
   }
 </script>

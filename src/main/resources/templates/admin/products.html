@@ -573,6 +573,29 @@
             border-color: var(--error);
             box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
         }
+
+        /* Стили для информации о прайсах */
+        .price-info {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .price-info--auto {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .price-info--jd {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning);
+            border-left: 4px solid var(--warning);
+        }
     </style>
 </head>
 <body>
@@ -619,6 +642,9 @@
         </a>
         <a th:href="@{/admin/regions}" class="app-sidebar__nav-item">
             <i class="fas fa-map-marked-alt"></i> Регионы
+        </a>
+        <a th:href="@{/admin/quotas}" class="app-sidebar__nav-item">
+            <i class="fas fa-balance-scale"></i> Квоты
         </a>
         <a th:href="@{/admin/messenger}" class="app-sidebar__nav-item">
             <i class="fas fa-comments"></i>
@@ -682,6 +708,14 @@
                    min="1" max="9999" 
                    pattern="^[1-9]\d{0,3}$"
                    title="Введите положительное целое число не более 4 знаков">
+        </div>
+
+        <div class="form-group">
+            <label for="nomenclatureType" class="form-label">Тип номенклатуры</label>
+            <select id="nomenclatureType" name="nomenclatureType" class="form-control" required>
+                <option value="AUTO">Авто</option>
+                <option value="RAILWAY">ЖД</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -844,8 +878,13 @@
                     <label for="manualProductId" class="form-label">Выберите товар</label>
                     <select id="manualProductId" name="productId" class="form-control" required>
                         <option value="">Выберите товар</option>
-                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}"></option>
+                        <option th:each="product : ${products}" th:value="${product.id}" th:text="${product.name}" th:data-nomenclature-type="${product.nomenclatureType}"></option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <div id="priceInfo" class="price-info price-info--auto">
+                        <i class="fas fa-truck"></i> Используются Авто прайсы
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1303,6 +1342,41 @@
     function closeNav() {
         document.getElementById('sidebar').classList.remove('app-sidebar--open');
     }
+
+    // Функция для определения типа номенклатуры товара
+    function getProductNomenclatureType(productId) {
+        const productSelect = document.getElementById('manualProductId');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (selectedOption && selectedOption.dataset.nomenclatureType) {
+            return selectedOption.dataset.nomenclatureType;
+        }
+        return 'AUTO'; // По умолчанию
+    }
+
+    // Функция для обновления информации о прайсах в зависимости от типа номенклатуры
+    function updatePriceInfo() {
+        const productId = document.getElementById('manualProductId').value;
+        const nomenclatureType = getProductNomenclatureType(productId);
+        
+        const priceInfo = document.getElementById('priceInfo');
+        if (priceInfo) {
+            if (nomenclatureType === 'RAILWAY') {
+                priceInfo.innerHTML = '<i class="fas fa-train"></i> Используются ЖД прайсы';
+                priceInfo.className = 'price-info price-info--jd';
+            } else {
+                priceInfo.innerHTML = '<i class="fas fa-truck"></i> Используются Авто прайсы';
+                priceInfo.className = 'price-info price-info--auto';
+            }
+        }
+    }
+
+    // Добавляем обработчик изменения товара в форме ручного ввода цен
+    document.addEventListener('DOMContentLoaded', function() {
+        const manualProductSelect = document.getElementById('manualProductId');
+        if (manualProductSelect) {
+            manualProductSelect.addEventListener('change', updatePriceInfo);
+        }
+    });
 </script>
 
 </body>
